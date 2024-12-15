@@ -28,7 +28,7 @@ COVERAGE_BUILD_FOLDER = $(BUILD_FOLDER)/coverage
 UNIT_COVERAGE_OUT  = $(COVERAGE_BUILD_FOLDER)/ut_cov.out
 UNIT_COVERAGE_HTML = $(COVERAGE_BUILD_FOLDER)/ut_index.html
 
-.PHONY: help mod-tidy test test-race test-lint lint mockgen-install version
+.PHONY: help mod-tidy test test-race test-lint lint mockgen-install goreleaser-snaptho goreleaser version
 
 help:
 	@echo "Usage: make <target>"
@@ -41,7 +41,8 @@ help:
 	@echo "  test-lint           Check linting"
 	@echo "  lint                Run linter to fix linting issues"
 	@echo "  mockgen-install     Install mockgen command"
-	@echo "  goreleaser-dry-run  Execute dry run of goreleaser without publishing"
+	@echo "  goreleaser-snapshot Execute goreleaser with --snapshot flag"
+	@echo "  goreleaser          Execute goreleaser"
 	@echo "  version             Read version from git tags"
 
 # Run go mod tidy command to update go.mod and go.sum files
@@ -84,8 +85,7 @@ mockgen-install:
 		go install go.uber.org/mock/mockgen@$(MOCKGEN_VERSION);  \
 	}
 
-goreleaser-dry-run:
-	goreleaser release --config .goreleaser/prepare.yml --snapshot --clean
+goreleaser-snapshot:
 	@docker run \
 		--rm \
 		--privileged \
@@ -95,8 +95,19 @@ goreleaser-dry-run:
 		-v `pwd`/sysroot:/sysroot \
 		-w /go/src/$(MODULE_NAME) \
 		goreleaser/goreleaser-cross:${GOLANG_VERSION} \
-		--config .goreleaser/build.yml \
-		--clean --skip-validate --skip-publish --snapshot
+		--clean --skip=publish,validate --snapshot
+
+goreleaser:
+	@docker run \
+		--rm \
+		--privileged \
+		-e CGO_ENABLED=1 \
+		-v /var/run/docker.sock:/var/run/docker.sock \
+		-v `pwd`:/go/src/$(MODULE_NAME) \
+		-v `pwd`/sysroot:/sysroot \
+		-w /go/src/$(MODULE_NAME) \
+		goreleaser/goreleaser-cross:${GOLANG_VERSION} \
+		--clean --skip=publish,validate
 
 # Read version from git tags
 # It is used in CI to set the version

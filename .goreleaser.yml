@@ -1,4 +1,6 @@
-project_name: kkrtctl
+# goreleaser config to build kkrt
+# This configuration file is by gorelease in goreleaser-cross docker image providing cross-compilation environment
+project_name: kkrt
 checksum:
   name_template: 'checksums.txt'
 snapshot:
@@ -12,7 +14,7 @@ changelog:
 builds:
   - id: darwin-amd64
     main: ./
-    binary: kkrtctl
+    binary: kkrt
     goos:
       - darwin
     goarch:
@@ -23,10 +25,10 @@ builds:
     flags:
       - -mod=readonly
     ldflags:
-      - -s -w -X github.com/liquid-collective/lceth/cmd.Version={{.Version}}
+      - -s -w -X github.com/kkrt-labs/kakarot-controller/src.Version={{.Version}}
   - id: darwin-arm64
     main: ./
-    binary: kkrtctl
+    binary: kkrt
     goarch:
       - arm64
     goos:
@@ -37,10 +39,10 @@ builds:
     flags:
       - -mod=readonly
     ldflags:
-      - -s -w -X github.com/liquid-collective/lceth/cmd.Version={{.Version}}
+      - -s -w -X github.com/kkrt-labs/kakarot-controller/src.Version={{.Version}}
   - id: linux-amd64
     main: ./
-    binary: kkrtctl
+    binary: kkrt
     env:
       - CC=x86_64-linux-gnu-gcc
       - CXX=x86_64-linux-gnu-g++
@@ -51,11 +53,11 @@ builds:
     flags:
       - -mod=readonly
     ldflags:
-      - -s -w -X github.com/liquid-collective/lceth/cmd.Version={{.Version}}
+      - -s -w -X github.com/kkrt-labs/kakarot-controller/src.Version={{.Version}}
       - -extldflags "-lc -lrt -lpthread --static"
   - id: linux-arm64
     main: ./
-    binary: kkrtctl
+    binary: kkrt
     goarch:
       - arm64
     goos:
@@ -66,5 +68,5 @@ builds:
     flags:
       - -mod=readonly
     ldflags:
-      - -s -w -X github.com/liquid-collective/lceth/cmd.Version={{.Version}}
+      - -s -w -X github.com/kkrt-labs/kakarot-controller/src.Version={{.Version}}
       - -extldflags "-lc -lrt -lpthread --static"
