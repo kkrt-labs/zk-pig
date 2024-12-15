@@ -6,6 +6,7 @@ import (
 
 	ethrpc "github.com/kkrt-labs/kakarot-controller/pkg/ethereum/rpc/jsonrpc"
 	jsonrpchttp "github.com/kkrt-labs/kakarot-controller/pkg/jsonrpc/http"
+	"github.com/kkrt-labs/kakarot-controller/src"
 	"github.com/kkrt-labs/kakarot-controller/src/blocks"
 	"github.com/sirupsen/logrus"
 )
@@ -15,6 +16,8 @@ func main() {
 	cfg := &blocks.Config{
 		RPC: &jsonrpchttp.Config{Address: os.Getenv("RPC_URL")},
 	}
+
+	logrus.Infof("Version: %s", src.Version)
 
 	svc := blocks.New(cfg)
 	err := svc.Generate(context.Background(), ethrpc.MustFromBlockNumArg("latest"))

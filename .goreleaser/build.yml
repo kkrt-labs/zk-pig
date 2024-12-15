@@ -1,0 +1,70 @@
+project_name: kkrtctl
+checksum:
+  name_template: 'checksums.txt'
+snapshot:
+  name_template: "{{ .Tag }}-next"
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^test:'
+      - '^docs:'
+builds:
+  - id: darwin-amd64
+    main: ./
+    binary: kkrtctl
+    goos:
+      - darwin
+    goarch:
+      - amd64
+    env:
+      - CC=o64-clang
+      - CXX=o64-clang++
+    flags:
+      - -mod=readonly
+    ldflags:
+      - -s -w -X github.com/liquid-collective/lceth/cmd.Version={{.Version}}
+  - id: darwin-arm64
+    main: ./
+    binary: kkrtctl
+    goarch:
+      - arm64
+    goos:
+      - darwin
+    env:
+      - CC=oa64-clang
+      - CXX=oa64-clang++
+    flags:
+      - -mod=readonly
+    ldflags:
+      - -s -w -X github.com/liquid-collective/lceth/cmd.Version={{.Version}}
+  - id: linux-amd64
+    main: ./
+    binary: kkrtctl
+    env:
+      - CC=x86_64-linux-gnu-gcc
+      - CXX=x86_64-linux-gnu-g++
+    goarch:
+      - amd64
+    goos:
+      - linux
+    flags:
+      - -mod=readonly
+    ldflags:
+      - -s -w -X github.com/liquid-collective/lceth/cmd.Version={{.Version}}
+      - -extldflags "-lc -lrt -lpthread --static"
+  - id: linux-arm64
+    main: ./
+    binary: kkrtctl
+    goarch:
+      - arm64
+    goos:
+      - linux
+    env:
+      - CC=aarch64-linux-gnu-gcc
+      - CXX=aarch64-linux-gnu-g++
+    flags:
+      - -mod=readonly
+    ldflags:
+      - -s -w -X github.com/liquid-collective/lceth/cmd.Version={{.Version}}
+      - -extldflags "-lc -lrt -lpthread --static"
