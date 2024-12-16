@@ -1,3 +1,7 @@
 # Kakarot Controller
 
-Kakarot Controller is a monorepo containing all the services required for orchestrating Kakarot proving operations.
+The **Kakarot Controller** is a monorepo housing all the services necessary for managing and orchestrating Kakarot proving operations.
+
+## Getting Involved
+
+Interested in contributing? Check out our [Contributing Guidelines](CONTRIBUTING.md) to get started! 
