@@ -1,20 +1,25 @@
 # goreleaser config to build kkrt
 # This configuration file is by gorelease in goreleaser-cross docker image providing cross-compilation environment
-project_name: kkrt
+project_name: kakarot-controller
 checksum:
   name_template: 'checksums.txt'
 snapshot:
   name_template: "{{ .Tag }}-next"
 changelog:
-  sort: asc
+  sort: ''
   filters:
-    exclude:
-      - '^test:'
-      - '^docs:'
+    include:
+      - '^feat'
+      - '^fix'
+      - '^chore'
+release:
+  github:
+    owner: kkrt-labs
+    name: kakarot-controller
 builds:
   - id: darwin-amd64
     main: ./
-    binary: kkrt
+    binary: kkrtctl
     goos:
       - darwin
     goarch:
@@ -28,7 +33,7 @@ builds:
       - -s -w -X github.com/kkrt-labs/kakarot-controller/src.Version={{.Version}}
   - id: darwin-arm64
     main: ./
-    binary: kkrt
+    binary: kkrtctl
     goarch:
       - arm64
     goos:
@@ -42,7 +47,7 @@ builds:
       - -s -w -X github.com/kkrt-labs/kakarot-controller/src.Version={{.Version}}
   - id: linux-amd64
     main: ./
-    binary: kkrt
+    binary: kkrtctl
     env:
       - CC=x86_64-linux-gnu-gcc
       - CXX=x86_64-linux-gnu-g++
@@ -57,7 +62,7 @@ builds:
       - -extldflags "-lc -lrt -lpthread --static"
   - id: linux-arm64
     main: ./
-    binary: kkrt
+    binary: kkrtctl
     goarch:
       - arm64
     goos:
