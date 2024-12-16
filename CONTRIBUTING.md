@@ -25,8 +25,6 @@ Run the following command to confirm everything is set up correctly:
 make test
 ```
 
----
-
 ## Developing in the Project
 
 This repository includes a `Makefile` to streamline development tasks.
@@ -36,8 +34,6 @@ To see the available commands, run:
 ```bash
 make help
 ```
-
----
 
 ## How to Contribute
 
@@ -97,18 +93,14 @@ Common type include:
 - `chore`: Non-functional changes (e.g., dependency updates)
 - `ci`: Changes to the CI
 
----
-
 ### Submit a Pull Request
 
 1. [Open a Pull Request](https://github.com/kkrt-labs/kakarot-controller/compare) from your branch targetting the `main` branch. Provide a clear title, detailed description, and reference to any associated issues or tickets that your work addresses.
 4. Ensure your Pull Request passes all CI checks. If it fails, make the necessary updates to resolve any issues.
 5. Request reviews from relevant team members.
 6. Address feedback and iterate on your changes as needed. And repeat the review process until your Pull Request is approved.
-8. Merge yout Pull Request
+8. Merge yout Pull Request following to the [merging strategy](#merging-strategy)
 
----
-
-### Merging Strategy
+#### Merging Strategy
 
 We use the [Squash & Merge](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/incorporating-changes-from-a-pull-request/about-pull-request-merges#squash-and-merge-your-commits) strategy for merging changes. This ensures that all commits in your branch are combined into a single, concise commit in the `main` branch.
