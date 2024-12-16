@@ -77,15 +77,25 @@ We follow the [GitHub Flow](https://docs.github.com/en/get-started/using-github/
 
 All commits should adhere to the [Conventional Commit v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) standard. This ensures consistency and enables automated tooling.
 
-Common prefixes include:
+```
+<type>[optional scope]: <description>
+
+[optional body]
+
+[optional footer(s)]
+```
+
+Common type include:
 
 - `fix`: Bug fixes
 - `feat`: New features
 - `docs`: Documentation updates
 - `test`: Test additions or updates
+- `perf`: Change for performance
 - `refactor`: Code restructuring without changing functionality
 - `style`: Code style changes (e.g., linting, formatting)
 - `chore`: Non-functional changes (e.g., dependency updates)
+- `ci`: Changes to the CI
 
 ---
 
