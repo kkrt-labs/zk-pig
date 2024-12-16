@@ -8,11 +8,11 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func testLoadExecInputs(t *testing.T, path string) *PreflightData {
+func testLoadExecInputs(t *testing.T, path string) *HeavyProverInputs {
 	f, err := os.Open(path)
 	require.NoError(t, err)
 
-	var inputs PreflightData
+	var inputs HeavyProverInputs
 	require.NoError(t, json.NewDecoder(f).Decode(&inputs))
 	return &inputs
 }

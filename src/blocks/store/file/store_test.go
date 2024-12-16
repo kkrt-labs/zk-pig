@@ -20,7 +20,7 @@ func TestFileBlockStore(t *testing.T) {
 	store := New(baseDir)
 
 	// Test storing and loading preflight data
-	preflightData := &blockinputs.PreflightData{
+	preflightData := &blockinputs.HeavyProverInputs{
 		ChainConfig: &params.ChainConfig{
 			ChainID: big.NewInt(1),
 		},

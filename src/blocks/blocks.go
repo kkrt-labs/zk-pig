@@ -98,7 +98,7 @@ func (s *Service) Preflight(ctx context.Context, blockNumber *big.Int) error {
 	return err
 }
 
-func (s *Service) preflight(ctx context.Context, blockNumber *big.Int) (*blockinputs.PreflightData, error) {
+func (s *Service) preflight(ctx context.Context, blockNumber *big.Int) (*blockinputs.HeavyProverInputs, error) {
 	data, err := blockinputs.NewPreflight(s.remote).Preflight(ctx, blockNumber)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute preflight: %v", err)

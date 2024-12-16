@@ -21,12 +21,12 @@ import (
 	"github.com/kkrt-labs/kakarot-controller/pkg/tag"
 )
 
-// Preparer is the interface for preparing the ProvableBlockInputs data that serves as the input for the EVM prover engine.
+// Preparer is the interface for preparing the prover inputs that serves as the input for the EVM prover engine.
 // It runs a full "execution + final state validation" of the block ensuring that the necessary data is available.
-// It bases on the PreflightData data obtained from the preflight block execution to prepare the necessary pre-state
+// It bases on the heavy prover inputs generated at preflight to prepare the final prover inputs
 type Preparer interface {
 	// Prepare prepares the ProvableBlockInputs data for the EVM prover engine.
-	Prepare(ctx context.Context, inputs *PreflightData) (*ProverInputs, error)
+	Prepare(ctx context.Context, inputs *HeavyProverInputs) (*ProverInputs, error)
 }
 
 type preparer struct{}
@@ -37,7 +37,7 @@ func NewPreparer() Preparer {
 }
 
 // Prepare prepares the ProvableBlockInputs data for the EVM prover engine.
-func (p *preparer) Prepare(ctx context.Context, data *PreflightData) (*ProverInputs, error) {
+func (p *preparer) Prepare(ctx context.Context, data *HeavyProverInputs) (*ProverInputs, error) {
 	ctx = tag.WithComponent(ctx, "prepare")
 	ctx = tag.WithTags(
 		ctx,
@@ -63,7 +63,7 @@ type preparerContext struct {
 	hc       *core.HeaderChain
 }
 
-func (p *preparer) prepare(ctx context.Context, inputs *PreflightData) (*ProverInputs, error) {
+func (p *preparer) prepare(ctx context.Context, inputs *HeavyProverInputs) (*ProverInputs, error) {
 	log.LoggerFromContext(ctx).Infof("Process provable inputs preparation...")
 
 	valCtx, err := p.prepareContext(ctx, inputs)
@@ -87,7 +87,7 @@ func (p *preparer) prepare(ctx context.Context, inputs *PreflightData) (*ProverI
 	return p.prepareProverInputs(valCtx, execParams), nil
 }
 
-func (p *preparer) prepareContext(ctx context.Context, inputs *PreflightData) (*preparerContext, error) {
+func (p *preparer) prepareContext(ctx context.Context, inputs *HeavyProverInputs) (*preparerContext, error) {
 	log.LoggerFromContext(ctx).Debug("Prepare context...")
 
 	// --- Create necessary database and chain instances ---
@@ -109,7 +109,7 @@ func (p *preparer) prepareContext(ctx context.Context, inputs *PreflightData) (*
 	}, nil
 }
 
-func (p *preparer) preparePreState(ctx *preparerContext, inputs *PreflightData) error {
+func (p *preparer) preparePreState(ctx *preparerContext, inputs *HeavyProverInputs) error {
 	log.LoggerFromContext(ctx.ctx).Info("Prepare pre-state...")
 
 	// -- Preload the ancestors of the block into database ---
@@ -139,7 +139,7 @@ func (p *preparer) preparePreState(ctx *preparerContext, inputs *PreflightData) 
 	return nil
 }
 
-func (p *preparer) prepareExecParams(ctx *preparerContext, inputs *PreflightData) (*evm.ExecParams, error) {
+func (p *preparer) prepareExecParams(ctx *preparerContext, inputs *HeavyProverInputs) (*evm.ExecParams, error) {
 	log.LoggerFromContext(ctx.ctx).Debug("Prepare execution parameters...")
 
 	parentHeader := inputs.Ancestors[0]

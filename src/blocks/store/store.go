@@ -13,10 +13,10 @@ type BlockStore interface {
 
 type PreflightDataStore interface {
 	// StorePreflightData stores the preflight data for a block.
-	StorePreflightData(ctx context.Context, data *blockinputs.PreflightData) error
+	StorePreflightData(ctx context.Context, data *blockinputs.HeavyProverInputs) error
 
 	// LoadPreflightData loads the preflight data for a block.
-	LoadPreflightData(ctx context.Context, chainID, blockNumber uint64) (*blockinputs.PreflightData, error)
+	LoadPreflightData(ctx context.Context, chainID, blockNumber uint64) (*blockinputs.HeavyProverInputs, error)
 }
 
 type ProverInputsStore interface {

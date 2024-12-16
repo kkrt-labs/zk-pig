@@ -23,14 +23,14 @@ func New(baseDir string) *FileBlockStore {
 	return &FileBlockStore{baseDir: baseDir}
 }
 
-func (s *FileBlockStore) StorePreflightData(_ context.Context, data *blockinputs.PreflightData) error {
+func (s *FileBlockStore) StorePreflightData(_ context.Context, data *blockinputs.HeavyProverInputs) error {
 	path := s.preflightPath(data.ChainConfig.ChainID.Uint64(), data.Block.Number.ToInt().Uint64())
 	return s.storeData(path, data)
 }
 
-func (s *FileBlockStore) LoadPreflightData(_ context.Context, chainID, blockNumber uint64) (*blockinputs.PreflightData, error) {
+func (s *FileBlockStore) LoadPreflightData(_ context.Context, chainID, blockNumber uint64) (*blockinputs.HeavyProverInputs, error) {
 	path := s.preflightPath(chainID, blockNumber)
-	data := &blockinputs.PreflightData{}
+	data := &blockinputs.HeavyProverInputs{}
 	if err := s.loadData(path, data); err != nil {
 		return nil, err
 	}
