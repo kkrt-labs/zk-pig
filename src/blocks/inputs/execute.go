@@ -45,11 +45,11 @@ func (e *executor) Execute(ctx context.Context, inputs *ProverInputs) (*core.Pro
 
 	res, err := e.execute(ctx, inputs)
 	if err != nil {
-		log.LoggerFromContext(ctx).WithError(err).Errorf("Provable execution failed")
+		log.SugaredLoggerFromContext(ctx).Errorw("Provable execution failed", "error", err)
 		return res, err
 	}
 
-	log.LoggerFromContext(ctx).Infof("Provable execution succeeded")
+	log.LoggerFromContext(ctx).Info("Provable execution succeeded")
 
 	return res, err
 }
@@ -61,7 +61,7 @@ type executorContext struct {
 }
 
 func (e *executor) execute(ctx context.Context, inputs *ProverInputs) (*core.ProcessResult, error) {
-	log.LoggerFromContext(ctx).Infof("Process provable execution...")
+	log.LoggerFromContext(ctx).Info("Process provable execution...")
 
 	execCtx, err := e.prepareContext(ctx, inputs)
 	if err != nil {
@@ -149,7 +149,7 @@ func (e *executor) prepareExecParams(ctx *executorContext, inputs *ProverInputs)
 }
 
 func (e *executor) execEVM(ctx *executorContext, execParams *evm.ExecParams) (*core.ProcessResult, error) {
-	log.LoggerFromContext(ctx.ctx).Infof("Execute EVM...")
+	log.LoggerFromContext(ctx.ctx).Info("Execute EVM...")
 
 	res, err := evm.ExecutorWithTags("evm")(evm.ExecutorWithLog()(evm.NewExecutor())).Execute(ctx.ctx, execParams)
 	if err != nil {

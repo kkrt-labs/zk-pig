@@ -55,7 +55,7 @@ func WithRetry() ClientDecorator {
 				func() error { return c.Call(ctx, req, res) },
 				backoff.WithContext(bckff, ctx),
 				func(err error, d time.Duration) {
-					log.LoggerWithFieldsFromContext(ctx).WithError(err).Warnf("JSON-RPC call failed retrying in %v...", d)
+					log.SugaredLoggerWithFieldsFromNamespaceContext(ctx).Warnw("JSON-RPC call failed retrying...", "error", err, "duration", d)
 				},
 			)
 		})

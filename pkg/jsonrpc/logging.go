@@ -47,7 +47,7 @@ func WithTags(component string, namespaces ...string) ClientDecorator {
 func WithLog(namespaces ...string) ClientDecorator {
 	return func(c Client) Client {
 		return ClientFunc(func(ctx context.Context, req *Request, res interface{}) error {
-			logger := log.LoggerWithFieldsFromNamespaceContext(ctx, namespaces...)
+			logger := log.SugaredLoggerWithFieldsFromNamespaceContext(ctx, namespaces...)
 
 			logger.Debug("Call JSON-RPC")
 			err := c.Call(ctx, req, res)

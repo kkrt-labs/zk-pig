@@ -48,10 +48,10 @@ func (p *preparer) Prepare(ctx context.Context, data *HeavyProverInputs) (*Prove
 
 	inputs, err := p.prepare(ctx, data)
 	if err != nil {
-		log.LoggerFromContext(ctx).WithError(err).Errorf("Provable inputs preparation failed")
+		log.SugaredLoggerFromContext(ctx).Errorw("Provable inputs preparation failed", "error", err)
 		return nil, err
 	}
-	log.LoggerFromContext(ctx).Infof("Provable inputs preparation succeeded")
+	log.LoggerFromContext(ctx).Info("Provable inputs preparation succeeded")
 
 	return inputs, nil
 }
@@ -64,7 +64,7 @@ type preparerContext struct {
 }
 
 func (p *preparer) prepare(ctx context.Context, inputs *HeavyProverInputs) (*ProverInputs, error) {
-	log.LoggerFromContext(ctx).Infof("Process provable inputs preparation...")
+	log.LoggerFromContext(ctx).Info("Process provable inputs preparation...")
 
 	valCtx, err := p.prepareContext(ctx, inputs)
 	if err != nil {
@@ -160,7 +160,7 @@ func (p *preparer) prepareExecParams(ctx *preparerContext, inputs *HeavyProverIn
 }
 
 func (p *preparer) execute(ctx *preparerContext, execParams *evm.ExecParams) error {
-	log.LoggerFromContext(ctx.ctx).Infof("Execute EVM...")
+	log.LoggerFromContext(ctx.ctx).Info("Execute EVM...")
 	_, err := evm.ExecutorWithTags("evm")(evm.ExecutorWithLog()(evm.NewExecutor())).Execute(ctx.ctx, execParams)
 	if err != nil {
 		return fmt.Errorf("failed to execute block: %v", err)

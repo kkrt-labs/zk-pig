@@ -98,7 +98,7 @@ func (e *executor) Execute(ctx context.Context, params *ExecParams) (res *core.P
 func (e *executor) processBlock(ctx context.Context, params *ExecParams) (*core.ProcessResult, error) {
 	processor := core.NewStateProcessor(params.Chain.Config(), params.Chain)
 
-	log.LoggerFromContext(ctx).Infof("Process block...")
+	log.LoggerFromContext(ctx).Info("Process block...")
 	res, err := processor.Process(params.Block, params.State, *params.VMConfig)
 	if err != nil {
 		if params.Reporter != nil {
@@ -110,7 +110,7 @@ func (e *executor) processBlock(ctx context.Context, params *ExecParams) (*core.
 }
 
 func (e *executor) validateBlock(ctx context.Context, params *ExecParams, res *core.ProcessResult) error {
-	log.LoggerFromContext(ctx).Infof("Validate block & state transition...")
+	log.LoggerFromContext(ctx).Info("Validate block & state transition...")
 	validator := core.NewBlockValidator(params.Chain.Config(), nil)
 	err := validator.ValidateState(params.Block, params.State, res, false)
 	if params.Reporter != nil {
