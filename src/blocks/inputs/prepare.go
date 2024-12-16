@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 
+	gethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
@@ -25,7 +26,7 @@ import (
 // It bases on the PreflightData data obtained from the preflight block execution to prepare the necessary pre-state
 type Preparer interface {
 	// Prepare prepares the ProvableBlockInputs data for the EVM prover engine.
-	Prepare(ctx context.Context, inputs *PreflightData) (*ProvableInputs, error)
+	Prepare(ctx context.Context, inputs *PreflightData) (*ProverInputs, error)
 }
 
 type preparer struct{}
@@ -36,7 +37,7 @@ func NewPreparer() Preparer {
 }
 
 // Prepare prepares the ProvableBlockInputs data for the EVM prover engine.
-func (p *preparer) Prepare(ctx context.Context, data *PreflightData) (*ProvableInputs, error) {
+func (p *preparer) Prepare(ctx context.Context, data *PreflightData) (*ProverInputs, error) {
 	ctx = tag.WithComponent(ctx, "prepare")
 	ctx = tag.WithTags(
 		ctx,
@@ -56,12 +57,13 @@ func (p *preparer) Prepare(ctx context.Context, data *PreflightData) (*ProvableI
 }
 
 type preparerContext struct {
-	ctx     context.Context
-	stateDB gethstate.Database
-	hc      *core.HeaderChain
+	ctx      context.Context
+	trackers *state.AccessTrackerManager
+	stateDB  gethstate.Database
+	hc       *core.HeaderChain
 }
 
-func (p *preparer) prepare(ctx context.Context, inputs *PreflightData) (*ProvableInputs, error) {
+func (p *preparer) prepare(ctx context.Context, inputs *PreflightData) (*ProverInputs, error) {
 	log.LoggerFromContext(ctx).Infof("Process provable inputs preparation...")
 
 	valCtx, err := p.prepareContext(ctx, inputs)
@@ -82,16 +84,17 @@ func (p *preparer) prepare(ctx context.Context, inputs *PreflightData) (*Provabl
 		return nil, fmt.Errorf("validation execution failed: %v", err)
 	}
 
-	return p.prepareProvableInputs(execParams), nil
+	return p.prepareProverInputs(valCtx, execParams), nil
 }
 
 func (p *preparer) prepareContext(ctx context.Context, inputs *PreflightData) (*preparerContext, error) {
 	log.LoggerFromContext(ctx).Debug("Prepare context...")
 
 	// --- Create necessary database and chain instances ---
+	trackers := state.NewAccessTrackerManager()
 	db := rawdb.NewMemoryDatabase()
 	trieDB := triedb.NewDatabase(db, &triedb.Config{HashDB: &hashdb.Config{}})
-	stateDB := state.NewModifiedTrieDatabase(trieDB, nil) // We use a modified trie database to track trie modifications
+	stateDB := state.NewAccessTrackerDatabase(state.NewModifiedTrieDatabase(trieDB, nil), trackers) // We use a modified trie database to track trie modifications
 
 	hc, err := ethereum.NewChain(inputs.ChainConfig, stateDB)
 	if err != nil {
@@ -99,9 +102,10 @@ func (p *preparer) prepareContext(ctx context.Context, inputs *PreflightData) (*
 	}
 
 	return &preparerContext{
-		ctx:     ctx,
-		stateDB: stateDB,
-		hc:      hc,
+		ctx:      ctx,
+		trackers: trackers,
+		stateDB:  stateDB,
+		hc:       hc,
 	}, nil
 }
 
@@ -165,8 +169,8 @@ func (p *preparer) execute(ctx *preparerContext, execParams *evm.ExecParams) err
 	return nil
 }
 
-func (p *preparer) prepareProvableInputs(execParams *evm.ExecParams) *ProvableInputs {
-	provableInputs := &ProvableInputs{
+func (p *preparer) prepareProverInputs(ctx *preparerContext, execParams *evm.ExecParams) *ProverInputs {
+	proverInputs := &ProverInputs{
 		ChainConfig: execParams.Chain.Config(),
 		Block:       new(ethrpc.Block).FromBlock(execParams.Block, execParams.Chain.Config()),
 		Ancestors:   execParams.State.Witness().Headers,
@@ -174,13 +178,24 @@ func (p *preparer) prepareProvableInputs(execParams *evm.ExecParams) *ProvableIn
 
 	witness := execParams.State.Witness()
 	for code := range witness.Codes {
-		provableInputs.Codes = append(provableInputs.Codes, []byte(code))
+		proverInputs.Codes = append(proverInputs.Codes, []byte(code))
 	}
 
 	for node := range witness.State {
 		blob := []byte(node)
-		provableInputs.PreState = append(provableInputs.PreState, hexutil.Encode(blob))
+		proverInputs.PreState = append(proverInputs.PreState, hexutil.Encode(blob))
 	}
 
-	return provableInputs
+	proverInputs.AccessList = make(map[gethcommon.Address][]string)
+	tracker := ctx.trackers.GetAccessTracker(proverInputs.Ancestors[0].Root)
+	for account := range tracker.Accounts {
+		if storage, ok := tracker.Storage[account]; ok {
+			proverInputs.AccessList[account] = []string{}
+			for slot := range storage {
+				proverInputs.AccessList[account] = append(proverInputs.AccessList[account], slot.Hex())
+			}
+		}
+	}
+
+	return proverInputs
 }

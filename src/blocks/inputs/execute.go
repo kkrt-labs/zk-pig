@@ -23,7 +23,7 @@ import (
 // It is primarily meant to validate that the provable inputs are correct and enable proper EVM execution.
 type Executor interface {
 	// Execute runs a full EVM block execution on provable inputs
-	Execute(ctx context.Context, inputs *ProvableInputs) (*core.ProcessResult, error)
+	Execute(ctx context.Context, inputs *ProverInputs) (*core.ProcessResult, error)
 }
 
 type executor struct{}
@@ -34,7 +34,7 @@ func NewExecutor() Executor {
 }
 
 // Execute runs the ProvableBlockInputs data for the EVM prover engine.
-func (e *executor) Execute(ctx context.Context, inputs *ProvableInputs) (*core.ProcessResult, error) {
+func (e *executor) Execute(ctx context.Context, inputs *ProverInputs) (*core.ProcessResult, error) {
 	ctx = tag.WithComponent(ctx, "execute")
 	ctx = tag.WithTags(
 		ctx,
@@ -60,7 +60,7 @@ type executorContext struct {
 	hc      *core.HeaderChain
 }
 
-func (e *executor) execute(ctx context.Context, inputs *ProvableInputs) (*core.ProcessResult, error) {
+func (e *executor) execute(ctx context.Context, inputs *ProverInputs) (*core.ProcessResult, error) {
 	log.LoggerFromContext(ctx).Infof("Process provable execution...")
 
 	execCtx, err := e.prepareContext(ctx, inputs)
@@ -81,7 +81,7 @@ func (e *executor) execute(ctx context.Context, inputs *ProvableInputs) (*core.P
 	return e.execEVM(execCtx, execParams)
 }
 
-func (e *executor) prepareContext(ctx context.Context, inputs *ProvableInputs) (*executorContext, error) {
+func (e *executor) prepareContext(ctx context.Context, inputs *ProverInputs) (*executorContext, error) {
 	log.LoggerFromContext(ctx).Debug("Prepare context...")
 
 	// --- Create necessary database and chain instances ---
@@ -101,7 +101,7 @@ func (e *executor) prepareContext(ctx context.Context, inputs *ProvableInputs) (
 	}, nil
 }
 
-func (e *executor) preparePreState(ctx *executorContext, inputs *ProvableInputs) error {
+func (e *executor) preparePreState(ctx *executorContext, inputs *ProverInputs) error {
 	log.LoggerFromContext(ctx.ctx).Info("Prepare pre-state...")
 
 	// -- Preload the ancestors of the block into database ---
@@ -128,7 +128,7 @@ func (e *executor) preparePreState(ctx *executorContext, inputs *ProvableInputs)
 	return nil
 }
 
-func (e *executor) prepareExecParams(ctx *executorContext, inputs *ProvableInputs) (*evm.ExecParams, error) {
+func (e *executor) prepareExecParams(ctx *executorContext, inputs *ProverInputs) (*evm.ExecParams, error) {
 	log.LoggerFromContext(ctx.ctx).Debug("Prepare execution parameters...")
 
 	parentHeader := inputs.Ancestors[0]

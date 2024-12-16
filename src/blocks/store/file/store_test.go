@@ -40,8 +40,8 @@ func TestFileBlockStore(t *testing.T) {
 	_, err = store.LoadPreflightData(context.Background(), 1, 20)
 	assert.Error(t, err)
 
-	// Test storing and loading provable inputs
-	provableInputs := &blockinputs.ProvableInputs{
+	// Test storing and loading prover inputs
+	proverInputs := &blockinputs.ProverInputs{
 		ChainConfig: &params.ChainConfig{
 			ChainID: big.NewInt(2),
 		},
@@ -51,13 +51,13 @@ func TestFileBlockStore(t *testing.T) {
 			},
 		},
 	}
-	err = store.StoreProvableInputs(context.Background(), provableInputs)
+	err = store.StoreProverInputs(context.Background(), proverInputs)
 	assert.NoError(t, err)
 
-	_, err = store.LoadProvableInputs(context.Background(), 2, 15)
+	_, err = store.LoadProverInputs(context.Background(), 2, 15)
 	assert.NoError(t, err)
 
-	// Test loading non-existent provable inputs
-	_, err = store.LoadProvableInputs(context.Background(), 2, 25)
+	// Test loading non-existent prover inputs
+	_, err = store.LoadProverInputs(context.Background(), 2, 25)
 	assert.Error(t, err)
 }

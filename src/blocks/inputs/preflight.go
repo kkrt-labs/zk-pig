@@ -232,7 +232,7 @@ func (pf *preflight) fetchStateProofs(ctx *preflightContext, execParams *evm.Exe
 	log.LoggerFromContext(ctx.ctx).Infof("Fetch state proofs after successful EVM execution... (this may take a while)")
 
 	finalState := execParams.State
-	tracker := ctx.trackers.GetTracker(ctx.parentHeader.Root)
+	tracker := ctx.trackers.GetAccessTracker(ctx.parentHeader.Root)
 	for account := range tracker.Accounts {
 		var (
 			slots       = []string{}

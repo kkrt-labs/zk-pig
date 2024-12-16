@@ -1,9 +1,9 @@
 package fileblockstore
 
-// Implementation of BlockStore interface that stores the preflight and provable inputs in files.
+// Implementation of BlockStore interface that stores the preflight and prover inputs in files.
 //
 // The preflight data is stored in at path `<base-dir>/<chainID>/preflight/<blockNumber>.json`
-// The provable inputs are stored in a file named `<base-dir>/<chainID>/provable/<blockNumber>.json`
+// The prover inputs are stored in a file named `<base-dir>/<chainID>/prover/<blockNumber>.json`
 
 import (
 	"context"
@@ -37,14 +37,14 @@ func (s *FileBlockStore) LoadPreflightData(_ context.Context, chainID, blockNumb
 	return data, nil
 }
 
-func (s *FileBlockStore) StoreProvableInputs(_ context.Context, data *blockinputs.ProvableInputs) error {
-	path := s.provablePath(data.ChainConfig.ChainID.Uint64(), data.Block.Number.ToInt().Uint64())
+func (s *FileBlockStore) StoreProverInputs(_ context.Context, data *blockinputs.ProverInputs) error {
+	path := s.proverPath(data.ChainConfig.ChainID.Uint64(), data.Block.Number.ToInt().Uint64())
 	return s.storeData(path, data)
 }
 
-func (s *FileBlockStore) LoadProvableInputs(_ context.Context, chainID, blockNumber uint64) (*blockinputs.ProvableInputs, error) {
-	path := s.provablePath(chainID, blockNumber)
-	data := &blockinputs.ProvableInputs{}
+func (s *FileBlockStore) LoadProverInputs(_ context.Context, chainID, blockNumber uint64) (*blockinputs.ProverInputs, error) {
+	path := s.proverPath(chainID, blockNumber)
+	data := &blockinputs.ProverInputs{}
 	if err := s.loadData(path, data); err != nil {
 		return nil, err
 	}
@@ -55,8 +55,8 @@ func (s *FileBlockStore) preflightPath(chainID, blockNumber uint64) string {
 	return filepath.Join(s.baseDir, fmt.Sprintf("%d", chainID), "preflight", fmt.Sprintf("%d.json", blockNumber))
 }
 
-func (s *FileBlockStore) provablePath(chainID, blockNumber uint64) string {
-	return filepath.Join(s.baseDir, fmt.Sprintf("%d", chainID), "provable", fmt.Sprintf("%d.json", blockNumber))
+func (s *FileBlockStore) proverPath(chainID, blockNumber uint64) string {
+	return filepath.Join(s.baseDir, fmt.Sprintf("%d", chainID), "prover", fmt.Sprintf("%d.json", blockNumber))
 }
 
 func (s *FileBlockStore) storeData(path string, data interface{}) error {

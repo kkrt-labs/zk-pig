@@ -45,11 +45,6 @@ func (db *AccessTrackerDatabase) ContractCode(addr gethcommon.Address, codeHash 
 	if err != nil {
 		return nil, err
 	}
-
-	if db.currentTracker != nil {
-		db.currentTracker.Bytecodes[addr] = code
-	}
-
 	return code, nil
 }
 
@@ -60,9 +55,8 @@ func (db *AccessTrackerDatabase) ContractCodeSize(addr gethcommon.Address, codeH
 }
 
 type AccessTracker struct {
-	Accounts  map[gethcommon.Address]*gethtypes.StateAccount             `json:"accounts"`
-	Storage   map[gethcommon.Address]map[gethcommon.Hash]gethcommon.Hash `json:"storage"`
-	Bytecodes map[gethcommon.Address][]byte                              `json:"bytecodes"`
+	Accounts map[gethcommon.Address]*gethtypes.StateAccount             `json:"accounts"`
+	Storage  map[gethcommon.Address]map[gethcommon.Hash]gethcommon.Hash `json:"storage"`
 }
 
 type AccessTrackerManager struct {
@@ -75,7 +69,7 @@ func NewAccessTrackerManager() *AccessTrackerManager {
 	}
 }
 
-func (m *AccessTrackerManager) GetTracker(stateRoot gethcommon.Hash) *AccessTracker {
+func (m *AccessTrackerManager) GetAccessTracker(stateRoot gethcommon.Hash) *AccessTracker {
 	if tracker, ok := m.trackers[stateRoot]; ok {
 		return tracker
 	}
@@ -97,9 +91,8 @@ func (m *AccessTrackerManager) Clear() {
 
 func newStateAccessTracker() *AccessTracker {
 	return &AccessTracker{
-		Accounts:  make(map[gethcommon.Address]*gethtypes.StateAccount),
-		Storage:   make(map[gethcommon.Address]map[gethcommon.Hash]gethcommon.Hash),
-		Bytecodes: make(map[gethcommon.Address][]byte),
+		Accounts: make(map[gethcommon.Address]*gethtypes.StateAccount),
+		Storage:  make(map[gethcommon.Address]map[gethcommon.Hash]gethcommon.Hash),
 	}
 }
 

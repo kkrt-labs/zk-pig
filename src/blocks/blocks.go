@@ -133,7 +133,7 @@ func (s *Service) prepare(ctx context.Context, chainID, blockNumber *big.Int) er
 		return fmt.Errorf("failed to prepare provable inputs: %v", err)
 	}
 
-	err = s.store.StoreProvableInputs(ctx, inputs)
+	err = s.store.StoreProverInputs(ctx, inputs)
 	if err != nil {
 		return fmt.Errorf("failed to store provable inputs: %v", err)
 	}
@@ -153,7 +153,7 @@ func (s *Service) Execute(ctx context.Context, chainID, blockNumber *big.Int) er
 }
 
 func (s *Service) execute(ctx context.Context, chainID, blockNumber *big.Int) error {
-	inputs, err := s.store.LoadProvableInputs(ctx, chainID.Uint64(), blockNumber.Uint64())
+	inputs, err := s.store.LoadProverInputs(ctx, chainID.Uint64(), blockNumber.Uint64())
 	if err != nil {
 		return fmt.Errorf("failed to load provable inputs: %v", err)
 	}

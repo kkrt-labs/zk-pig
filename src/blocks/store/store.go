@@ -8,7 +8,7 @@ import (
 
 type BlockStore interface {
 	PreflightDataStore
-	ProvableInputsStore
+	ProverInputsStore
 }
 
 type PreflightDataStore interface {
@@ -19,10 +19,10 @@ type PreflightDataStore interface {
 	LoadPreflightData(ctx context.Context, chainID, blockNumber uint64) (*blockinputs.PreflightData, error)
 }
 
-type ProvableInputsStore interface {
-	// StoreProvableInputs stores the provable inputs for a block.
-	StoreProvableInputs(ctx context.Context, data *blockinputs.ProvableInputs) error
+type ProverInputsStore interface {
+	// StoreProverInputs stores the prover inputs for a block.
+	StoreProverInputs(ctx context.Context, data *blockinputs.ProverInputs) error
 
-	// LoadProvableInputs loads the provable inputs for a block.
-	LoadProvableInputs(ctx context.Context, chainID, blockNumber uint64) (*blockinputs.ProvableInputs, error)
+	// LoadProverInputs loads the prover inputs for a block.
+	LoadProverInputs(ctx context.Context, chainID, blockNumber uint64) (*blockinputs.ProverInputs, error)
 }
