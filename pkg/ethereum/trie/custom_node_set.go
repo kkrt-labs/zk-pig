@@ -75,6 +75,11 @@ func NewProvedAccountNodeSet() *ProvedNodeSet {
 	return NewProvedNodeSet(gethcommon.Hash{})
 }
 
+// NewProvedStorageNodeSet creates a new ProvedNodeSet
+func NewProvedStorageNodeSet(addr gethcommon.Address) *ProvedNodeSet {
+	return NewProvedNodeSet(StorageTrieOwner(addr))
+}
+
 // NewProvedNodeSetFromSet creates a new ProvedNodeSet from an existing trienode.NodeSet
 func NewProvedNodeSetFromSet(set *trienode.NodeSet) *ProvedNodeSet {
 	return &ProvedNodeSet{set: set}
@@ -290,7 +295,7 @@ func NodeSetFromStateProofs(stateRoot gethcommon.Hash, accountProofs []*AccountP
 			continue
 		}
 
-		provedStorageNodeSet := NewProvedNodeSet(StorageTrieOwner(accountProof.Address))
+		provedStorageNodeSet := NewProvedStorageNodeSet(accountProof.Address)
 		err := provedStorageNodeSet.AddStorageNodes(
 			accountProof.StorageHash,
 			accountProof.Storage,
@@ -333,7 +338,7 @@ func NodeSetFromStateTransitionProofs(preRoot, postRoot gethcommon.Hash, preProo
 		if accountProof.StorageHash == (gethcommon.Hash{}) {
 			continue
 		}
-		provedStorageNodeSet := NewProvedNodeSet(StorageTrieOwner(accountProof.Address))
+		provedStorageNodeSet := NewProvedStorageNodeSet(accountProof.Address)
 		err := provedStorageNodeSet.AddStorageNodes(
 			accountProof.StorageHash,
 			accountProof.Storage,

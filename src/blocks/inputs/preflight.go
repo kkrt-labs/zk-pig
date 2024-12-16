@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"math/big"
 
+	gethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
@@ -25,7 +26,7 @@ import (
 
 // PreflightData is the data generated after performing a preflight block EVM execution without final state validation.
 // This contains minimally the necessary partial state & chain data to run the full block execution + state validation
-// This is an intermediate steps before generating the final ProvableInputs.
+// This is an intermediate steps before generating the final ProverInputs.
 type PreflightData struct {
 	Block           *ethrpc.Block        `json:"block"`
 	Ancestors       []*gethtypes.Header  `json:"ancestors"`
@@ -43,20 +44,20 @@ type Preflight interface {
 	Preflight(ctx context.Context, blockNumber *big.Int) (*PreflightData, error)
 }
 
-// RPCPreflight is the implementation of the Preflight interface using an RPC remote to fetch the state datas.
-type RPCPreflight struct {
+// preflight is the implementation of the Preflight interface using an RPC remote to fetch the state datas.
+type preflight struct {
 	remote ethrpc.Client
 }
 
 // NewPreflight creates a new RPC Preflight instance using the provided RPC client.
-func NewPreflight(remote ethrpc.Client) *RPCPreflight {
-	return &RPCPreflight{
+func NewPreflight(remote ethrpc.Client) Preflight {
+	return &preflight{
 		remote: remote,
 	}
 }
 
 // Preflight executes a preflight block execution and returns the intermediate PreflightExecInputs data.
-func (pf *RPCPreflight) Preflight(ctx context.Context, blockNumber *big.Int) (*PreflightData, error) {
+func (pf *preflight) Preflight(ctx context.Context, blockNumber *big.Int) (*PreflightData, error) {
 	ctx = tag.WithComponent(ctx, "preflight")
 	chainCfg, block, err := pf.init(ctx, blockNumber)
 	if err != nil {
@@ -76,14 +77,14 @@ func (pf *RPCPreflight) Preflight(ctx context.Context, blockNumber *big.Int) (*P
 	data, err := pf.preflight(ctx, chainCfg, block)
 	if err != nil {
 		log.LoggerFromContext(ctx).WithError(err).Errorf("Preflight failed")
-		return nil, err
+		return nil, fmt.Errorf("preflight failed: %v", err)
 	}
 	log.LoggerFromContext(ctx).Infof("Preflight successful")
 	return data, nil
 }
 
-func (pf *RPCPreflight) init(ctx context.Context, blockNumber *big.Int) (*params.ChainConfig, *gethtypes.Block, error) {
-	log.LoggerFromContext(ctx).Infof("Initiate preflight...")
+func (pf *preflight) init(ctx context.Context, blockNumber *big.Int) (*params.ChainConfig, *gethtypes.Block, error) {
+	log.LoggerFromContext(ctx).Infof("Initialize preflight...")
 	chainID, err := pf.remote.ChainID(ctx)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to fetch chain ID: %v", err)
@@ -111,50 +112,50 @@ type preflightContext struct {
 	parentHeader *gethtypes.Header
 }
 
-func (pf *RPCPreflight) preflight(ctx context.Context, chainCfg *params.ChainConfig, block *gethtypes.Block) (*PreflightData, error) {
+func (pf *preflight) preflight(ctx context.Context, chainCfg *params.ChainConfig, block *gethtypes.Block) (*PreflightData, error) {
 	log.LoggerFromContext(ctx).Infof("Process preflight...")
 
 	genCtx, err := pf.prepareContext(ctx, chainCfg)
 	if err != nil {
-		return nil, fmt.Errorf("failed to prepare preflight context: %v", err)
+		return nil, err
 	}
 
 	if err := pf.preparePreState(genCtx, block); err != nil {
-		return nil, fmt.Errorf("failed to prefill preflight database: %v", err)
+		return nil, err
 	}
 
-	execParams, err := pf.prepareExecParams(genCtx, block)
+	execParams, err := pf.prepareProcessBlockExecParams(genCtx, block)
 	if err != nil {
-		return nil, fmt.Errorf("failed to prepare preflight exec params: %v", err)
+		return nil, err
 	}
 
 	if err := pf.execute(genCtx, execParams); err != nil {
-		return nil, fmt.Errorf("failed to execute preflight: %v", err)
+		return nil, err
 	}
 
-	preStateProofs, postStateProofs, err := pf.fetchStateProofs(genCtx, execParams)
+	preStateProofs, deletionsPostStateProofs, err := pf.fetchStateProofs(genCtx, execParams)
 	if err != nil {
-		return nil, fmt.Errorf("failed to fetch state proofs: %v", err)
+		return nil, err
 	}
 
-	fullInputs := &PreflightData{
+	data := &PreflightData{
 		ChainConfig:     chainCfg,
 		Block:           new(ethrpc.Block).FromBlock(block, chainCfg),
 		PreStateProofs:  preStateProofs,
-		PostStateProofs: postStateProofs,
+		PostStateProofs: deletionsPostStateProofs,
 	}
 
 	witness := execParams.State.Witness()
 	for code := range witness.Codes {
-		fullInputs.Codes = append(fullInputs.Codes, []byte(code))
+		data.Codes = append(data.Codes, []byte(code))
 	}
 
-	fullInputs.Ancestors = witness.Headers
+	data.Ancestors = witness.Headers
 
-	return fullInputs, nil
+	return data, nil
 }
 
-func (pf *RPCPreflight) prepareContext(ctx context.Context, chainCfg *params.ChainConfig) (*preflightContext, error) {
+func (pf *preflight) prepareContext(ctx context.Context, chainCfg *params.ChainConfig) (*preflightContext, error) {
 	log.LoggerFromContext(ctx).Debug("Prepare context for block execution...")
 
 	trackers := state.NewAccessTrackerManager()
@@ -177,7 +178,7 @@ func (pf *RPCPreflight) prepareContext(ctx context.Context, chainCfg *params.Cha
 	}, nil
 }
 
-func (pf *RPCPreflight) preparePreState(ctx *preflightContext, block *gethtypes.Block) error {
+func (pf *preflight) preparePreState(ctx *preflightContext, block *gethtypes.Block) error {
 	log.LoggerFromContext(ctx.ctx).Info("Prepare pre-state... (this may take a while)")
 	// --- Preload the 256 ancestors of the block necessary for BLOCKHASH opcode ---
 	// TODO: we currently preload all the blocks which is overkill as the block execution will very rarely access those ancestors.
@@ -195,7 +196,7 @@ func (pf *RPCPreflight) preparePreState(ctx *preflightContext, block *gethtypes.
 	return nil
 }
 
-func (pf *RPCPreflight) prepareExecParams(ctx *preflightContext, block *gethtypes.Block) (*evm.ExecParams, error) {
+func (pf *preflight) prepareProcessBlockExecParams(ctx *preflightContext, block *gethtypes.Block) (*evm.ExecParams, error) {
 	log.LoggerFromContext(ctx.ctx).Debug("Prepare execution parameters... (this may take a while)")
 
 	st, err := gethstate.New(ctx.parentHeader.Root, ctx.stateDB)
@@ -205,7 +206,7 @@ func (pf *RPCPreflight) prepareExecParams(ctx *preflightContext, block *gethtype
 
 	return &evm.ExecParams{
 		Block:    block,
-		Validate: false, // We cannot validate because we don't have a proper pre-state yet
+		Validate: false, // We do not validate on because we don't have a proper pre-state yet
 		VMConfig: &vm.Config{
 			StatelessSelfValidation: true, // We enable stateless self-validation so witness data is filled
 		},
@@ -215,7 +216,7 @@ func (pf *RPCPreflight) prepareExecParams(ctx *preflightContext, block *gethtype
 }
 
 // execute runs the actual block EVM execution
-func (pf *RPCPreflight) execute(ctx *preflightContext, execParams *evm.ExecParams) error {
+func (pf *preflight) execute(ctx *preflightContext, execParams *evm.ExecParams) error {
 	log.LoggerFromContext(ctx.ctx).Infof("Execute EVM... (this may take a while)")
 	_, err := evm.ExecutorWithTags("evm")(evm.ExecutorWithLog()(evm.NewExecutor())).Execute(ctx.ctx, execParams)
 	if err != nil {
@@ -227,15 +228,22 @@ func (pf *RPCPreflight) execute(ctx *preflightContext, execParams *evm.ExecParam
 
 // fetchStateProofs for all accounts and storage slots that were accessed during the block execution
 // It fetches the state proofs both at the initial state (parent state) and at the final state
-func (pf *RPCPreflight) fetchStateProofs(ctx *preflightContext, execParams *evm.ExecParams) (preStateProofs, postStateProofs []*trie.AccountProof, err error) {
+func (pf *preflight) fetchStateProofs(ctx *preflightContext, execParams *evm.ExecParams) (preStateProofs, postStateProofs []*trie.AccountProof, err error) {
 	log.LoggerFromContext(ctx.ctx).Infof("Fetch state proofs after successful EVM execution... (this may take a while)")
 
+	finalState := execParams.State
 	tracker := ctx.trackers.GetTracker(ctx.parentHeader.Root)
 	for account := range tracker.Accounts {
-		slots := []string{}
+		var (
+			slots       = []string{}
+			deletedSlot = []string{}
+		)
 		if storage, ok := tracker.Storage[account]; ok {
-			for slot := range storage {
+			for slot, preStateValue := range storage {
 				slots = append(slots, slot.Hex())
+				if (preStateValue != gethcommon.Hash{}) && (finalState.GetState(account, slot) == gethcommon.Hash{}) {
+					deletedSlot = append(deletedSlot, slot.Hex())
+				}
 			}
 		}
 
@@ -246,9 +254,14 @@ func (pf *RPCPreflight) fetchStateProofs(ctx *preflightContext, execParams *evm.
 		}
 		preStateProofs = append(preStateProofs, trie.AccountProofFromRPC(acc))
 
-		// Also get proofs at final state
-		// TODO: we currently query all slots on final state, we should optimize this to only query the slots that have been effectively deleted
-		acc, err = pf.remote.GetProof(ctx.ctx, account, slots, execParams.Block.Number())
+		// Also get necessary proofs at final state
+		if len(deletedSlot) == 0 && !finalState.HasSelfDestructed(account) {
+			// Account was not deleted so we don't need to fetch post-state proofs for it
+			continue
+		}
+
+		// Also get proofs at final state for deleted accounts & slots
+		acc, err = pf.remote.GetProof(ctx.ctx, account, deletedSlot, execParams.Block.Number())
 		if err != nil {
 			return nil, nil, fmt.Errorf("failed to get proof for account %v: %v", account, err)
 		}

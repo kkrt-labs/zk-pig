@@ -20,7 +20,7 @@ import (
 type ExecParams struct {
 	VMConfig *vm.Config // VM configuration
 	Block    *types.Block
-	Validate bool // Whether to validate the block
+	Validate bool // Whether to the validate the block at the end of execution
 	State    *gethstate.StateDB
 	Chain    *core.HeaderChain
 	Reporter func(error)
@@ -28,6 +28,7 @@ type ExecParams struct {
 
 // Executor is an interface for executing EVM blocks.
 type Executor interface {
+	// Execute an EVM block
 	Execute(ctx context.Context, params *ExecParams) (*core.ProcessResult, error)
 }
 
@@ -50,8 +51,6 @@ func NewExecutor() Executor {
 
 // Execute executes an EVM block.
 // It processes the block on the given state and chain then validates the block if requested.
-//
-//nolint:gocritic // TODO: uncomment commented code after adding metrics
 func (e *executor) Execute(ctx context.Context, params *ExecParams) (res *core.ProcessResult, execErr error) {
 	if vmCfg := params.VMConfig; vmCfg != nil && vmCfg.Tracer != nil {
 		if vmCfg.Tracer.OnBlockStart != nil {
@@ -84,56 +83,43 @@ func (e *executor) Execute(ctx context.Context, params *ExecParams) (res *core.P
 	}
 
 	// Process block on given state
-	processor := core.NewStateProcessor(params.Chain.Config(), params.Chain)
-
-	// pstart := time.Now()
-	log.LoggerFromContext(ctx).Infof("Process block...")
-	res, execErr = processor.Process(params.Block, params.State, *params.VMConfig)
+	res, execErr = e.processBlock(ctx, params)
 	if execErr != nil {
-		execErr = fmt.Errorf("failed to process block: %v", execErr)
-		if params.Reporter != nil {
-			params.Reporter(summarizeBadBlockError(params.Chain.Config(), params.Block, res, execErr))
-		}
 		return
 	}
-	// ptime := time.Since(pstart)
-
-	// Process block on given state
 
 	if params.Validate {
-		// vstart := time.Now()
-		log.LoggerFromContext(ctx).Infof("Validate state transition...")
-		validator := core.NewBlockValidator(params.Chain.Config(), nil)
-		if execErr = validator.ValidateState(params.Block, params.State, res, false); execErr != nil {
-			execErr = fmt.Errorf("failed to validate block: %v", execErr)
-			if params.Reporter != nil {
-				params.Reporter(summarizeBadBlockError(params.Chain.Config(), params.Block, res, execErr))
-			}
-			return
-		}
-		// vtime := time.Since(vstart)
+		execErr = e.validateBlock(ctx, params, res)
 	}
 
-	// TODO: add metrics
-	// Update the metrics touched during block processing and validation
-	// accountReadTimer.Update(statedb.AccountReads) // Account reads are complete(in processing)
-	// storageReadTimer.Update(statedb.StorageReads) // Storage reads are complete(in processing)
-	// if statedb.AccountLoaded != 0 {
-	// 	accountReadSingleTimer.Update(statedb.AccountReads / time.Duration(statedb.AccountLoaded))
-	// }
-	// if statedb.StorageLoaded != 0 {
-	// 	storageReadSingleTimer.Update(statedb.StorageReads / time.Duration(statedb.StorageLoaded))
-	// }
-	// accountUpdateTimer.Update(statedb.AccountUpdates)                                 // Account updates are complete(in validation)
-	// storageUpdateTimer.Update(statedb.StorageUpdates)                                 // Storage updates are complete(in validation)
-	// accountHashTimer.Update(statedb.AccountHashes)                                    // Account hashes are complete(in validation)
-	// triehash := statedb.AccountHashes                                                 // The time spent on tries hashing
-	// trieUpdate := statedb.AccountUpdates + statedb.StorageUpdates                     // The time spent on tries update
-	// blockExecutionTimer.Update(ptime - (statedb.AccountReads + statedb.StorageReads)) // The time spent on EVM processing
-	// blockValidationTimer.Update(vtime - (triehash + trieUpdate))                      // The time spent on block validation
-	// blockCrossValidationTimer.Update(xvtime)                                          // The time spent on stateless cross validation
-
 	return
+}
+
+func (e *executor) processBlock(ctx context.Context, params *ExecParams) (*core.ProcessResult, error) {
+	processor := core.NewStateProcessor(params.Chain.Config(), params.Chain)
+
+	log.LoggerFromContext(ctx).Infof("Process block...")
+	res, err := processor.Process(params.Block, params.State, *params.VMConfig)
+	if err != nil {
+		if params.Reporter != nil {
+			params.Reporter(summarizeBadBlockError(params.Chain.Config(), params.Block, res, err))
+		}
+		return nil, fmt.Errorf("block processing failed: %v", err)
+	}
+	return res, err
+}
+
+func (e *executor) validateBlock(ctx context.Context, params *ExecParams, res *core.ProcessResult) error {
+	log.LoggerFromContext(ctx).Infof("Validate block & state transition...")
+	validator := core.NewBlockValidator(params.Chain.Config(), nil)
+	err := validator.ValidateState(params.Block, params.State, res, false)
+	if params.Reporter != nil {
+		params.Reporter(summarizeBadBlockError(params.Chain.Config(), params.Block, res, err))
+	}
+	if err != nil {
+		return fmt.Errorf("block validation failed: %v", err)
+	}
+	return nil
 }
 
 // summarizeBadBlock generates a human-readable summary of a bad block.
