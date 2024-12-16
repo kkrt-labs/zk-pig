@@ -28,7 +28,7 @@ COVERAGE_BUILD_FOLDER = $(BUILD_FOLDER)/coverage
 UNIT_COVERAGE_OUT  = $(COVERAGE_BUILD_FOLDER)/ut_cov.out
 UNIT_COVERAGE_HTML = $(COVERAGE_BUILD_FOLDER)/ut_index.html
 
-.PHONY: help mod-tidy test test-race test-lint lint mockgen-install goreleaser-snaptho goreleaser version
+.PHONY: help mod-tidy test test-race test-lint lint generate-mocks goreleaser-snaptho goreleaser version
 
 help:
 	@echo "Usage: make <target>"
@@ -41,6 +41,7 @@ help:
 	@echo "  test-lint           Check linting"
 	@echo "  lint                Run linter to fix linting issues"
 	@echo "  mockgen-install     Install mockgen command"
+	@echo "  generate-mocks      Generate mocks"
 	@echo "  goreleaser-snapshot Execute goreleaser with --snapshot flag"
 	@echo "  goreleaser          Execute goreleaser"
 	@echo "  version             Read version from git tags"
@@ -84,6 +85,9 @@ mockgen-install:
 		echo "Installing mockgen..."; \
 		go install go.uber.org/mock/mockgen@$(MOCKGEN_VERSION);  \
 	}
+
+generate-mocks: mockgen-install
+	@go generate ./...
 
 goreleaser-snapshot:
 	@docker run \
