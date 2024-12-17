@@ -51,20 +51,20 @@ func ExecutorWithTags(component string, namespaces ...string) ExecutorDecorator 
 func ExecutorWithLog(namespaces ...string) ExecutorDecorator {
 	return func(executor Executor) Executor {
 		return ExecutorFunc(func(ctx context.Context, params *ExecParams) (*core.ProcessResult, error) {
-			logger := log.SugaredLoggerWithFieldsFromNamespaceContext(ctx, namespaces...)
+			logger := log.LoggerWithFieldsFromNamespaceContext(ctx, namespaces...)
 
 			// Set tracing logger
 			params.VMConfig.Tracer = NewLoggerTracer(logger).Hooks()
 
 			logger.Info("Start block execution...")
-			res, err := executor.Execute(log.WithSugaredLogger(ctx, logger), params)
+			res, err := executor.Execute(log.WithLogger(ctx, logger), params)
 			if err != nil {
-				logger.Errorw("Block execution failed", 
-					"error", err,
+				logger.Error("Block execution failed", 
+					zap.Error(err),
 				)
 			} else {
-				logger.Infow("Block execution succeeded!", 
-					"gasUsed", res.GasUsed,
+				logger.Info("Block execution succeeded!", 
+					zap.Uint64("gasUsed", res.GasUsed),
 				)
 			}
 
@@ -76,23 +76,23 @@ func ExecutorWithLog(namespaces ...string) ExecutorDecorator {
 // LoggerTracer is an EVM tracer that logs EVM execution
 // TODO: it would be nice to have a way to configure when to log and when not to log for each method
 type LoggerTracer struct {
-    logger      *zap.SugaredLogger
-    blockLogger *zap.SugaredLogger
-    txLogger    *zap.SugaredLogger
+    logger      *zap.Logger
+    blockLogger *zap.Logger
+    txLogger    *zap.Logger
 }
 
 // NewLoggerTracer creates a new logger tracer
 // We use a sugared logger because the DevX is better with it
 // If the performance is an issue, we can switch to a standard logger
-func NewLoggerTracer(logger *zap.SugaredLogger) *LoggerTracer {
+func NewLoggerTracer(logger *zap.Logger) *LoggerTracer {
     return &LoggerTracer{logger: logger}
 }
 
 // OnBlockStart logs block execution start
 func (t *LoggerTracer) OnBlockStart(event tracing.BlockEvent) {
     t.blockLogger = t.logger.With(
-        "block.number", event.Block.Number(),
-        "block.hash", event.Block.Hash().Hex(),
+        zap.String("block.number", event.Block.Number().String()),
+        zap.String("block.hash", event.Block.Hash().Hex()),
     )
 }
 
@@ -104,29 +104,29 @@ func (t *LoggerTracer) OnBlockEnd(_ error) {
 // OnTxStart logs transaction execution start
 func (t *LoggerTracer) OnTxStart(vm *tracing.VMContext, tx *gethtypes.Transaction, from gethcommon.Address) {
 	t.txLogger = t.blockLogger.With(
-		"tx.type", "transaction",
-		"tx.hash", tx.Hash().Hex(),
-		"tx.from", from.Hex(),
+		zap.String("tx.type", "transaction"),
+		zap.String("tx.hash", tx.Hash().Hex()),
+		zap.String("tx.from", from.Hex()),
 	)
 	
-	t.txLogger.Debugw("Start executing transaction",
-		"vm.blocknumber", vm.BlockNumber.String(),
+	t.txLogger.Debug("Start executing transaction",
+		zap.String("vm.blocknumber", vm.BlockNumber.String()),
 	)
 }
 
 // OnTxEnd logs transaction execution end
 func (t *LoggerTracer) OnTxEnd(receipt *gethtypes.Receipt, err error) {
 	if err != nil {
-		t.txLogger.Errorw("failed to execute transaction", 
-			"error", err,
+		t.txLogger.Error("failed to execute transaction", 
+			zap.Error(err),
 		)
 	} else {
-		t.txLogger.Debugw("Executed transaction",
-			"receipt.txHash", receipt.TxHash.Hex(),
-			"receipt.status", receipt.Status,
-			"receipt.gasUsed", receipt.GasUsed,
-			"receipt.postState", hexutil.Encode(receipt.PostState),
-			"receipt.contractAddress", receipt.ContractAddress.Hex(),
+		t.txLogger.Debug("Executed transaction",
+			zap.String("receipt.txHash", receipt.TxHash.Hex()),
+			zap.Uint64("receipt.status", receipt.Status),
+			zap.Uint64("receipt.gasUsed", receipt.GasUsed),
+			zap.String("receipt.postState", hexutil.Encode(receipt.PostState)),
+			zap.String("receipt.contractAddress", receipt.ContractAddress.Hex()),
 		)
 	}
 	t.txLogger = nil
@@ -135,7 +135,7 @@ func (t *LoggerTracer) OnTxEnd(receipt *gethtypes.Receipt, err error) {
 // OnSystemCallStart logs system call execution start
 func (t *LoggerTracer) OnSystemCallStart() {
 	t.txLogger = t.blockLogger.With(
-		"tx.type", "system",
+		zap.String("tx.type", "system"),
 	)
 	t.txLogger.Debug("Execute system call")
 }
@@ -151,66 +151,66 @@ func (t *LoggerTracer) OnEnter(depth int, typ byte, from, to gethcommon.Address,
 	if value == nil {
 		value = new(big.Int)
 	}
-	t.txLogger.Debugw("Start EVM message execution...",
-		"msg.type", gethvm.OpCode(typ).String(),
-		"msg.depth", depth,
-		"msg.from", from.Hex(),
-		"msg.to", to.Hex(),
-		"msg.input", hexutil.Encode(input),
-		"msg.gas", gas,
-		"msg.value", hexutil.EncodeBig(value),
+	t.txLogger.Debug("Start EVM message execution...",
+		zap.String("msg.type", gethvm.OpCode(typ).String()),
+		zap.Int("msg.depth", depth),
+		zap.String("msg.from", from.Hex()),
+		zap.String("msg.to", to.Hex()),
+		zap.String("msg.input", hexutil.Encode(input)),
+		zap.Uint64("msg.gas", gas),
+		zap.String("msg.value", hexutil.EncodeBig(value)),
 	)
 }
 
 // OnExit logs EVM message execution end
 func (t *LoggerTracer) OnExit(depth int, output []byte, gasUsed uint64, err error, reverted bool) {
-	t.txLogger.Debugw("End EVM message execution",
-		"msg.depth", depth,
-		"msg.output", hexutil.Encode(output),
-		"msg.gasUsed", gasUsed,
-		"msg.reverted", reverted,
-		"error", err,
+	t.txLogger.Debug("End EVM message execution",
+		zap.Int("msg.depth", depth),
+		zap.String("msg.output", hexutil.Encode(output)),
+		zap.Uint64("msg.gasUsed", gasUsed),
+		zap.Bool("msg.reverted", reverted),
+		zap.Error(err),
 	)
 }
 
 // OnOpcode logs opcode execution
 func (t *LoggerTracer) OnOpcode(pc uint64, op byte, gas, cost uint64, _ tracing.OpContext, _ []byte, depth int, err error) {
 	if err != nil {
-		t.txLogger.Debugw("Cannot execute opcode",
-			"pc", pc,
-			"op", gethvm.OpCode(op).String(),
-			"gas", gas,
-			"cost", cost,
-			"depth", depth,
-			"error", err,
+		t.txLogger.Debug("Cannot execute opcode",
+			zap.Uint64("pc", pc),
+			zap.String("op", gethvm.OpCode(op).String()),
+			zap.Uint64("gas", gas),
+			zap.Uint64("cost", cost),
+			zap.Int("depth", depth),
+			zap.Error(err),
 		)
 	}
 }
 
 // OnFault logs opcode execution fault
 func (t *LoggerTracer) OnFault(pc uint64, op byte, gas, cost uint64, _ tracing.OpContext, depth int, err error) {
-	t.txLogger.Debugw("Failed to execute opcode",
-		"pc", pc,
-		"op", gethvm.OpCode(op).String(),
-		"gas", gas,
-		"cost", cost,
-		"depth", depth,
-		"error", err,
+	t.txLogger.Debug("Failed to execute opcode",
+		zap.Uint64("pc", pc),
+		zap.String("op", gethvm.OpCode(op).String()),
+		zap.Uint64("gas", gas),
+		zap.Uint64("cost", cost),
+		zap.Int("depth", depth),
+		zap.Error(err),
 	)
 }
 
 // Hooks returns the logger tracer hooks
 func (t *LoggerTracer) Hooks() *tracing.Hooks {
 	return &tracing.Hooks{
-			OnBlockStart:      t.OnBlockStart,
-			OnBlockEnd:        t.OnBlockEnd,
-			OnTxStart:         t.OnTxStart,
-			OnTxEnd:           t.OnTxEnd,
-			OnEnter:           t.OnEnter,
-			OnExit:            t.OnExit,
-			OnOpcode:          t.OnOpcode,
-			OnFault:           t.OnFault,
-			OnSystemCallStart: t.OnSystemCallStart,
-			OnSystemCallEnd:   t.OnSystemCallEnd,
+		OnBlockStart:      t.OnBlockStart,
+		OnBlockEnd:        t.OnBlockEnd,
+		OnTxStart:         t.OnTxStart,
+		OnTxEnd:           t.OnTxEnd,
+		OnEnter:           t.OnEnter,
+		OnExit:            t.OnExit,
+		OnOpcode:          t.OnOpcode,
+		OnFault:           t.OnFault,
+		OnSystemCallStart: t.OnSystemCallStart,
+		OnSystemCallEnd:   t.OnSystemCallEnd,
 	}
 }

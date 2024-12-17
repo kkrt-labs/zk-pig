@@ -5,6 +5,7 @@ import (
 
 	"github.com/kkrt-labs/kakarot-controller/pkg/log"
 	"github.com/kkrt-labs/kakarot-controller/pkg/tag"
+	"go.uber.org/zap"
 )
 
 // WithTags is a decorator that attaches JSON-RPC specific tags to the provided context namespaces.
@@ -47,12 +48,12 @@ func WithTags(component string, namespaces ...string) ClientDecorator {
 func WithLog(namespaces ...string) ClientDecorator {
 	return func(c Client) Client {
 		return ClientFunc(func(ctx context.Context, req *Request, res interface{}) error {
-			logger := log.SugaredLoggerWithFieldsFromNamespaceContext(ctx, namespaces...)
+			logger := log.LoggerWithFieldsFromNamespaceContext(ctx, namespaces...)
 
 			logger.Debug("Call JSON-RPC")
 			err := c.Call(ctx, req, res)
 			if err != nil {
-				logger.Errorf("JSON-RPC call failed with error: %v", err)
+				logger.Error("JSON-RPC call failed with error: ", zap.Error(err))
 			}
 
 			return err

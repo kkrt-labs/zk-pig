@@ -16,6 +16,7 @@ import (
 	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/state"
 	"github.com/kkrt-labs/kakarot-controller/pkg/log"
 	"github.com/kkrt-labs/kakarot-controller/pkg/tag"
+	"go.uber.org/zap"
 )
 
 // Executor is the interface for EVM execution on provable inputs.
@@ -45,7 +46,7 @@ func (e *executor) Execute(ctx context.Context, inputs *ProverInputs) (*core.Pro
 
 	res, err := e.execute(ctx, inputs)
 	if err != nil {
-		log.SugaredLoggerFromContext(ctx).Errorw("Provable execution failed", "error", err)
+		log.LoggerFromContext(ctx).Error("Provable execution failed", zap.Error(err))
 		return res, err
 	}
 

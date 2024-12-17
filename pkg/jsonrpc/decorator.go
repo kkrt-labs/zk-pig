@@ -8,6 +8,7 @@ import (
 
 	backoff "github.com/cenkalti/backoff/v4"
 	"github.com/kkrt-labs/kakarot-controller/pkg/log"
+	"go.uber.org/zap"
 )
 
 type ClientDecorator func(Client) Client
@@ -55,7 +56,10 @@ func WithRetry() ClientDecorator {
 				func() error { return c.Call(ctx, req, res) },
 				backoff.WithContext(bckff, ctx),
 				func(err error, d time.Duration) {
-					log.SugaredLoggerWithFieldsFromNamespaceContext(ctx).Warnw("JSON-RPC call failed retrying...", "error", err, "duration", d)
+					log.LoggerFromContext(ctx).Warn("JSON-RPC call failed retrying...", 
+						zap.Error(err),
+						zap.Duration("duration", d),
+					)
 				},
 			)
 		})

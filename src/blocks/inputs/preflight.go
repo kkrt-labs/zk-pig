@@ -21,6 +21,7 @@ import (
 	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/trie"
 	"github.com/kkrt-labs/kakarot-controller/pkg/log"
 	"github.com/kkrt-labs/kakarot-controller/pkg/tag"
+	"go.uber.org/zap"
 )
 
 // Preflight is the interface for the preflight block execution which consists of processing an EVM block without final state validation.
@@ -48,7 +49,7 @@ func (pf *preflight) Preflight(ctx context.Context, blockNumber *big.Int) (*Heav
 	ctx = tag.WithComponent(ctx, "preflight")
 	chainCfg, block, err := pf.init(ctx, blockNumber)
 	if err != nil {
-		log.SugaredLoggerFromContext(ctx).Errorw("Failed to initialize preflight", "error", err)
+		log.LoggerFromContext(ctx).Error("Failed to initialize preflight", zap.Error(err))
 		return nil, fmt.Errorf("failed to initialize preflight: %v", err)
 	}
 
@@ -63,9 +64,7 @@ func (pf *preflight) Preflight(ctx context.Context, blockNumber *big.Int) (*Heav
 	// Execute preflight
 	data, err := pf.preflight(ctx, chainCfg, block)
 	if err != nil {
-		log.SugaredLoggerFromContext(ctx).Errorw("Preflight failed",
-			"error", err,
-		)
+		log.LoggerFromContext(ctx).Error("Preflight failed", zap.Error(err))
 		return nil, fmt.Errorf("preflight failed: %v", err)
 	}
 	log.LoggerFromContext(ctx).Info("Preflight successful")

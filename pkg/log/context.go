@@ -9,11 +9,6 @@ import (
 
 type loggerKey struct{}
 
-// WithSugaredLogger returns a new context with the given sugared logger attached to it
-func WithSugaredLogger(ctx context.Context, logger *zap.SugaredLogger) context.Context {
-	return context.WithValue(ctx, loggerKey{}, logger)
-}
-
 // LoggerWithFieldsFromContext returns a logger from the given context with the default namespace tags attached to it
 func LoggerWithFieldsFromContext(ctx context.Context) *zap.Logger {
 	return LoggerWithFieldsFromNamespaceContext(ctx, tag.DefaultNamespace)
@@ -51,13 +46,7 @@ func loggerFromContext(ctx context.Context) *zap.Logger {
 	return zap.L()
 }
 
-// SugaredLoggerFromContext returns a sugared logger from the given context with the default namespace tags attached to it
-func SugaredLoggerFromContext(ctx context.Context) *zap.SugaredLogger {
-	return LoggerFromContext(ctx).Sugar()
-}
-
-// SugaredLoggerWithFieldsFromNamespaceContext returns a sugared logger from the given context.
-// It loads the tags from the provided tags namespace and adds them to the logger.
-func SugaredLoggerWithFieldsFromNamespaceContext(ctx context.Context, namespaces ...string) *zap.SugaredLogger {
-	return LoggerWithFieldsFromNamespaceContext(ctx, namespaces...).Sugar()
+// WithLogger returns a new context with the given logger attached to it
+func WithLogger(ctx context.Context, logger *zap.Logger) context.Context {
+	return context.WithValue(ctx, loggerKey{}, logger)
 }
