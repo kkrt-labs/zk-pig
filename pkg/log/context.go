@@ -25,8 +25,19 @@ func LoggerWithFieldsFromNamespaceContext(ctx context.Context, namespaces ...str
 	for _, namespace := range namespaces {
 		tags := tag.FromNamespaceContext(ctx, namespace)
 		fields := make([]zap.Field, 0, len(tags))
-		for _, tag := range tags {
-			fields = append(fields, zap.Any(string(tag.Key), tag.Value.Interface))
+		for _, t := range tags {
+			switch t.Value.Type {
+			case tag.BOOL:
+				fields = append(fields, zap.Bool(string(t.Key), t.Value.Interface.(bool)))
+			case tag.INT64:
+				fields = append(fields, zap.Int64(string(t.Key), t.Value.Interface.(int64)))
+			case tag.FLOAT64:
+				fields = append(fields, zap.Float64(string(t.Key), t.Value.Interface.(float64)))
+			case tag.STRING:
+				fields = append(fields, zap.String(string(t.Key), t.Value.Interface.(string)))
+			case tag.OBJECT:
+				fields = append(fields, zap.Any(string(t.Key), t.Value.Interface))
+			}
 		}
 		logger = logger.With(fields...)
 	}
