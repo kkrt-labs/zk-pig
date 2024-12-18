@@ -1,0 +1,76 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'pkg/**'
+      - 'src/**'
+      - 'go.*'
+  pull_request:
+    paths:
+      - 'pkg/**'
+      - 'src/**'
+      - 'go.*'
+
+env:
+  GO_VERSION: 1.22.0
+jobs:
+  unit-tests:
+    name: 'Run unit tests in ${{ matrix.os }}'
+    strategy:
+      fail-fast: false
+      matrix:
+        os: ["ubuntu-latest"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup golang with the appropriate version
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Run unit tests and generage HTML coverage report
+        run: |
+          make test
+      - name: Archive code coverage results
+        uses: actions/upload-artifact@v3
+        with:
+          name: unit-test-coverage-report
+          path: build/coverage/ut_cov.out
+
+  tests-race:
+    name: "Run unit tests with race detection enabled on ${{ matrix.os }}"
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ "ubuntu-latest" ]
+    runs-on: ${{ matrix.os }}
+    needs: unit-tests
+    if: github.ref != 'refs/heads/main'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup golang with the appropriate version
+        uses: actions/setup-go@v5
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Run tests with race detection enabled
+        run: make test-race
+
+  test-lint:
+    name: 'Run lint tests'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup golang with the appropriate version
+        uses: actions/setup-go@v2
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Run linting tests
+        uses: golangci/golangci-lint-action@v6
+        with:
+          version: v1.62.0
+          args: -v --timeout 3m0s
