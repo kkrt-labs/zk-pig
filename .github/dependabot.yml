@@ -11,3 +11,8 @@ updates:
       interval: daily
     reviewers:
       - "nmvalera"
+    commit-message:
+      prefix: "⬆️ "
+    labels:
+      - type.chore
+      - non-breaking-change
