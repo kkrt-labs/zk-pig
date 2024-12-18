@@ -11,7 +11,7 @@ require (
 	github.com/ethereum/go-ethereum v1.14.12
 	github.com/holiman/uint256 v1.3.1
 	github.com/sirupsen/logrus v1.9.3
-	github.com/stretchr/testify v1.9.0
+	github.com/stretchr/testify v1.10.0
 	go.uber.org/mock v0.5.0
 	golang.org/x/crypto v0.31.0
 	golang.org/x/net v0.33.0
