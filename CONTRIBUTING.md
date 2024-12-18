@@ -53,8 +53,15 @@ We follow the [GitHub Flow](https://docs.github.com/en/get-started/using-github/
   - `fix/bug-1234`
   - `chore/fix-typo`
   - `test/generator`
-  - `ci/update-workflow`
+  - `devops/update-workflow`
   - `docs/add-readme`
+- While you can choose any prefix, we recommend picking from the following list
+  - `feat/*` for a new feature (e.g. API route, major perf improvement)
+  - `fix/*` for a bug fix
+  - `chore/*` for a package upgrade, a configuration change, a refactor, a small perf improvement, a typo fix...
+  - `test/*` for adding tests
+  - `devops/*` for CI-CD, development environment upgrade, security upgrade, automation addition...
+  - `docs/*` for documentation
 
 ### Make Changes
 
@@ -74,37 +81,21 @@ We follow the [GitHub Flow](https://docs.github.com/en/get-started/using-github/
 
 #### Commit Message Convention
 
-All commits should adhere to the [Conventional Commit v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) standard. This ensures consistency and enables automated tooling.
+Commits can either adhere to
+- Preferably [gitmoji](https://github.com/carloscuesta/gitmoji) standard
+- Or [Conventional Commit v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) standard
 
-```
-<type>[optional scope]: <description>
-
-[optional body]
-
-[optional footer(s)]
-```
-
-Common type include:
-
-- `fix`: Bug fixes
-- `feat`: New features
-- `docs`: Documentation updates
-- `test`: Test additions or updates
-- `perf`: Change for performance
-- `refactor`: Code restructuring without changing functionality
-- `style`: Code style changes (e.g., linting, formatting)
-- `chore`: Non-functional changes (e.g., dependency updates)
-- `ci`: Changes to the CI
+This ensures consistency and enables automated tooling.
 
 ### Submit a Pull Request
 
 1. [Open a Pull Request](https://github.com/kkrt-labs/kakarot-controller/compare) from your branch targetting the `main` branch.
-  - Provide a clear title respecting [Conventional Commit v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) standard
+  - Provide a clear title respecting [gitmoji](https://github.com/carloscuesta/gitmoji) standard
   - Provide a detailed description of the change
   - Reference associated issues resolved by the Pull Request.
   - If it is a breaking change, provide migration path for the change.
   - Set Pull Request labels (those are used for automated generation of release notes)
-     - one of `type.feat/type.fix/type.chore/type.test/type.ci/type.docs`
+     - one of `type.feat/type.fix/type.chore/type.test/type.devops/type.docs`
      - one of `breaking-change/non-breaking-change` 
 4. Ensure your Pull Request passes all CI checks. If it fails, make the necessary updates to resolve any issues.
 5. Request reviews from relevant team members.
