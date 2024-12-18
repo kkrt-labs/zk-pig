@@ -10,18 +10,16 @@ Resolves <!-- Provide references to the relevant issues, if applicable -->
 
 <!-- Tick the type of change introduced by this Pull Request: -->
 
-- [ ] ✨ New feature
+- [ ] ✨ New feature (e.g. API route, major perf improvement...)
 - [ ] 🐛 Bug fix
+- [ ] 🧹 Chore (e.g. package upgrades, configuration change, refactor, small perf improvement, typos...)
 - [ ] 🧪 Tests
-- [ ] 🧹 Chore (e.g., package upgrades, refactor, small perf improvement, typos...)
-- [ ] 🤖 CI (e.g. GitHub Workflows, Makefile...)
+- [ ] 🏭 DevOps (e.g. CI-CD, development environment upgrade, security upgrade, automation addition...)
 - [ ] 📚 Documentation
-- [ ] Other (please specify):
 
 <!-- Tick if this Pull Request introduce a breaking change -->
 
 - [ ] 💥 Breaking Change
-
 
 ## 💥 Breaking Change (if applicable)
 
@@ -34,7 +32,9 @@ Resolves <!-- Provide references to the relevant issues, if applicable -->
 - [ ] I have added tests to cover my changes, if applicable.
 - [ ] I have updated relevant documentation for my changes.
 - [ ] I have included references to issues resolved by this Pull Request
-- [ ] I have set Pull Request label `type.*` and `breaking-change` or `non-breaking-change`
+- [ ] I have set a Pull Request title that respects [gitmoji](https://gitmoji.dev/)
+- [ ] I have set a Pull Request's label to one of `type.feat`,`type.fix`,`type.chore`,`type.test`,`type.docs`,`type.devops`
+- [ ] I have set a Pull Request's label to one of `breaking-change` or `non-breaking-change`
 - [ ] I have documented breaking changes and migration path, if applicable
 
 ## 📓 Additional Notes

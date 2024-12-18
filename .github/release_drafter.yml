@@ -14,20 +14,18 @@ template: |
   **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
 
 categories:
-  - title: '✨  Features'
+  - title: '✨ Features'
     label: 'type.feat'
-  - title: '🧪  Bug fixes'
+  - title: '🐛 Bug fixes'
     label: 'type.fix'
   - title: '🧹 Chore'
     label: 'type.chore'
-  - title : '🧪 Tests'
+  - title: '🧪 Tests'
     label: 'type.test'
-  - title: '🤖 CI'
-    label: 'type.ci'
-  - title: '📚 Documentation'
+  - title: '🏭 DevOps'
+    label: 'type.devops'
+  - title: '📝 Documentation'
     label: 'type.docs'
-  - title: 'Others'
-    label: 'type.other'
   - title: '💥 BREAKING CHANGES'
     label: 'breaking-change'
 
@@ -47,8 +45,7 @@ version-resolver:
       - 'type.chore'
       - 'type.docs'
       - 'type.test'
-      - 'type.ci'
-      - 'type.other'
+      - 'type.devops'
 
 exclude-labels:
   - 'skip-changelog'
