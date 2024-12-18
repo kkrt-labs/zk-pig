@@ -1,0 +1,37 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - v*
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: fetch all tags
+        run: git fetch --force --tags
+      - name: draft release notes
+        uses: release-drafter/release-drafter@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: generate a GitHub App token
+        id: generate-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.KAKAROT_BOT_APP_ID}}
+          private-key: ${{ secrets.KAKAROT_BOT_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+      - name: setup release environment
+        run: |-
+          echo 'GITHUB_TOKEN=${{steps.generate-token.outputs.token}}' > .env
+      - name: release
+        run: make goreleaser

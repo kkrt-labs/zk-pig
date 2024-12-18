@@ -1,21 +1,11 @@
 # goreleaser config to build kkrt
 # This configuration file is by gorelease in goreleaser-cross docker image providing cross-compilation environment
 project_name: kakarot-controller
-checksum:
-  name_template: 'checksums.txt'
 snapshot:
-  name_template: "{{ .Tag }}-next"
-changelog:
-  sort: ''
-  filters:
-    include:
-      - '^feat'
-      - '^fix'
-      - '^chore'
-release:
-  github:
-    owner: kkrt-labs
-    name: kakarot-controller
+  version_template: "{{ .Tag }}-next"
+checksum:
+  split: true # Create one checksum file per artifact
+# Build for multiple platforms
 builds:
   - id: darwin-amd64
     main: ./
@@ -75,3 +65,24 @@ builds:
     ldflags:
       - -s -w -X github.com/kkrt-labs/kakarot-controller/src.Version={{.Version}}
       - -extldflags "-lc -lrt -lpthread --static"
+# Publish draft release notes to GitHub with built artifacts attached to it
+release:
+  github:
+    owner: kkrt-labs
+    name: test-ci
+  make_latest: true
+  draft: true
+  use_existing_draft: true
+  mode: keep-existing # this keeps release notes drafted by release-drafter
+# Publish to Homebrew
+brews:
+  - name: kkrtctl
+    description: "kkrtctl is CLI to operate proving of EVM blocks"
+    repository:
+      owner: kkrt-labs
+      name: homebrew-kkrt
+      branch: main
+    download_strategy: GitHubPrivateRepositoryReleaseDownloadStrategy
+    custom_require: "lib/custom_download_strategy"
+    directory: Formula
+    homepage: "https://github.com/kkrt-labs/kakarot-controller"

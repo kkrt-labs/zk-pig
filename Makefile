@@ -2,7 +2,6 @@
 VERSION ?= $(shell git describe --tags)
 
 # Veriables used for building with goreleaser
-GOLANG_VERSION ?= v1.22.0
 MODULE_NAME := github.com/kkrt-labs/kakarot-controller
 
 GOPATH ?= $(shell go env GOPATH)
@@ -16,6 +15,8 @@ PACKAGES ?= $(shell go list ./... | egrep -v "testutils" )
 # Build folder
 BUILD_FOLDER = build
 
+# Tools versions
+GORELEASER_CROSS_VERSION = v1.24.0
 GOLANGCI_VERSION = v1.62.0
 MOCKGEN_VERSION = v0.5.0
 
@@ -28,13 +29,14 @@ COVERAGE_BUILD_FOLDER = $(BUILD_FOLDER)/coverage
 UNIT_COVERAGE_OUT  = $(COVERAGE_BUILD_FOLDER)/ut_cov.out
 UNIT_COVERAGE_HTML = $(COVERAGE_BUILD_FOLDER)/ut_index.html
 
-.PHONY: help mod-tidy test test-race test-lint lint generate-mocks goreleaser-snaptho goreleaser version
+.PHONY: help run mod-tidy test test-race test-lint lint generate-mocks goreleaser-snaptho goreleaser version
 
 help:
 	@echo "Usage: make <target>"
 	@echo ""
 	@echo "Available targets:"
 	@echo "  help                Show Makefile help message"
+	@echo "  run                 Run the main.go file"
 	@echo "  mod-tidy            Run go mod tidy command to update go.mod and go.sum files"
 	@echo "  test                Run unit tests with coverage"
 	@echo "  test-race           Run unit tests with race detector" 
@@ -45,6 +47,9 @@ help:
 	@echo "  goreleaser-snapshot Execute goreleaser with --snapshot flag"
 	@echo "  goreleaser          Execute goreleaser"
 	@echo "  version             Read version from git tags"
+
+run:
+	@go run .
 
 # Run go mod tidy command to update go.mod and go.sum files
 mod-tidy:
@@ -98,20 +103,25 @@ goreleaser-snapshot:
 		-v `pwd`:/go/src/$(MODULE_NAME) \
 		-v `pwd`/sysroot:/sysroot \
 		-w /go/src/$(MODULE_NAME) \
-		goreleaser/goreleaser-cross:${GOLANG_VERSION} \
+		goreleaser/goreleaser-cross:${GORELEASER_CROSS_VERSION} \
 		--clean --skip=publish,validate --snapshot
 
 goreleaser:
+	@if [ ! -f ".env" ]; then \
+		echo "\033[91m.env is required for release\033[0m";\
+		exit 1;\
+	fi
 	@docker run \
 		--rm \
 		--privileged \
 		-e CGO_ENABLED=1 \
+		--env-file .env \
 		-v /var/run/docker.sock:/var/run/docker.sock \
 		-v `pwd`:/go/src/$(MODULE_NAME) \
 		-v `pwd`/sysroot:/sysroot \
 		-w /go/src/$(MODULE_NAME) \
-		goreleaser/goreleaser-cross:${GOLANG_VERSION} \
-		--clean --skip=publish,validate
+		goreleaser/goreleaser-cross:${GORELEASER_CROSS_VERSION} \
+		--clean
 
 # Read version from git tags
 # It is used in CI to set the version
