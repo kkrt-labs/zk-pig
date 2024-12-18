@@ -1,0 +1,6 @@
+type.fix: fix/*
+type.feature: feat/*
+type.chore: chore/*
+type.test: test/*
+type.ci: ci/*
+type.docs: docs/*

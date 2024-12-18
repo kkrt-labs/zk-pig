@@ -1,0 +1,39 @@
+name: Enforce PR Title and Labels
+
+on:
+  pull_request:
+    branches: [ main ]
+    types: [opened, reopened, synchronize]
+
+jobs:
+  enforce-pr-title:
+    name: Enforce PR title to respect Conventional Commits
+    runs-on: ubuntu-latest
+    steps:
+      # Please look up the latest version from
+      # https://github.com/amannn/action-semantic-pull-request/releases
+      - uses: amannn/action-semantic-pull-request@v5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  autolabel-pr:
+    name: Autolabel PR by basing on branch name
+    permissions:
+      contents: read
+      pull-requests: write
+    runs-on: ubuntu-latest
+    steps:
+      - uses: TimonVS/pr-labeler-action@v5
+        with:
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+  enforce-pr-labels:
+    name: Enforce PR labels `type.*` and `breaking-change`
+    runs-on: ubuntu-latest
+    needs: autolabel-pr
+    if: always() && (contains(fromJson('["success","skipped"]'), needs.autolabel-pr.result))
+    steps:
+      - uses: yogevbd/enforce-label-action@2.2.2
+        with:
+          REQUIRED_LABELS_ANY: "type.feat,type.fix,type.chore,type.test,type.docs,type.ci,type.other"
+      - uses: yogevbd/enforce-label-action@2.2.2
+        with:
+          REQUIRED_LABELS_ANY: "breaking-change,non-breaking-change"
