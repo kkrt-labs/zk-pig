@@ -14,13 +14,11 @@ template: |
   **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
 
 categories:
-  - title: '⚠️ BREAKING CHANGES'
-    label: 'breaking-change'
-  - title: '💫 Features'
+  - title: '✨  Features'
     label: 'type.feat'
-  - title: '🛠️ Bug fixes'
+  - title: '🧪  Bug fixes'
     label: 'type.fix'
-  - title: '🕹️ Chore'
+  - title: '🧹 Chore'
     label: 'type.chore'
   - title : '🧪 Tests'
     label: 'type.test'
@@ -30,6 +28,8 @@ categories:
     label: 'type.docs'
   - title: 'Others'
     label: 'type.other'
+  - title: '💥 BREAKING CHANGES'
+    label: 'breaking-change'
 
 version-resolver:
   # Major is not meant to be used before v1.0.0
