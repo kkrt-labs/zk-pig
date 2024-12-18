@@ -6,7 +6,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	backoff "github.com/cenkalti/backoff/v4"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/kkrt-labs/kakarot-controller/pkg/log"
 	"go.uber.org/zap"
 )
@@ -56,7 +56,7 @@ func WithRetry() ClientDecorator {
 				func() error { return c.Call(ctx, req, res) },
 				backoff.WithContext(bckff, ctx),
 				func(err error, d time.Duration) {
-					log.LoggerFromContext(ctx).Warn("JSON-RPC call failed retrying...", 
+					log.LoggerFromContext(ctx).Warn("JSON-RPC call failed retrying...",
 						zap.Error(err),
 						zap.Duration("duration", d),
 					)

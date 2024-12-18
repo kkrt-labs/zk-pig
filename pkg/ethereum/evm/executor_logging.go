@@ -59,11 +59,11 @@ func ExecutorWithLog(namespaces ...string) ExecutorDecorator {
 			logger.Info("Start block execution...")
 			res, err := executor.Execute(log.WithLogger(ctx, logger), params)
 			if err != nil {
-				logger.Error("Block execution failed", 
+				logger.Error("Block execution failed",
 					zap.Error(err),
 				)
 			} else {
-				logger.Info("Block execution succeeded!", 
+				logger.Info("Block execution succeeded!",
 					zap.Uint64("gasUsed", res.GasUsed),
 				)
 			}
@@ -76,24 +76,24 @@ func ExecutorWithLog(namespaces ...string) ExecutorDecorator {
 // LoggerTracer is an EVM tracer that logs EVM execution
 // TODO: it would be nice to have a way to configure when to log and when not to log for each method
 type LoggerTracer struct {
-    logger      *zap.Logger
-    blockLogger *zap.Logger
-    txLogger    *zap.Logger
+	logger      *zap.Logger
+	blockLogger *zap.Logger
+	txLogger    *zap.Logger
 }
 
 // NewLoggerTracer creates a new logger tracer
 // We use a sugared logger because the DevX is better with it
 // If the performance is an issue, we can switch to a standard logger
 func NewLoggerTracer(logger *zap.Logger) *LoggerTracer {
-    return &LoggerTracer{logger: logger}
+	return &LoggerTracer{logger: logger}
 }
 
 // OnBlockStart logs block execution start
 func (t *LoggerTracer) OnBlockStart(event tracing.BlockEvent) {
-    t.blockLogger = t.logger.With(
-        zap.String("block.number", event.Block.Number().String()),
-        zap.String("block.hash", event.Block.Hash().Hex()),
-    )
+	t.blockLogger = t.logger.With(
+		zap.String("block.number", event.Block.Number().String()),
+		zap.String("block.hash", event.Block.Hash().Hex()),
+	)
 }
 
 // OnBlockEnd logs block execution end
@@ -108,7 +108,7 @@ func (t *LoggerTracer) OnTxStart(vm *tracing.VMContext, tx *gethtypes.Transactio
 		zap.String("tx.hash", tx.Hash().Hex()),
 		zap.String("tx.from", from.Hex()),
 	)
-	
+
 	t.txLogger.Debug("Start executing transaction",
 		zap.String("vm.blocknumber", vm.BlockNumber.String()),
 	)
@@ -117,7 +117,7 @@ func (t *LoggerTracer) OnTxStart(vm *tracing.VMContext, tx *gethtypes.Transactio
 // OnTxEnd logs transaction execution end
 func (t *LoggerTracer) OnTxEnd(receipt *gethtypes.Receipt, err error) {
 	if err != nil {
-		t.txLogger.Error("failed to execute transaction", 
+		t.txLogger.Error("failed to execute transaction",
 			zap.Error(err),
 		)
 	} else {

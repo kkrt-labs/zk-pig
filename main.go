@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"os"
 
 	ethrpc "github.com/kkrt-labs/kakarot-controller/pkg/ethereum/rpc/jsonrpc"
@@ -15,13 +16,17 @@ func main() {
 	// TODO: configure dev/prod environments to use zap.NewProduction() in production
 	// and zap.NewDevelopment() in dev. We can also modify log levels (debug, info, etc.)
 	logger, _ := zap.NewDevelopment(zap.IncreaseLevel(zap.InfoLevel))
-	defer logger.Sync() // flushes buffer, if any
+	defer func() {
+		if err := logger.Sync(); err != nil {
+			fmt.Printf("Failed to sync logger: %v\n", err)
+		}
+	}()
 
 	cfg := &blocks.Config{
 		RPC: &jsonrpchttp.Config{Address: os.Getenv("RPC_URL")},
 	}
 
-	logrus.Infof("Version: %s", src.Version)
+	logger.Info("Version: %s", zap.String("version", src.Version))
 
 	svc := blocks.New(cfg)
 	err := svc.Generate(context.Background(), ethrpc.MustFromBlockNumArg("latest"))

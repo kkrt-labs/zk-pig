@@ -23,4 +23,4 @@ func TagsToFields(tags []*tag.Tag) []zap.Field {
 		}
 	}
 	return fields
-} 
+}
