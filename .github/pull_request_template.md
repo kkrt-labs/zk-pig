@@ -25,7 +25,7 @@ Resolves <!-- Provide references to the relevant issues, if applicable -->
 
 ## 💥 Breaking Change (if applicable)
 
-<!-- If there are any breaking changes, describe them here, including the migration path (e.g., API changes, configuration updates). -->
+<!-- If this PR introduce breaking changes, describe them here, covering the migration path (e.g., API changes, configuration updates). -->
 
 ## 📋 Checklist
 
