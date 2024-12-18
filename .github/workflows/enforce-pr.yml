@@ -7,14 +7,16 @@ on:
 
 jobs:
   enforce-pr-title:
-    name: Enforce PR title to respect Conventional Commits
+    name: Enforce PR title to respect Gitmoji
     runs-on: ubuntu-latest
     steps:
-      # Please look up the latest version from
-      # https://github.com/amannn/action-semantic-pull-request/releases
-      - uses: amannn/action-semantic-pull-request@v5
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: check PR title respects Gitmoji
+        run: |
+          if echo "${{ github.event.pull_request.title }}" | grep -E '^(🎨|⚡️|🔥|🐛|🚑️|🚑|✨|📝|🚀|💄|🎉|✅|🔒️|🔒|🔐|🔖|🚨|🚧|💚|⬇️|⬆️|📌|👷|👷‍♂️|📈|♻️|➕|➖|🔧|🔨|🌐|✏️|💩|⏪️|⏪|🔀|📦️|📦|👽️|👽|🚚|📄|💥|🍱|♿️|♿|💡|🍻|💬|🗃️|🔊|🔇|👥|👥|🚸|🏗️|📱|🤡|🥚|🙈|📸|⚗️|🔍️|🔍|🏷️|🌱|🚩|🥅|💫|🗑️|🛂|🩹|🧐|⚰️|🧪|👔|🩺|🧱|🧑‍💻|👨‍💻|💸|🧵|🦺) '; then
+            exit 0
+          else
+            exit 1
+          fi
   autolabel-pr:
     name: Autolabel PR by basing on branch name
     permissions:
@@ -33,7 +35,7 @@ jobs:
     steps:
       - uses: yogevbd/enforce-label-action@2.2.2
         with:
-          REQUIRED_LABELS_ANY: "type.feat,type.fix,type.chore,type.test,type.docs,type.ci,type.other"
+          REQUIRED_LABELS_ANY: "type.feat,type.fix,type.chore,type.test,type.docs,type.devops"
       - uses: yogevbd/enforce-label-action@2.2.2
         with:
           REQUIRED_LABELS_ANY: "breaking-change,non-breaking-change"
