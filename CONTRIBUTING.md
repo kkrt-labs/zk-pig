@@ -50,7 +50,10 @@ We follow the [GitHub Flow](https://docs.github.com/en/get-started/using-github/
     ```
 - Use clear and descriptive branch names, such as:
   - `feat/add-login`
-  - `fix/fix-typo`
+  - `fix/bug-1234`
+  - `chore/fix-typo`
+  - `test/generator`
+  - `ci/update-workflow`
   - `docs/add-readme`
 
 ### Make Changes
@@ -95,7 +98,14 @@ Common type include:
 
 ### Submit a Pull Request
 
-1. [Open a Pull Request](https://github.com/kkrt-labs/kakarot-controller/compare) from your branch targetting the `main` branch. Provide a clear title, detailed description, and reference to any associated issues or tickets that your work addresses.
+1. [Open a Pull Request](https://github.com/kkrt-labs/kakarot-controller/compare) from your branch targetting the `main` branch.
+  - Provide a clear title respecting [Conventional Commit v1.0.0](https://www.conventionalcommits.org/en/v1.0.0/) standard
+  - Provide a detailed description of the change
+  - Reference associated issues resolved by the Pull Request.
+  - If it is a breaking change, provide migration path for the change.
+  - Set Pull Request labels (those are used for automated generation of release notes)
+     - one of `type.feat/type.fix/type.chore/type.test/type.ci/type.docs`
+     - one of `breaking-change/non-breaking-change` 
 4. Ensure your Pull Request passes all CI checks. If it fails, make the necessary updates to resolve any issues.
 5. Request reviews from relevant team members.
 6. Address feedback and iterate on your changes as needed. And repeat the review process until your Pull Request is approved.
