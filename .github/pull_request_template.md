@@ -1,37 +1,42 @@
-## Description
+## 📝 Description
 
 <!-- Provide a detailed description of your changes and the motivation behind them. -->
 
-## Solved Issues
+## ✅ Solved Issues
 
 Resolves <!-- Provide references to the relevant issues, if applicable -->
 
-## Type of Change
+## 🔄 Change
 
-<!-- Check all the options that apply: -->
+<!-- Tick the type of change introduced by this Pull Request: -->
 
-- [ ] 🛠️ Bug fix
-- [ ] 💫 New feature
-- [ ] 📚 Documentation
+- [ ] ✨ New feature
+- [ ] 🐛 Bug fix
 - [ ] 🧪 Tests
-- [ ] 🕹️ Chore (e.g., package upgrades, refactor, typos...)
-- [ ] 🤖 DevOps (e.g. ci, development environment...)
+- [ ] 🧹 Chore (e.g., package upgrades, refactor, small perf improvement, typos...)
+- [ ] 🤖 CI (e.g. GitHub Workflows, Makefile...)
+- [ ] 📚 Documentation
 - [ ] Other (please specify):
 
-## Breaking Changes (if applicable)
+<!-- Tick if this Pull Request introduce a breaking change -->
+
+- [ ] 💥 Breaking Change
+
+
+## 💥 Breaking Change (if applicable)
 
 <!-- If there are any breaking changes, describe them here, including the migration path (e.g., API changes, configuration updates). -->
 
-## Checklist
+## 📋 Checklist
 
 <!-- Confirm the following items are completed before submitting your pull request: -->
 
 - [ ] I have added tests to cover my changes, if applicable.
-- [ ] I have updated relevant documentation.
-- [ ] I have added sufficient inline comments in the code where necessary.
-- [ ] I have accurately completed this pull request description
-- [ ] I have included references to issues solved by this Pull Request
+- [ ] I have updated relevant documentation for my changes.
+- [ ] I have included references to issues resolved by this Pull Request
+- [ ] I have set Pull Request label `type.*` and `breaking-change` or `non-breaking-change`
+- [ ] I have documented breaking changes and migration path, if applicable
 
-## Additional Notes
+## 📓 Additional Notes
 
 <!-- Include any additional context, considerations, or dependencies relevant to this pull request. -->
