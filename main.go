@@ -14,15 +14,20 @@ import (
 
 func main() {
 	var logger *zap.Logger
+	var err error
 	env := os.Getenv("ENV")
 
 	switch env {
 	case "dev":
-		logger, _ = zap.NewDevelopment()
+		logger, err = zap.NewDevelopment()
 	case "prod":
-		logger, _ = zap.NewProduction()
+		logger, err = zap.NewProduction()
 	default:
-		logger, _ = zap.NewDevelopment()
+		logger, err = zap.NewDevelopment()
+	}
+	if err != nil {
+		fmt.Printf("Failed to create logger: %v\n", err)
+		os.Exit(1)
 	}
 
 	level := os.Getenv("LOGGER_LEVEL")
@@ -49,7 +54,7 @@ func main() {
 	logger.Info("Version", zap.String("version", src.Version))
 
 	svc := blocks.New(cfg)
-	err := svc.Generate(context.Background(), ethrpc.MustFromBlockNumArg("latest"))
+	err = svc.Generate(context.Background(), ethrpc.MustFromBlockNumArg("latest"))
 	if err != nil {
 		logger.Fatal("Failed to generate block inputs", zap.Error(err))
 	}
