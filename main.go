@@ -13,10 +13,17 @@ import (
 )
 
 func main() {
-	// TODO: configure dev/prod environments to use zap.NewProduction() in production
-	// and zap.NewDevelopment() in dev. We can also modify log levels (debug, info, etc.)
-	logger, _ := zap.NewDevelopment(zap.IncreaseLevel(zap.DebugLevel))
-	zap.ReplaceGlobals(logger) // replace the global logger with the new one
+	level := os.Getenv("LOGGER_LEVEL")
+	var logger *zap.Logger
+	switch level {
+	case "debug":
+		logger, _ = zap.NewDevelopment(zap.IncreaseLevel(zap.DebugLevel))
+	case "info":
+		logger, _ = zap.NewDevelopment(zap.IncreaseLevel(zap.InfoLevel))
+	default:
+		logger, _ = zap.NewDevelopment(zap.IncreaseLevel(zap.InfoLevel))
+	}
+	zap.ReplaceGlobals(logger)
 	defer func() {
 		if err := logger.Sync(); err != nil {
 			fmt.Printf("Failed to sync logger: %v\n", err)
