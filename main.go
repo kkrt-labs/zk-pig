@@ -13,15 +13,27 @@ import (
 )
 
 func main() {
-	level := os.Getenv("LOGGER_LEVEL")
 	var logger *zap.Logger
+	env := os.Getenv("ENV")
+
+	switch env {
+	case "dev":
+		logger, _ = zap.NewDevelopment()
+	case "prod":
+		logger, _ = zap.NewProduction()
+	default:
+		logger, _ = zap.NewDevelopment()
+	}
+
+	level := os.Getenv("LOGGER_LEVEL")
+
 	switch level {
 	case "debug":
-		logger, _ = zap.NewDevelopment(zap.IncreaseLevel(zap.DebugLevel))
+		logger = logger.WithOptions(zap.IncreaseLevel(zap.DebugLevel))
 	case "info":
-		logger, _ = zap.NewDevelopment(zap.IncreaseLevel(zap.InfoLevel))
+		logger = logger.WithOptions(zap.IncreaseLevel(zap.InfoLevel))
 	default:
-		logger, _ = zap.NewDevelopment(zap.IncreaseLevel(zap.InfoLevel))
+		logger = logger.WithOptions(zap.IncreaseLevel(zap.InfoLevel))
 	}
 	zap.ReplaceGlobals(logger)
 	defer func() {
