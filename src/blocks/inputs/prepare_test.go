@@ -11,9 +11,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+const (
+	testDataPath = "testdata/21372637.json"
+)
+
 func TestPreparer_prepare(t *testing.T) {
-	//load test data
-	testBlock := testLoadExecInputs(t, "testdata/21372637.json")
+	// load test data
+	testBlock := testLoadExecInputs(t, testDataPath)
 
 	tests := []struct {
 		name    string
@@ -80,7 +84,7 @@ func TestPreparer_prepare(t *testing.T) {
 
 func TestPreparer_prepareContext(t *testing.T) {
 	p := NewPreparer()
-	testBlock := testLoadExecInputs(t, "testdata/21372637.json")
+	testBlock := testLoadExecInputs(t, testDataPath)
 
 	ctx, err := p.(*preparer).prepareContext(context.Background(), testBlock)
 	require.NoError(t, err)
@@ -93,7 +97,7 @@ func TestPreparer_prepareContext(t *testing.T) {
 
 func TestPreparer_PreparePreState(t *testing.T) {
 	p := NewPreparer()
-	testBlock := testLoadExecInputs(t, "testdata/21372637.json")
+	testBlock := testLoadExecInputs(t, testDataPath)
 
 	ctx, err := p.(*preparer).prepareContext(context.Background(), testBlock)
 	require.NoError(t, err)
@@ -105,7 +109,7 @@ func TestPreparer_PreparePreState(t *testing.T) {
 
 func TestPreparer_prepareExecParams(t *testing.T) {
 	p := NewPreparer()
-	testBlock := testLoadExecInputs(t, "testdata/21372637.json")
+	testBlock := testLoadExecInputs(t, testDataPath)
 
 	ctx, err := p.(*preparer).prepareContext(context.Background(), testBlock)
 	require.NoError(t, err)
@@ -121,7 +125,7 @@ func TestPreparer_prepareExecParams(t *testing.T) {
 
 func TestPreparer_execute(t *testing.T) {
 	p := NewPreparer()
-	testBlock := testLoadExecInputs(t, "testdata/21372637.json")
+	testBlock := testLoadExecInputs(t, testDataPath)
 
 	ctx, err := p.(*preparer).prepareContext(context.Background(), testBlock)
 	require.NoError(t, err)
@@ -140,7 +144,7 @@ func TestPreparer_execute(t *testing.T) {
 
 func TestPreparer_prepareProverInputs(t *testing.T) {
 	p := NewPreparer()
-	testBlock := testLoadExecInputs(t, "testdata/21372637.json")
+	testBlock := testLoadExecInputs(t, testDataPath)
 
 	ctx, err := p.(*preparer).prepareContext(context.Background(), testBlock)
 	require.NoError(t, err)
