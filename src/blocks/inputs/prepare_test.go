@@ -157,6 +157,9 @@ func TestPreparer_prepareProverInputs(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, execParams)
 
+	err = p.(*preparer).execute(ctx, execParams)
+	require.NoError(t, err)
+
 	proverInputs := p.(*preparer).prepareProverInputs(ctx, execParams)
 	require.NotNil(t, proverInputs)
 }
