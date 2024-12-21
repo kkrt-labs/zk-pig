@@ -7,10 +7,6 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	testDataPath = "testdata/21372637.json"
-)
-
 type preparerTest struct {
 	name string
 	test func(p *preparer, ctx *preparerContext, inputs *HeavyProverInputs) error
