@@ -12,7 +12,7 @@ func setupTestProverInputs(t *testing.T) (*ProverInputs, *HeavyProverInputs) {
 	t.Helper()
 
 	// Load test data
-	testDataInput := testLoadExecInputs(t, testDataPath_Ethereum_Mainnet_21465322)
+	testDataInput := testLoadExecInputs(t, testDataPathEthereumMainnet21465322)
 	require.NotNil(t, testDataInput, "Test data input should not be nil")
 
 	// Prepare inputs

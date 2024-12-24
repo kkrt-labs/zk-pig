@@ -93,7 +93,7 @@ func CompareProverInputs(a, b *ProverInputs) bool {
 }
 
 // Test helper function that provides more detailed comparison information
-func CompareProverInputsWithDiff(a, b *ProverInputs) (bool, string) {
+func CompareProverInputsWithDiff(a, b *ProverInputs) (equal bool, diff string) {
 	normalizedA := normalizeProverInputs(a)
 	normalizedB := normalizeProverInputs(b)
 
