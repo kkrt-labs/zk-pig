@@ -9,7 +9,7 @@ import (
 
 type preparerTest struct {
 	name string
-	test func(p *preparer, ctx *preparerContext, inputs *HeavyProverInputs) error
+	test func(p *preparer, ctx *preparerContext, inputs *TestDataInputs) error
 }
 
 func setupPreparerContext(t *testing.T, p *preparer, inputs *HeavyProverInputs) *preparerContext {
@@ -23,44 +23,57 @@ func setupPreparerContext(t *testing.T, p *preparer, inputs *HeavyProverInputs) 
 func TestPreparer(t *testing.T) {
 	tests := []preparerTest{
 		{
+			name: "Prepare",
+			test: func(p *preparer, ctx *preparerContext, inputs *TestDataInputs) error {
+				result, err := p.Prepare(ctx.ctx, &inputs.HeavyProverInputs)
+				require.NoError(t, err)
+				require.NotNil(t, result)
+
+				equal := CompareProverInputs(&inputs.ExpectedProverInputs, result)
+				require.True(t, equal)
+
+				return nil
+			},
+		},
+		{
 			name: "prepare",
-			test: func(p *preparer, ctx *preparerContext, inputs *HeavyProverInputs) error {
-				_, err := p.prepare(ctx.ctx, inputs)
+			test: func(p *preparer, ctx *preparerContext, inputs *TestDataInputs) error {
+				_, err := p.prepare(ctx.ctx, &inputs.HeavyProverInputs)
 				return err
 			},
 		},
 		{
 			name: "prepareContext",
-			test: func(p *preparer, ctx *preparerContext, inputs *HeavyProverInputs) error {
-				_, err := p.prepareContext(ctx.ctx, inputs)
+			test: func(p *preparer, ctx *preparerContext, inputs *TestDataInputs) error {
+				_, err := p.prepareContext(ctx.ctx, &inputs.HeavyProverInputs)
 				return err
 			},
 		},
 		{
 			name: "preparePreState",
-			test: func(p *preparer, ctx *preparerContext, inputs *HeavyProverInputs) error {
-				return p.preparePreState(ctx, inputs)
+			test: func(p *preparer, ctx *preparerContext, inputs *TestDataInputs) error {
+				return p.preparePreState(ctx, &inputs.HeavyProverInputs)
 			},
 		},
 		{
 			name: "prepareExecParams",
-			test: func(p *preparer, ctx *preparerContext, inputs *HeavyProverInputs) error {
-				err := p.preparePreState(ctx, inputs)
+			test: func(p *preparer, ctx *preparerContext, inputs *TestDataInputs) error {
+				err := p.preparePreState(ctx, &inputs.HeavyProverInputs)
 				if err != nil {
 					return err
 				}
-				_, err = p.prepareExecParams(ctx, inputs)
+				_, err = p.prepareExecParams(ctx, &inputs.HeavyProverInputs)
 				return err
 			},
 		},
 		{
 			name: "execute",
-			test: func(p *preparer, ctx *preparerContext, inputs *HeavyProverInputs) error {
-				err := p.preparePreState(ctx, inputs)
+			test: func(p *preparer, ctx *preparerContext, inputs *TestDataInputs) error {
+				err := p.preparePreState(ctx, &inputs.HeavyProverInputs)
 				if err != nil {
 					return err
 				}
-				execParams, err := p.prepareExecParams(ctx, inputs)
+				execParams, err := p.prepareExecParams(ctx, &inputs.HeavyProverInputs)
 				if err != nil {
 					return err
 				}
@@ -70,12 +83,12 @@ func TestPreparer(t *testing.T) {
 		},
 		{
 			name: "prepareProverInputs",
-			test: func(p *preparer, ctx *preparerContext, inputs *HeavyProverInputs) error {
-				err := p.preparePreState(ctx, inputs)
+			test: func(p *preparer, ctx *preparerContext, inputs *TestDataInputs) error {
+				err := p.preparePreState(ctx, &inputs.HeavyProverInputs)
 				if err != nil {
 					return err
 				}
-				execParams, err := p.prepareExecParams(ctx, inputs)
+				execParams, err := p.prepareExecParams(ctx, &inputs.HeavyProverInputs)
 				if err != nil {
 					return err
 				}
@@ -85,6 +98,10 @@ func TestPreparer(t *testing.T) {
 				}
 				result := p.prepareProverInputs(ctx, execParams)
 				require.NotNil(t, result)
+
+				equal := CompareProverInputs(&inputs.ExpectedProverInputs, result)
+				require.True(t, equal)
+
 				return nil
 			},
 		},
@@ -92,10 +109,10 @@ func TestPreparer(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			testBlock := testLoadExecInputs(t, testDataPath)
+			testDataInputs := testLoadExecInputs(t, testDataPath_Ethereum_Mainnet_21465322)
 			p := NewPreparer().(*preparer)
-			ctx := setupPreparerContext(t, p, testBlock)
-			err := tt.test(p, ctx, testBlock)
+			ctx := setupPreparerContext(t, p, &testDataInputs.HeavyProverInputs)
+			err := tt.test(p, ctx, testDataInputs)
 			require.NoError(t, err)
 		})
 	}

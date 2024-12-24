@@ -8,26 +8,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-const (
-	testDataPath = "testdata/21372637.json"
-)
-
 func setupTestProverInputs(t *testing.T) (*ProverInputs, *HeavyProverInputs) {
 	t.Helper()
 
 	// Load test data
-	testBlock := testLoadExecInputs(t, testDataPath)
-	require.NotNil(t, testBlock, "Test block should not be nil")
-
-	// Create preparer
-	p := NewPreparer()
+	testDataInput := testLoadExecInputs(t, testDataPath_Ethereum_Mainnet_21465322)
+	require.NotNil(t, testDataInput, "Test data input should not be nil")
 
 	// Prepare inputs
-	proverInputs, err := p.Prepare(context.Background(), testBlock)
-	require.NoError(t, err)
+	proverInputs := &testDataInput.ExpectedProverInputs
 	require.NotNil(t, proverInputs)
 
-	return proverInputs, testBlock
+	return proverInputs, &testDataInput.HeavyProverInputs
 }
 
 type executorTest struct {
