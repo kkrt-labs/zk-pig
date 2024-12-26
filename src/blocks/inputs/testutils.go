@@ -15,7 +15,7 @@ import (
  * It ensures that the struct is in a consistent format for comparison, especially
  * important for fields like Codes, PreState, and AccessList.
  */
-func normalizeProverInputs(input *ProverInputs) *ProverInputs {
+func NormalizeProverInputs(input *ProverInputs) *ProverInputs {
 	if input == nil {
 		return nil
 	}
