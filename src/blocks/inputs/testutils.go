@@ -75,8 +75,8 @@ func CompareProverInputs(a, b *ProverInputs) bool {
 		return a == b
 	}
 
-	normalizedA := normalizeProverInputs(a)
-	normalizedB := normalizeProverInputs(b)
+	normalizedA := NormalizeProverInputs(a)
+	normalizedB := NormalizeProverInputs(b)
 
 	// Convert to JSON for deep comparison
 	jsonA, err := json.Marshal(normalizedA)
@@ -94,8 +94,8 @@ func CompareProverInputs(a, b *ProverInputs) bool {
 
 // Test helper function that provides more detailed comparison information
 func CompareProverInputsWithDiff(a, b *ProverInputs) (equal bool, diff string) {
-	normalizedA := normalizeProverInputs(a)
-	normalizedB := normalizeProverInputs(b)
+	normalizedA := NormalizeProverInputs(a)
+	normalizedB := NormalizeProverInputs(b)
 
 	jsonA, err := json.MarshalIndent(normalizedA, "", "  ")
 	if err != nil {
