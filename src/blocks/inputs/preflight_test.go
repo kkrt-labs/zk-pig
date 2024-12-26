@@ -10,8 +10,8 @@ import (
 
 // ExpectedData represents the structure of the JSON file
 type TestDataInputs struct {
-	HeavyProverInputs    HeavyProverInputs `json:"heavyProverInputs"`
-	ExpectedProverInputs ProverInputs      `json:"expectedProverInputs"`
+	HeavyProverInputs HeavyProverInputs `json:"heavyProverInputs"`
+	ProverInputs      ProverInputs      `json:"proverInputs"`
 }
 
 func loadTestDataInputs(t *testing.T, path string) *TestDataInputs {
@@ -27,7 +27,7 @@ func loadTestDataInputs(t *testing.T, path string) *TestDataInputs {
 }
 
 func TestUnmarshal(t *testing.T) {
-	_ = loadTestDataInputs(t, testDataPathEthereumMainnet21465322)
+	_ = loadTestDataInputs(t, testDataInputsPath("Ethereum_Mainnet_21465322.json"))
 }
 
 // TODO: Add unit-tests for the preflight block execution
