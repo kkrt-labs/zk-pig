@@ -109,7 +109,7 @@ func TestPreparer(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			testDataInputs := testLoadExecInputs(t, testDataPathEthereumMainnet21465322)
+			testDataInputs := loadTestDataInputs(t, testDataPathEthereumMainnet21465322)
 			p := NewPreparer().(*preparer)
 			ctx := setupPreparerContext(t, p, &testDataInputs.HeavyProverInputs)
 			err := tt.test(p, ctx, testDataInputs)

@@ -14,7 +14,7 @@ type TestDataInputs struct {
 	ExpectedProverInputs ProverInputs      `json:"expectedProverInputs"`
 }
 
-func testLoadExecInputs(t *testing.T, path string) *TestDataInputs {
+func loadTestDataInputs(t *testing.T, path string) *TestDataInputs {
 	f, err := os.Open(path)
 	require.NoError(t, err)
 	defer f.Close()
@@ -27,7 +27,7 @@ func testLoadExecInputs(t *testing.T, path string) *TestDataInputs {
 }
 
 func TestUnmarshal(t *testing.T) {
-	_ = testLoadExecInputs(t, testDataPathEthereumMainnet21465322)
+	_ = loadTestDataInputs(t, testDataPathEthereumMainnet21465322)
 }
 
 // TODO: Add unit-tests for the preflight block execution
