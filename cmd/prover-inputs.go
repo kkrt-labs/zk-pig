@@ -40,12 +40,12 @@ Commands to handle the entire pipeline of proving EVM blocks:
 var generateCmd = &cobra.Command{
 	Use:   "generate",
 	Short: "Generate prover inputs (preflight + prepare + execute)",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		setupLogger()
 
 		cfg := &blocks.Config{
 			BaseDir: dataDir,
-			RPC: &jsonrpchttp.Config{Address: rpcURL},
+			RPC:     &jsonrpchttp.Config{Address: rpcURL},
 		}
 
 		blockNum := parseBigIntOrDie(blockNumber, "block-number")
@@ -62,13 +62,14 @@ var generateCmd = &cobra.Command{
 var preflightCmd = &cobra.Command{
 	Use:   "preflight",
 	Short: "Run preflight checks",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		setupLogger()
 
 		cfg := &blocks.Config{
 			BaseDir: dataDir,
-			RPC: &jsonrpchttp.Config{Address: rpcURL},
+			RPC:     &jsonrpchttp.Config{Address: rpcURL},
 		}
+
 		blockNum := parseBigIntOrDie(blockNumber, "block-number")
 
 		svc := blocks.New(cfg)
@@ -83,12 +84,12 @@ var preflightCmd = &cobra.Command{
 var prepareCmd = &cobra.Command{
 	Use:   "prepare",
 	Short: "Prepare prover inputs",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		setupLogger()
 
 		cfg := &blocks.Config{
 			BaseDir: dataDir,
-			RPC: &jsonrpchttp.Config{Address: rpcURL},
+			RPC:     &jsonrpchttp.Config{Address: rpcURL},
 		}
 
 		blockNum := parseBigIntOrDie(blockNumber, "block-number")
@@ -106,12 +107,12 @@ var prepareCmd = &cobra.Command{
 var executeCmd = &cobra.Command{
 	Use:   "execute",
 	Short: "Execute prover inputs generation",
-	Run: func(cmd *cobra.Command, args []string) {
+	Run: func(_ *cobra.Command, _ []string) {
 		setupLogger()
 
 		cfg := &blocks.Config{
 			BaseDir: dataDir,
-			RPC: &jsonrpchttp.Config{Address: rpcURL},
+			RPC:     &jsonrpchttp.Config{Address: rpcURL},
 		}
 
 		blockNum := parseBigIntOrDie(blockNumber, "block-number")
@@ -184,7 +185,7 @@ func setupLogger() {
 	}
 
 	// Log Format
-	if strings.ToLower(logFormat) == "text" {
+	if strings.EqualFold(logFormat, "text") {
 		cfg.Encoding = "console"
 	} else {
 		cfg.Encoding = "json"
