@@ -7,21 +7,21 @@ import (
 )
 
 type BlockStore interface {
-	PreflightDataStore
+	HeavyProverInputsStore
 	ProverInputsStore
 }
 
-type PreflightDataStore interface {
-	// StorePreflightData stores the preflight data for a block.
-	StorePreflightData(ctx context.Context, data *blockinputs.HeavyProverInputs) error
+type HeavyProverInputsStore interface {
+	// StoreHeavyProverInputs stores the heavy prover inputs for a block.
+	StoreHeavyProverInputs(ctx context.Context, inputs *blockinputs.HeavyProverInputs) error
 
-	// LoadPreflightData loads the preflight data for a block.
-	LoadPreflightData(ctx context.Context, chainID, blockNumber uint64) (*blockinputs.HeavyProverInputs, error)
+	// LoadHeavyProverInputs loads tthe heavy prover inputs for a block.
+	LoadHeavyProverInputs(ctx context.Context, chainID, blockNumber uint64) (*blockinputs.HeavyProverInputs, error)
 }
 
 type ProverInputsStore interface {
 	// StoreProverInputs stores the prover inputs for a block.
-	StoreProverInputs(ctx context.Context, data *blockinputs.ProverInputs) error
+	StoreProverInputs(ctx context.Context, inputs *blockinputs.ProverInputs) error
 
 	// LoadProverInputs loads the prover inputs for a block.
 	LoadProverInputs(ctx context.Context, chainID, blockNumber uint64) (*blockinputs.ProverInputs, error)

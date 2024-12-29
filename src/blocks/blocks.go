@@ -104,7 +104,7 @@ func (s *Service) preflight(ctx context.Context, blockNumber *big.Int) (*blockin
 		return nil, fmt.Errorf("failed to execute preflight: %v", err)
 	}
 
-	if err = s.store.StorePreflightData(ctx, data); err != nil {
+	if err = s.store.StoreHeavyProverInputs(ctx, data); err != nil {
 		return nil, fmt.Errorf("failed to store preflight data: %v", err)
 	}
 
@@ -123,7 +123,7 @@ func (s *Service) Prepare(ctx context.Context, chainID, blockNumber *big.Int) er
 }
 
 func (s *Service) prepare(ctx context.Context, chainID, blockNumber *big.Int) error {
-	data, err := s.store.LoadPreflightData(ctx, chainID.Uint64(), blockNumber.Uint64())
+	data, err := s.store.LoadHeavyProverInputs(ctx, chainID.Uint64(), blockNumber.Uint64())
 	if err != nil {
 		return fmt.Errorf("failed to load preflight data: %v", err)
 	}

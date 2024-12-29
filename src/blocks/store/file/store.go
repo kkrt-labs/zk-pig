@@ -23,12 +23,12 @@ func New(baseDir string) *FileBlockStore {
 	return &FileBlockStore{baseDir: baseDir}
 }
 
-func (s *FileBlockStore) StorePreflightData(_ context.Context, data *blockinputs.HeavyProverInputs) error {
-	path := s.preflightPath(data.ChainConfig.ChainID.Uint64(), data.Block.Number.ToInt().Uint64())
-	return s.storeData(path, data)
+func (s *FileBlockStore) StoreHeavyProverInputs(_ context.Context, inputs *blockinputs.HeavyProverInputs) error {
+	path := s.preflightPath(inputs.ChainConfig.ChainID.Uint64(), inputs.Block.Number.ToInt().Uint64())
+	return s.storeData(path, inputs)
 }
 
-func (s *FileBlockStore) LoadPreflightData(_ context.Context, chainID, blockNumber uint64) (*blockinputs.HeavyProverInputs, error) {
+func (s *FileBlockStore) LoadHeavyProverInputs(_ context.Context, chainID, blockNumber uint64) (*blockinputs.HeavyProverInputs, error) {
 	path := s.preflightPath(chainID, blockNumber)
 	data := &blockinputs.HeavyProverInputs{}
 	if err := s.loadData(path, data); err != nil {
@@ -56,7 +56,7 @@ func (s *FileBlockStore) preflightPath(chainID, blockNumber uint64) string {
 }
 
 func (s *FileBlockStore) proverPath(chainID, blockNumber uint64) string {
-	return filepath.Join(s.baseDir, fmt.Sprintf("%d", chainID), "prover", fmt.Sprintf("%d.json", blockNumber))
+	return filepath.Join(s.baseDir, fmt.Sprintf("%d", chainID), "prover-inputs", fmt.Sprintf("%d.json", blockNumber))
 }
 
 func (s *FileBlockStore) storeData(path string, data interface{}) error {
