@@ -27,9 +27,9 @@ The Ethereum state root is the Merkle Patricia root of the account state trie.
 
 ### EVM Block Execution
 
-The execution of an EVM block involves various operations, such as processing transactions, handling system calls, and accounting for block rewards. These operations induce state transitions, which can be categorized as follows:
+The execution of an EVM block involves operations such as processing transactions, handling system calls, accounting for block rewards... which results in a set of elementary state transitions that can be categorized as follows:
 
-| **Operation**            | **Description**                                                                                                    | **Example**                                                                                      |
+| **State Transition**            | **Description**                                                                                                    | **Example of Operation**                                                                                      |
 |---------------------------|--------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------------------------------------|
 | **Create an account**     | Create a new account object in the account state trie.                                                             | Deploying a new smart contract.                                                                 |
 | **Update an account**     | Update one or more account fields: balance, nonce, or storage hash (note: `codeHash` cannot be changed).           | Updating balance when transferring ETH, updating nonce when executing a transaction, etc.       |
@@ -38,31 +38,26 @@ The execution of an EVM block involves various operations, such as processing tr
 | **Update a storage**      | Set a non-empty storage slot to a non-null value.                                                                  | Any call to `SSTORE(slot, value)` on a non-empty slot with `value ≠ 0`.                     |
 | **Delete a storage**      | Set a non-empty storage slot to zero.                                                                              | Any call to `SSTORE(slot, 0)` on a non-empty slot.                                              |
 
-Starting from parent state `S`, applying all state transitions induced by the execution of block `B` results in the final state `S'`. The state root of `S'` is stored in block `B`'s header.
+Starting from parent state `S`, applying all state transitions induced by the execution of block `B` results in the final state `S'`.
 
-Practically, the final state root is computed by the block proposer and included in the block header. When other nodes receive the proposed block, they re-execute the block on their local state, validate the computed final state root against the one in the block header, and reject the block in case of a mismatch.
+Practically, the final state root `S'` is first computed by the block proposer and included in the block header at block proposal time. When other nodes receive the proposed block, they re-execute the block on their local state, validate the computed final state root against the one in the block header, and reject the block in case of a mismatch.
 
-### Partial Pre-state and Ancestors
+### Block witness
 
-The execution of a block requires accessing only a subset of the pre-state (accounts and storage entries). This subset, called the **partial pre-state**, is significantly smaller than the full pre-state.
+Block witness encompasses the minimal state and chain data required for a stateless EVM block execution (meaning without access to a a database containing the full state) which includes
+- performing all block operations (apply transactions, apply fee rewards, apply system calls, etc.) 
+- deriving the post state root
 
-Block execution may also optionally require access to some ancestor blocks. For instance, the EVM opcode `BLOCKHASH` enables smart contracts to access the hash of any of the 256 most recent blocks (excluding the current block, as its hash is computed post-execution).
+This includes
+- **partial pre-state** containing the list of MPTS nodes from the accounts MPT and storage MPTs which have been resolved during block execution either 
+   - when accessing a state data (either an account or a storage slot)
+   - when deleting some state entries which may result in a [MPT branch node reduction](modified-mpt.md#branch-node-reduction) which resolves extra nodes
+- **codes** of all smart contracts called during block execution
+- **ancestors headers**, minimally containing the direct parent of the executed block and optionnaly older ancestors if accessed with opcode `BLOCKHASH` during block execution. For instance, the opcode `BLOCKHASH`enables smart contracts to access the hash of any of the 256 most recent blocks (excluding the current block, as its hash is computed post-execution)
 
-## What Are Prover Inputs?
+#### Witness examples
 
-ZK proving engines operate in isolated environments without a direct access to a full blockchain node. **Prover Inputs** refer to the minimal data required by a ZK EVM proving engine to effectively prove a block (including processing the block, computing the final state root, and validating both the block and the final state). They include:
-
-- **Block**: The Ethereum block to be executed, including the block header and all transactions.
-- **Chain Configuration**: The chain identifier and fork configurations.
-- **Witness**: chain data accessed during block execution 
-  - **Ancestors**: At minimum, the parent header, and optionally all block headers up to the oldest ancestor block accessed during execution (maximum 256 entries).
-  - **Codes**: Bytecode of all smart contracts called during execution.
-  - **PreState**: The partial pre-state accessed during execution, represented as a list of RLP-encoded MPT nodes (both account storage and all storage tries in the same list).
-- **AccessList**: A mapping of accessed state entries (accounts and storage) during block execution. While this data is actually redundant, it currently facilitate some ZK EVM prover engines by enabling to perform some pre-state validations before executing the block. On the long run we may re-assess if this is absolutely needed.
-
-### Witness examples
-
-The table below is a non-exhaustive list describing the witness required by some common operations of the EVM block execution.
+The table below is a non-exhaustive list describing the witness for some common operations of the block execution.
 
 | **Operation**                                                                                                                                 	| **Account pre-state**                                                                                          	| **Storage pre-state**                                                                                          	| **Codes**                    	| **Ancestors**                                                                 	|
 |-----------------------------------------------------------------------------------------------------------------------------------------------	|----------------------------------------------------------------------------------------------------------------	|----------------------------------------------------------------------------------------------------------------	|------------------------------	|-------------------------------------------------------------------------------	|
@@ -74,6 +69,21 @@ The table below is a non-exhaustive list describing the witness required by some
 | Transaction fees (or priority fees) to coinbase                                                                                               	| - All nodes to coinbase account (for balance update)                                                           	| None                                                                                                           	| None                         	| None                                                                          	|
 | Op-code BLOCKHASH <blocknum>                                                                                                                  	| None                                                                                                           	| None                                                                                                           	| None                         	| - All headers from `currentBlockNum-1` down to `blockNum` (max. 256 headers)  	|
 | For account destructions or storage deletions (see [Modified MPT Implementation](modified-mpt.md) for more details)                           	| - All nodes to the destructed account<br>- Possibly, the remaining child node in case of branch node reduction 	| - All nodes to the destructed storage<br>- Possibly, the remaining child node in case of branch node reduction 	| None                         	| None                                                                          	|
+
+## What Are Prover Inputs?
+
+ZK proving engines operate in isolated & stateless environments without a direct access to a full blockchain node. 
+
+**Prover Inputs** refer to the minimal data required by a ZK EVM proving engine to effectively prove a block in an isolated & stateless environment (including processing the block, computing the final state root, and validating both the block and the final state). They include:
+
+- **Block**: The Ethereum block to be executed, including the block header and all transactions.
+- **Chain Configuration**: The chain identifier and fork configurations.
+- **Witness**: chain and state data accessed during block execution 
+  - **Ancestors**: At minimum, the parent header, and optionally all block headers up to the oldest ancestor block accessed during execution (maximum 256 entries).
+  - **Codes**: Bytecode of all smart contracts called during execution.
+  - **PreState**: The partial pre-state accessed during execution, represented as a list of RLP-encoded MPT nodes (both account storage and all storage tries in the same list).
+- **AccessList**: A mapping of accessed state entries (accounts and storage) during block execution. While this data is actually redundant, it currently facilitate some ZK EVM prover engines by enabling to perform some pre-state validations before executing the block. On the long run we may re-assess if this is absolutely needed.
+
 
 ## Generation of Prover Inputs
 
@@ -167,6 +177,7 @@ During this step, a [modified MPT](modified-mpt.md#modified-mpt-implementation) 
 - **Account**: An entity in Ethereum that can hold ETH and interact with contracts, represented as an object in the state trie.
 - **Storage**: Key-value pairs representing data for smart contracts, stored in a dedicated MPT.
 - **Partial Pre-state**: The subset of the state required to execute a block successfully.
+- **Stateless**: Generally refers to EVM executions without access to a full blockchain state  
 - **Witness**: Supplemental ancestor headers, smart contract codes, pre-state MPT nodes accessed during an EVM block execution.
 
 

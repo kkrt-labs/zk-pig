@@ -1,9 +1,9 @@
 
 # Modified Patricia Merkle Trie (MPT)
 
-This section describes the modified Merkle Patricia Trie (MPT) implementation necessary to generate Prover Inputs during `Prepare` and `Execute`.
+This section describes the modified Merkle Patricia Trie (MPT) implementation necessary during [prepare](prover-inputs-generation.md#step-2-prepare) and [execute](prover-inputs-generation.md#step-3-prepare) of Prover Inputs generation.
 
-## Background
+## Background on Merkle Patricia Trie
 
 The Ethereum state (a representation of all accounts and smart contract storage) is encoded using a specialized version of a **Merkle Tree**, called the **Merkle Patricia Trie (MPT)**. This data structure enables cryptographically verifiable relationships between its components, ensuring that a single root value can be used to validate the entirety of the data within the tree.
 
@@ -89,11 +89,11 @@ During deletion if a branch node is left with a single non-null child, then it i
 
 ## Problem with Partial States
 
-In the context, of EVM block proving, blocks are executed in an isolated environment with access only to a partial portion of the pre-state which only includes a subset of nodes.
+In the context, of EVM block proving, blocks are executed in a stateless environment with access only to a partial portion of the pre-state which only includes a subset of nodes.
 
-To generate Prover Inputs, the partial pre-state for [Prepare](prover-inputs-generation.md#step-2-prepare) is initialized with data fetched from a remote JSON-RPC node during [Preflight](prover-inputs-generation.md#step-1-preflight) using `eth_getProof` JSON-RPC calls. 
+To generate the partial pre-state we use data fetched from a remote JSON-RPC node during [Preflight](prover-inputs-generation.md#step-1-preflight) using `eth_getProof` JSON-RPC calls. 
 
-While Preflight enables to retrieve all the MPT nodes on the path of every accessed accounts and storage, and re-constitute the partial pre-state necessary for the block processing, it may miss the MPT nodes resolved during [branch node reduction](#branch-node-reduction) following deletions. This creates a significant issue: the inability to compute the final state root after processing the block.
+While preflight enables to retrieve all the MPT nodes on the path of every accessed accounts and storage, and re-constitute the partial pre-state necessary for the block processing, it may miss the MPT nodes resolved during [branch node reduction](#branch-node-reduction) following deletions. This creates a significant issue: the inability to compute the final state root after processing the block.
 
 ## Solution
 
@@ -107,9 +107,9 @@ This modified MPT is used during both [Prepare](prover-inputs-generation.md#step
 
 To further address this issue, we use a supplemental technique during the [Prepare](prover-inputs-generation.md#step-2-prepare) phase. 
 
-For every deletion resulting in a branch node reduction, we pre-inject some hypothetized short-nodes into the pre-state, ensuring that if the remaining child is a short-node, then it belong's to the pre-injected hypothetized short nodes. Consequently, ensuring that, during branch node reduction, the remaining child node resolution will succeed.
+For every deletion resulting in a branch node reduction, we pre-inject some hypothetized short-nodes into the pre-state, ensuring that if the remaining child is a short-node, then it resolve's to one of the pre-injected hypothetized short nodes. Consequently, ensuring that, during branch node reduction, the remaining child node resolution will succeed.
 
-To compute the hypothetized short-nodes, we base on the post-state proof for every deleted MPT path. Indeed, in case of a deletion, the post-state proof is actually an exclusion proof, in which the last proof's element is an MPT node proving that there is no value at the given path. If this last proof's item is a short-node, this means that the deletion resulted a branch node reduction, and it is possible to compute all the short-nodes that could have potentially reduced into the last proof's element (see [below](#pre-state-preparation-workflow)).
+To compute the hypothetized short-nodes, we base on the post-state proof for every deleted MPT path. Indeed, in case of a deletion, the post-state proof is actually an exclusion proof, in which the last proof's element is an MPT node proving that there is no value at the given path. If this last proof's item is a short-node, this means that the deletion triggered a branch node reduction, and it is possible to compute all the short-nodes that could have potentially reduced into the last proof's element (see [below](#pre-state-preparation-workflow)).
 
 #### Pre-State Preparation Workflow
 
@@ -132,8 +132,8 @@ This ensures that all short nodes that could potentially reduce into `n'_q` have
 ### Result
 
 As a result, during prepare the following scenarios can occur, when reducing a branch node and resolving the remaining child node
-- child is found, which means that the child node is a short node and it has been pre-injected during [pre-state preparation](#supplemental-technique-pre-injected-short-nodes-from-post-state-in-pre-state)
-- child is not found, then the [Modified MPT implementation](#modified-mpt-implementation), instead of raising an error, treats the child as if it was not a short nodes
+- child is found, which means that the remaining child node is a short node and it has been pre-injected during [pre-state preparation](#supplemental-technique-pre-injected-short-nodes-from-post-state-in-pre-state) then the branch node is reduced as per standard implementation.
+- child is not found, then the [Modified MPT implementation](#modified-mpt-implementation) reduces branch node in a one-nibble short-node. This is exactly what the standard MPT implementation would have done with full-state access, indeed if the remaining child is not found, it implies that it is not a short-node (or it would have been pre-injected and found), thus the standard implementation would reduce the branch node into in a one-nibbe short-node.
 
 So in both scenarios, the behavior is the same as a standard Ethereum MPT implementation with full-state access.
 
