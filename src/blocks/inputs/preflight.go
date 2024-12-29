@@ -15,6 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/triedb"
 	"github.com/ethereum/go-ethereum/triedb/hashdb"
 	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum"
+	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/ethdb/rpcdb"
 	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/evm"
 	ethrpc "github.com/kkrt-labs/kakarot-controller/pkg/ethereum/rpc"
 	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/state"
@@ -94,7 +95,7 @@ func (pf *preflight) init(ctx context.Context, blockNumber *big.Int) (*params.Ch
 type preflightContext struct {
 	ctx          context.Context
 	trackers     *state.AccessTrackerManager
-	rpcdb        *state.RPCDatabase
+	rpcDB        *state.RPCDatabase
 	stateDB      gethstate.Database
 	hc           *core.HeaderChain
 	parentHeader *gethtypes.Header
@@ -108,7 +109,7 @@ func (pf *preflight) preflight(ctx context.Context, chainCfg *params.ChainConfig
 		return nil, err
 	}
 
-	if err := pf.preparePreState(genCtx, block); err != nil {
+	if err := pf.fetchParentHeader(genCtx, block); err != nil {
 		return nil, err
 	}
 
@@ -147,10 +148,10 @@ func (pf *preflight) prepareContext(ctx context.Context, chainCfg *params.ChainC
 	log.LoggerFromContext(ctx).Debug("Prepare context for block execution...")
 
 	trackers := state.NewAccessTrackerManager()
-	db := rawdb.NewMemoryDatabase()
+	db := rpcdb.Hack(rawdb.NewMemoryDatabase(), pf.remote)
 	trieDB := triedb.NewDatabase(db, &triedb.Config{HashDB: &hashdb.Config{}})
-	rpcdb := state.NewRPCDatabase(gethstate.NewDatabase(trieDB, nil), pf.remote)
-	stateDB := state.NewAccessTrackerDatabase(rpcdb, trackers)
+	rpcDB := state.NewRPCDatabase(gethstate.NewDatabase(trieDB, nil), pf.remote)
+	stateDB := state.NewAccessTrackerDatabase(rpcDB, trackers)
 
 	hc, err := ethereum.NewChain(chainCfg, stateDB)
 	if err != nil {
@@ -161,25 +162,21 @@ func (pf *preflight) prepareContext(ctx context.Context, chainCfg *params.ChainC
 		ctx:      ctx,
 		trackers: trackers,
 		stateDB:  stateDB,
-		rpcdb:    rpcdb,
+		rpcDB:    rpcDB,
 		hc:       hc,
 	}, nil
 }
 
-func (pf *preflight) preparePreState(ctx *preflightContext, block *gethtypes.Block) error {
-	log.LoggerFromContext(ctx.ctx).Info("Prepare pre-state... (this may take a while)")
-	// --- Preload the 256 ancestors of the block necessary for BLOCKHASH opcode ---
-	// TODO: we currently preload all the blocks which is overkill as the block execution will very rarely access those ancestors.
-	// We should optimize this by fetching ancestors at block execution time
-	// An approach might consist in implementing a rpc wrapper over ethdb.KeyValueReader that fetches the ancestors on demand
-	ancestors, err := ethereum.FillDBWithAncestors(ctx.ctx, ctx.stateDB.TrieDB().Disk(), pf.remote.HeaderByHash, block, 256)
-	if err != nil {
-		return fmt.Errorf("failed to fill db with block ancestors: %v", err)
+func (pf *preflight) fetchParentHeader(ctx *preflightContext, block *gethtypes.Block) error {
+	log.LoggerFromContext(ctx.ctx).Info("Fetch parent header...")
+	parentHeader := ctx.hc.GetHeader(block.ParentHash(), block.Number().Uint64()-1)
+	if parentHeader == nil {
+		return fmt.Errorf("failed to fetch parent header with hash: %v", block.ParentHash())
 	}
 
 	// Mark the parent block so the RPC database can work effectively
-	ctx.parentHeader = ancestors[0]
-	ctx.rpcdb.MarkBlock(ctx.parentHeader)
+	ctx.parentHeader = parentHeader
+	ctx.rpcDB.MarkBlock(ctx.parentHeader)
 
 	return nil
 }
