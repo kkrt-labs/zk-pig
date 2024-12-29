@@ -83,7 +83,7 @@ func (db *RPCDatabase) OpenStorageTrie(stateRoot gethcommon.Hash, address gethco
 
 // ContractCode implements the gethstate.Database interface.
 func (db *RPCDatabase) ContractCode(addr gethcommon.Address, _ gethcommon.Hash) ([]byte, error) {
-	code, err := db.remote.CodeAt(context.Background(), addr, db.currentBlockNumber)
+	code, err := db.remote.CodeAt(context.TODO(), addr, db.currentBlockNumber)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get code for address %s: %v", addr.Hex(), err)
 	}
@@ -120,7 +120,7 @@ type rpcReader struct {
 // - Returns an error only if remote node returns an error
 // - The returned account is safe to modify after the call
 func (r *rpcReader) Account(addr gethcommon.Address) (*gethtypes.StateAccount, error) {
-	account, err := r.remote.GetProof(context.Background(), addr, nil, r.blockNumber)
+	account, err := r.remote.GetProof(context.TODO(), addr, nil, r.blockNumber)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get proof for address %s and block %v: %v", addr.Hex(), r.blockNumber, err)
 	}
@@ -149,7 +149,7 @@ func (r *rpcReader) Account(addr gethcommon.Address) (*gethtypes.StateAccount, e
 // - Returns an error only if an unexpected issue occurs
 // - The returned storage slot is safe to modify after the call
 func (r *rpcReader) Storage(addr gethcommon.Address, slot gethcommon.Hash) (gethcommon.Hash, error) {
-	value, err := r.remote.StorageAt(context.Background(), addr, slot, r.blockNumber)
+	value, err := r.remote.StorageAt(context.TODO(), addr, slot, r.blockNumber)
 	if err != nil {
 		return gethcommon.Hash{}, fmt.Errorf("failed to get storage slot for address %s and slot %s and block %v: %v", addr.Hex(), slot.Hex(), r.blockNumber, err)
 	}
