@@ -33,7 +33,7 @@ func testMarshalRequestWithAllFields(t *testing.T) {
 
 func testMarshalRequestWithEmptyFields(t *testing.T) {
 	req := &Request{}
-	expected := []byte(`{"jsonrpc":"","method":"","params":null,"id":null}`)
+	expected := []byte(`{"jsonrpc":"","method":""}`)
 	testMarshalRequest(t, expected, req)
 }
 
@@ -41,6 +41,6 @@ func testMarshalRequestWithInterfaceSliceParams(t *testing.T) {
 	req := &Request{
 		Params: []interface{}{"test-param", 4},
 	}
-	expected := []byte(`{"jsonrpc":"","method":"","params":["test-param",4],"id":null}`)
+	expected := []byte(`{"jsonrpc":"","method":"","params":["test-param",4]}`)
 	testMarshalRequest(t, expected, req)
 }

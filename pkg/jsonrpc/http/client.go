@@ -82,42 +82,8 @@ func newRequest(ctx context.Context) *http.Request {
 	return req
 }
 
-// responseMsg is a struct allowing to encode/decode a JSON-RPC response body
-type responseMsg struct {
-	Version string           `json:"jsonrpc"`
-	Result  *json.RawMessage `json:"result,omitempty"`
-	Error   *json.RawMessage `json:"error,omitempty"`
-	ID      *json.RawMessage `json:"id,omitempty"`
-}
-
-func inspectCallResponseMsg(msg *responseMsg, res interface{}) error {
-	if msg.Error == nil && msg.Result == nil {
-		return fmt.Errorf("invalid JSON-RPC response missing both result and error")
-	}
-
-	if msg.Error != nil {
-		errMsg := new(jsonrpc.ErrorMsg)
-		err := json.Unmarshal(*msg.Error, errMsg)
-		if err != nil {
-			return fmt.Errorf("failed to unmarshal JSON-RPC error message %v", string(*msg.Error))
-		}
-		return errMsg
-	}
-
-	if msg.Result != nil && res != nil {
-		err := json.Unmarshal(*msg.Result, res)
-		if err != nil {
-			return fmt.Errorf("failed to unmarshal JSON-RPC result %v into %T (%v)", string(*msg.Result), res, err)
-		}
-		return nil
-	}
-
-	return nil
-
-}
-
 func inspectCallResponse(resp *http.Response, res interface{}) error {
-	msg := new(responseMsg)
+	msg := new(jsonrpc.ResponseMsg)
 	err := autorest.Respond(
 		resp,
 		autorest.WithErrorUnlessOK(),
@@ -128,5 +94,5 @@ func inspectCallResponse(resp *http.Response, res interface{}) error {
 		return err
 	}
 
-	return inspectCallResponseMsg(msg, res)
+	return jsonrpc.Unmarshal(msg, res)
 }
