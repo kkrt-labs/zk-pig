@@ -94,5 +94,5 @@ func inspectCallResponse(resp *http.Response, res interface{}) error {
 		return err
 	}
 
-	return jsonrpc.Unmarshal(msg, res)
+	return msg.Unmarshal(res)
 }

@@ -36,7 +36,10 @@ func NewClient(cfg *Config) *Client {
 	dialer = ws.WithBaseURL(cfg.Address)(dialer)
 
 	return &Client{
-		client:    ws.NewClient(dialer, decode),
+		client: ws.NewClient(
+			dialer,
+			func(r io.Reader) (interface{}, error) { return jsonrpc.DecodeResponseMsg(r) },
+		),
 		inflights: make(map[interface{}]*operation),
 		closed:    make(chan struct{}),
 	}
@@ -105,7 +108,7 @@ func (c *Client) call(ctx context.Context, r *jsonrpc.Request, res interface{}) 
 
 	select {
 	case msg := <-op.result:
-		return errorWithErrorf(jsonrpc.Unmarshal(msg, res), r, "Failed to unmarshal response")
+		return errorWithErrorf(msg.Unmarshal(res), r, "Failed to unmarshal response")
 	case <-ctx.Done():
 		return errorWithErrorf(ctx.Err(), r, "Context canceled")
 	case <-c.closed:
@@ -198,14 +201,4 @@ func normalizeID(id interface{}) (interface{}, error) {
 	default:
 		return nil, fmt.Errorf("invalid id type: %T (must be one of string, float64, int64, uint32)", id)
 	}
-}
-
-func decode(r io.Reader) (interface{}, error) {
-	var msg jsonrpc.ResponseMsg
-	err := json.NewDecoder(r).Decode(&msg)
-	if err != nil {
-		return nil, err
-	}
-
-	return &msg, nil
 }

@@ -3,6 +3,7 @@ package jsonrpc
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 )
 
 // ResponseMsg is a struct allowing to encode/decode a JSON-RPC response body
@@ -13,7 +14,9 @@ type ResponseMsg struct {
 	ID      interface{}     `json:"id,omitempty"`
 }
 
-func Unmarshal(msg *ResponseMsg, res interface{}) error {
+// Unmarshal unmarshals a JSON-RPC response result into a given interface
+// If the response contains an error, it will be unmarshaled into an ErrorMsg and returned
+func (msg *ResponseMsg) Unmarshal(res interface{}) error {
 	if msg.Error == nil && msg.Result == nil {
 		return fmt.Errorf("invalid JSON-RPC response missing both result and error")
 	}
@@ -36,4 +39,14 @@ func Unmarshal(msg *ResponseMsg, res interface{}) error {
 	}
 
 	return nil
+}
+
+// DecodeResponseMsg decodes a JSON-RPC response message from an io.Reader
+func DecodeResponseMsg(r io.Reader) (*ResponseMsg, error) {
+	msg := new(ResponseMsg)
+	err := json.NewDecoder(r).Decode(msg)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode into JSON-RPC response message: %v", err)
+	}
+	return msg, nil
 }
