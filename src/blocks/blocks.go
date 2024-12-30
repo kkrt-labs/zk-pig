@@ -5,20 +5,28 @@ import (
 	"fmt"
 	"math/big"
 	"sync"
+	"time"
 
 	ethrpc "github.com/kkrt-labs/kakarot-controller/pkg/ethereum/rpc"
 	ethjsonrpc "github.com/kkrt-labs/kakarot-controller/pkg/ethereum/rpc/jsonrpc"
 	"github.com/kkrt-labs/kakarot-controller/pkg/jsonrpc"
 	jsonrpchttp "github.com/kkrt-labs/kakarot-controller/pkg/jsonrpc/http"
+	jsonrpcws "github.com/kkrt-labs/kakarot-controller/pkg/jsonrpc/websocket"
+	"github.com/kkrt-labs/kakarot-controller/pkg/svc"
 	blockinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs"
 	blockstore "github.com/kkrt-labs/kakarot-controller/src/blocks/store"
 	filestore "github.com/kkrt-labs/kakarot-controller/src/blocks/store/file"
 	"github.com/kkrt-labs/kakarot-controller/src/config"
 )
 
+type RPCConfig struct {
+	HTTP *jsonrpchttp.Config `json:"http"` // Configuration for an RPC HTTP client
+	WS   *jsonrpcws.Config   `json:"ws"`   // Configuration for an RPC WebSocket client
+}
+
 type ChainConfig struct {
 	ID  *big.Int
-	RPC *jsonrpchttp.Config
+	RPC *RPCConfig
 }
 
 // Config is the configuration for the RPCPreflight.
@@ -28,10 +36,6 @@ type Config struct {
 }
 
 func (cfg *Config) SetDefault() *Config {
-	if cfg.Chain.RPC == nil {
-		cfg.Chain.RPC = new(jsonrpchttp.Config).SetDefault()
-	}
-
 	if cfg.BaseDir == "" {
 		cfg.BaseDir = "data/blocks"
 	}
@@ -41,9 +45,7 @@ func (cfg *Config) SetDefault() *Config {
 
 func FromGlobalConfig(gcfg *config.Config) (*Service, error) {
 	cfg := &Config{
-		Chain: ChainConfig{
-			RPC: &jsonrpchttp.Config{Address: gcfg.Chain.RPC.URL},
-		},
+		Chain:   ChainConfig{},
 		BaseDir: gcfg.DataDir,
 	}
 
@@ -54,7 +56,7 @@ func FromGlobalConfig(gcfg *config.Config) (*Service, error) {
 		}
 	}
 
-	return New(cfg), nil
+	return New(cfg)
 }
 
 // Service is a service for managing blocks.
@@ -63,38 +65,63 @@ type Service struct {
 	store blockstore.BlockStore
 
 	initOnce sync.Once
-	remote   ethrpc.Client
+	remote   jsonrpc.Client
+	ethrpc   ethrpc.Client
 	chainID  *big.Int
 	err      error
 }
 
-func New(cfg *Config) *Service {
+func New(cfg *Config) (*Service, error) {
 	cfg = cfg.SetDefault()
 
-	return &Service{
+	s := &Service{
 		cfg:   cfg,
 		store: filestore.New(cfg.BaseDir),
 	}
+
+	if cfg.Chain.RPC != nil {
+		remote, err := newRPCRemote(cfg)
+		if err != nil {
+			return nil, err
+		}
+		s.remote = remote
+
+		remote = jsonrpc.WithLog()(remote)                           // Logs a first time before the Retry
+		remote = jsonrpc.WithTimeout(500 * time.Millisecond)(remote) // Sets a timeout on outgoing requests
+		remote = jsonrpc.WithTags("")(remote)                        // Add tags are updated according to retry
+		remote = jsonrpc.WithRetry()(remote)
+		remote = jsonrpc.WithTags("jsonrpc")(remote)
+		remote = jsonrpc.WithVersion("2.0")(remote)
+		remote = jsonrpc.WithIncrementalID()(remote)
+
+		s.ethrpc = ethjsonrpc.NewFromClient(remote)
+	}
+
+	return s, nil
 }
 
-func (s *Service) init(ctx context.Context) error {
+func (s *Service) Start(ctx context.Context) error {
 	s.initOnce.Do(func() {
 		if s.cfg.Chain.RPC == nil && s.cfg.Chain.ID == nil {
 			s.err = fmt.Errorf("no chain configuration provided")
 			return
 		}
 
-		if s.cfg.Chain.RPC != nil {
-			s.remote, s.err = newRPC(s.cfg.Chain.RPC)
-			if s.err == nil {
-				s.chainID, s.err = s.remote.ChainID(ctx)
+		if runable, ok := s.remote.(svc.Runnable); ok {
+			s.err = runable.Start(ctx)
+			if s.err != nil {
+				s.err = fmt.Errorf("failed to start RPC client: %v", s.err)
+				return
+			}
+		}
+
+		if s.ethrpc != nil {
+			s.chainID, s.err = s.ethrpc.ChainID(ctx)
+			if s.err != nil {
+				s.err = fmt.Errorf("failed to initialize RPC client: %v", s.err)
 			}
 		} else {
 			s.chainID = s.cfg.Chain.ID
-		}
-
-		if s.err != nil {
-			s.err = fmt.Errorf("failed to initialize RPC client: %v", s.err)
 		}
 	})
 
@@ -102,20 +129,16 @@ func (s *Service) init(ctx context.Context) error {
 }
 
 func (s *Service) Generate(ctx context.Context, blockNumber *big.Int, format blockstore.Format, compression blockstore.Compression) error {
-	if err := s.init(ctx); err != nil {
-		return err
-	}
-
 	data, err := s.preflight(ctx, blockNumber)
 	if err != nil {
 		return err
 	}
 
-	if err := s.prepare(ctx, data.ChainConfig.ChainID, data.Block.Number.ToInt(), format, compression); err != nil {
+	if err := s.prepare(ctx, data.Block.Number.ToInt(), format, compression); err != nil {
 		return err
 	}
 
-	if err := s.execute(ctx, data.ChainConfig.ChainID, data.Block.Number.ToInt(), format, compression); err != nil {
+	if err := s.execute(ctx, data.Block.Number.ToInt(), format, compression); err != nil {
 		return err
 	}
 
@@ -123,21 +146,13 @@ func (s *Service) Generate(ctx context.Context, blockNumber *big.Int, format blo
 }
 
 func (s *Service) Preflight(ctx context.Context, blockNumber *big.Int) error {
-	if err := s.init(ctx); err != nil {
-		return err
-	}
-
 	_, err := s.preflight(ctx, blockNumber)
 
 	return err
 }
 
 func (s *Service) preflight(ctx context.Context, blockNumber *big.Int) (*blockinputs.HeavyProverInputs, error) {
-	if s.remote == nil {
-		return nil, fmt.Errorf("no RPC client configured")
-	}
-
-	data, err := blockinputs.NewPreflight(s.remote).Preflight(ctx, blockNumber)
+	data, err := blockinputs.NewPreflight(s.ethrpc).Preflight(ctx, blockNumber)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute preflight: %v", err)
 	}
@@ -150,15 +165,14 @@ func (s *Service) preflight(ctx context.Context, blockNumber *big.Int) (*blockin
 }
 
 func (s *Service) Prepare(ctx context.Context, blockNumber *big.Int, format blockstore.Format, compression blockstore.Compression) error {
-	if err := s.init(ctx); err != nil {
-		return err
+	if s.chainID == nil {
+		return fmt.Errorf("chain ID missing")
 	}
-
-	return s.prepare(ctx, s.chainID, blockNumber, format, compression)
+	return s.prepare(ctx, blockNumber, format, compression)
 }
 
-func (s *Service) prepare(ctx context.Context, chainID, blockNumber *big.Int, format blockstore.Format, compression blockstore.Compression) error {
-	data, err := s.store.LoadHeavyProverInputs(ctx, chainID.Uint64(), blockNumber.Uint64())
+func (s *Service) prepare(ctx context.Context, blockNumber *big.Int, format blockstore.Format, compression blockstore.Compression) error {
+	data, err := s.store.LoadHeavyProverInputs(ctx, s.chainID.Uint64(), blockNumber.Uint64())
 	if err != nil {
 		return fmt.Errorf("failed to load preflight data: %v", err)
 	}
@@ -177,15 +191,15 @@ func (s *Service) prepare(ctx context.Context, chainID, blockNumber *big.Int, fo
 }
 
 func (s *Service) Execute(ctx context.Context, blockNumber *big.Int, format blockstore.Format, compression blockstore.Compression) error {
-	if err := s.init(ctx); err != nil {
-		return err
+	if s.chainID == nil {
+		return fmt.Errorf("chain ID missing")
 	}
 
-	return s.execute(ctx, s.chainID, blockNumber, format, compression)
+	return s.execute(ctx, blockNumber, format, compression)
 }
 
-func (s *Service) execute(ctx context.Context, chainID, blockNumber *big.Int, format blockstore.Format, compression blockstore.Compression) error {
-	inputs, err := s.store.LoadProverInputs(ctx, chainID.Uint64(), blockNumber.Uint64(), format, compression)
+func (s *Service) execute(ctx context.Context, blockNumber *big.Int, format blockstore.Format, compression blockstore.Compression) error {
+	inputs, err := s.store.LoadProverInputs(ctx, s.chainID.Uint64(), blockNumber.Uint64(), format, compression)
 	if err != nil {
 		return fmt.Errorf("failed to load provable inputs: %v", err)
 	}
@@ -198,27 +212,49 @@ func (s *Service) execute(ctx context.Context, chainID, blockNumber *big.Int, fo
 }
 
 // newRPC creates a new Ethereum RPC client
-func newRPC(cfg *jsonrpchttp.Config) (ethrpc.Client, error) {
-	cfg = cfg.SetDefault()
+func newRPCRemote(cfg *Config) (remote jsonrpc.Client, err error) {
+	switch {
+	case cfg.Chain.RPC.HTTP != nil:
+		if cfg.Chain.RPC.HTTP.Address == "" {
+			return nil, fmt.Errorf("no RPC url provided")
+		}
 
-	if cfg.Address == "" {
-		return nil, fmt.Errorf("no RPC url provided")
+		remote, err = jsonrpchttp.NewClient(cfg.Chain.RPC.HTTP)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create RPC client: %v", err)
+		}
+	case cfg.Chain.RPC.WS != nil:
+
+		if cfg.Chain.RPC.WS.Address == "" {
+			return nil, fmt.Errorf("no RPC url provided")
+		}
+
+		wsRemote := jsonrpcws.NewClient(cfg.Chain.RPC.WS)
+		fmt.Printf("Starting websocket client\n")
+		err := wsRemote.Start(context.Background())
+		if err != nil {
+			return nil, err
+		}
+
+		remote = wsRemote
+	default:
+		return nil, fmt.Errorf("no RPC configuration provided")
 	}
 
-	var (
-		remote jsonrpc.Client
-		err    error
-	)
-	remote, err = jsonrpchttp.NewClient(cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create RPC client: %v", err)
+	return remote, nil
+}
+
+func (s *Service) Errors() <-chan error {
+	if errorable, ok := s.remote.(svc.ErrorReporter); ok {
+		return errorable.Errors()
+	}
+	return nil
+}
+
+func (s *Service) Stop(ctx context.Context) error {
+	if runnable, ok := s.remote.(svc.Runnable); ok {
+		return runnable.Stop(ctx)
 	}
 
-	remote = jsonrpc.WithRetry()(remote)
-	remote = jsonrpc.WithLog()(remote)
-	remote = jsonrpc.WithTags("jsonrpc")(remote)
-	remote = jsonrpc.WithVersion("2.0")(remote)
-	remote = jsonrpc.WithIncrementalID()(remote)
-
-	return ethjsonrpc.NewFromClient(remote), nil
+	return nil
 }
