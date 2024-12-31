@@ -233,13 +233,15 @@ func (c *Client) outgoingMessageLoop() {
 		case <-c.outgoingPings:
 			c.writeControlMessage(websocket.PingMessage, nil)
 			c.resetReadDeadline(c.pongTimeout)
-		case msg := <-c.outgoingMessages:
-			select {
-			case <-msg.ctx.Done():
-				// Context is done, so we don't attempt to write the message
-				msg.err <- msg.ctx.Err()
-			default:
-				c.writeMessage(msg)
+		case msg, ok := <-c.outgoingMessages:
+			if ok {
+				select {
+				case <-msg.ctx.Done():
+					// Context is done, so we don't attempt to write the message
+					msg.err <- msg.ctx.Err()
+				default:
+					c.writeMessage(msg)
+				}
 			}
 		}
 	}
@@ -324,6 +326,7 @@ func (c *Client) pingLoop() {
 }
 
 func (c *Client) writeCloseMessage(closeCode int) {
+	fmt.Printf("writeCloseMessage: %v\n", closeCode)
 	c.writeControlMessage(websocket.CloseMessage, websocket.FormatCloseMessage(closeCode, ""))
 }
 

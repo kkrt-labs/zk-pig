@@ -51,6 +51,7 @@ func (c *Client) Start(ctx context.Context) error {
 		return err
 	}
 
+	c.wg.Add(1)
 	go func() {
 		c.loop()
 		c.wg.Done()
@@ -196,9 +197,11 @@ func normalizeID(id interface{}) (interface{}, error) {
 		return v, nil
 	case int64: // clients sending int64 need to normalize to float64
 		return float64(v), nil
+	case int:
+		return float64(v), nil
 	case uint32:
 		return float64(v), nil
 	default:
-		return nil, fmt.Errorf("invalid id type: %T (must be one of string, float64, int64, uint32)", id)
+		return nil, fmt.Errorf("invalid id type: %T (must be one of string, float64, int64, int, uint32)", id)
 	}
 }
