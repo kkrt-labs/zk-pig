@@ -7,11 +7,11 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/gorilla/websocket"
+	comurl "github.com/kkrt-labs/kakarot-controller/pkg/net/url"
 	"github.com/stretchr/testify/require"
 )
 
@@ -50,7 +50,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ReadBufferSize:    1024,
 		WriteBufferSize:   1024,
 		EnableCompression: true,
-		Error: func(w http.ResponseWriter, r *http.Request, status int, reason error) {
+		Error: func(w http.ResponseWriter, _ *http.Request, status int, reason error) {
 			http.Error(w, reason.Error(), status)
 		},
 	}).Upgrade(w, r, nil)
@@ -84,13 +84,15 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 }
 
-func newClient(u string) *Client {
-	u = "ws" + strings.TrimPrefix(u, "http")
+func newClient(t *testing.T, addr string) *Client {
 	dialer := &websocket.Dialer{
 		ReadBufferSize:   1024,
 		WriteBufferSize:  1024,
 		HandshakeTimeout: 30 * time.Second,
 	}
+	u, err := comurl.Parse(addr)
+	require.NoError(t, err, "ParseURL should not error")
+	u.Scheme = "ws" // override the scheme
 	return NewClient(WithBaseURL(u)(dialer), func(r io.Reader) (interface{}, error) {
 		msg := new(Msg)
 		err := json.NewDecoder(r).Decode(msg)
@@ -102,7 +104,7 @@ func TestWsClientStartStop(t *testing.T) {
 	s, h := newServer(t)
 	defer s.Close()
 
-	client := newClient(s.URL)
+	client := newClient(t, s.URL)
 	err := client.Start(context.TODO())
 	require.NoError(t, err, "Start should not error")
 
@@ -120,12 +122,13 @@ func TestWsClientSendReceiveMsg(t *testing.T) {
 	s, h := newServer(t)
 	defer s.Close()
 
-	client := newClient(s.URL)
+	client := newClient(t, s.URL)
 	err := client.Start(context.TODO())
 	require.NoError(t, err, "Start should not error")
 
 	t.Run("send message", func(t *testing.T) {
-		client.SendMessage(context.TODO(), websocket.TextMessage, func(w io.Writer) error { return json.NewEncoder(w).Encode(&Msg{Data: "hello"}) })
+		err := client.SendMessage(context.TODO(), websocket.TextMessage, func(w io.Writer) error { return json.NewEncoder(w).Encode(&Msg{Data: "hello"}) })
+		require.NoError(t, err, "SendMessage should not error")
 		req, err := h.getNextReq(time.Second)
 		require.NoError(t, err, "getNextReq should not error")
 		require.Equal(t, "hello", req.Data, "unexpected request data")
@@ -151,10 +154,10 @@ func getNextMsg(ch <-chan *IncomingMessage, timeout time.Duration) (interface{},
 	}
 }
 
-func getNextError(ch <-chan error, timeout time.Duration) (error, error) {
+func getNextError(ch <-chan error, timeout time.Duration) (gotErr, err error) {
 	select {
-	case err := <-ch:
-		return err, nil
+	case gotErr := <-ch:
+		return gotErr, nil
 	case <-time.After(timeout):
 		return nil, fmt.Errorf("timeout waiting for error")
 	}

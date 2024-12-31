@@ -9,6 +9,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/kkrt-labs/kakarot-controller/pkg/jsonrpc"
 	comhttp "github.com/kkrt-labs/kakarot-controller/pkg/net/http"
+	comurl "github.com/kkrt-labs/kakarot-controller/pkg/net/url"
 )
 
 // Client allows to connect to a JSON-RPC server
@@ -26,7 +27,16 @@ func NewClientFromClient(s autorest.Sender) *Client {
 }
 
 // NewClient creates a new client capable of connecting to a JSON-RPC server
-func NewClient(cfg *Config) (*Client, error) {
+func NewClient(addr string, cfg *Config) (*Client, error) {
+	u, err := comurl.Parse(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	if u.Scheme != "http" && u.Scheme != "https" {
+		return nil, fmt.Errorf("unsupported scheme for websocket connection: %s", u.Scheme)
+	}
+
 	httpc, err := comhttp.NewClient(cfg.HTTP)
 	if err != nil {
 		return nil, err
@@ -35,7 +45,7 @@ func NewClient(cfg *Config) (*Client, error) {
 	return NewClientFromClient(
 		autorest.Client{
 			Sender:           httpc,
-			RequestInspector: comhttp.WithBaseURL(cfg.Address),
+			RequestInspector: comhttp.WithBaseURL(u),
 		},
 	), nil
 }

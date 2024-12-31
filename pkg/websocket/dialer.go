@@ -3,7 +3,6 @@ package websocket
 import (
 	"context"
 	"encoding/base64"
-	"fmt"
 	"net/http"
 	"net/url"
 	"time"
@@ -72,19 +71,11 @@ func (f DialerFunc) DialContext(ctx context.Context, urlStr string, requestHeade
 }
 
 // WithBaseURL is a DialerDecorator that sets the base URL for the websocket connection.
-func WithBaseURL(baseURL string) DialerDecorator {
+func WithBaseURL(baseURL *url.URL) DialerDecorator {
 	return func(d Dialer) Dialer {
 		return DialerFunc(func(ctx context.Context, urlStr string, requestHeader http.Header) (*websocket.Conn, *http.Response, error) {
 			if urlStr == "" {
-				u, err := url.Parse(baseURL)
-				if err != nil {
-					return nil, nil, err
-				}
-
-				if u.Scheme == "" {
-					return nil, nil, fmt.Errorf("no scheme detected in URL %s", baseURL)
-				}
-
+				u := *baseURL // copy the base URL
 				if u.User != nil {
 					b64auth := base64.StdEncoding.EncodeToString([]byte(u.User.String()))
 					requestHeader.Add("authorization", "Basic "+b64auth)

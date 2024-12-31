@@ -16,6 +16,10 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestClientImplementsInterface(t *testing.T) {
+	assert.Implementsf(t, (*jsonrpc.Client)(nil), new(Client), "Client should implement jsonrpc.Client")
+}
+
 type handler struct {
 	*testing.T
 	reqs   chan *jsonrpc.RequestMsg
@@ -47,7 +51,7 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		ReadBufferSize:    1024,
 		WriteBufferSize:   1024,
 		EnableCompression: true,
-		Error: func(w http.ResponseWriter, r *http.Request, status int, reason error) {
+		Error: func(w http.ResponseWriter, _ *http.Request, status int, reason error) {
 			http.Error(w, reason.Error(), status)
 		},
 	}).Upgrade(w, r, nil)
@@ -81,9 +85,11 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}()
 }
 
-func newClient(u string) *Client {
+func newClient(t *testing.T, u string) *Client {
 	u = "ws" + strings.TrimPrefix(u, "http")
-	return NewClient((&Config{Address: u}).SetDefault())
+	c, err := NewClient(u, (&Config{}).SetDefault())
+	require.NoError(t, err, "NewClient should not error")
+	return c
 }
 
 type testCtx struct {
@@ -96,7 +102,7 @@ type testCtx struct {
 
 func newTestCtx(t *testing.T) *testCtx {
 	server, h := newServer(t)
-	client := newClient(server.URL)
+	client := newClient(t, server.URL)
 
 	err := client.Start(context.TODO())
 	require.NoError(t, err, "Start should not error")
@@ -208,10 +214,10 @@ func TestWsClientSendReceiveMsg(t *testing.T) {
 	})
 }
 
-func getNextError(ch <-chan error, timeout time.Duration) (error, error) {
+func getNextError(ch <-chan error, timeout time.Duration) (gotError, err error) {
 	select {
-	case err := <-ch:
-		return err, nil
+	case gotError := <-ch:
+		return gotError, nil
 	case <-time.After(timeout):
 		return nil, fmt.Errorf("timeout waiting for error")
 	}

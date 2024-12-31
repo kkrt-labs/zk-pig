@@ -5,8 +5,6 @@ import (
 )
 
 type Config struct {
-	Address string
-
 	HTTP *comhttp.ClientConfig
 }
 

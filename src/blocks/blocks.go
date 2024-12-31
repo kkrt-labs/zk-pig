@@ -10,8 +10,7 @@ import (
 	ethrpc "github.com/kkrt-labs/kakarot-controller/pkg/ethereum/rpc"
 	ethjsonrpc "github.com/kkrt-labs/kakarot-controller/pkg/ethereum/rpc/jsonrpc"
 	"github.com/kkrt-labs/kakarot-controller/pkg/jsonrpc"
-	jsonrpchttp "github.com/kkrt-labs/kakarot-controller/pkg/jsonrpc/http"
-	jsonrpcws "github.com/kkrt-labs/kakarot-controller/pkg/jsonrpc/websocket"
+	jsonrpcmrgd "github.com/kkrt-labs/kakarot-controller/pkg/jsonrpc/merged"
 	"github.com/kkrt-labs/kakarot-controller/pkg/svc"
 	blockinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs"
 	blockstore "github.com/kkrt-labs/kakarot-controller/src/blocks/store"
@@ -19,14 +18,9 @@ import (
 	"github.com/kkrt-labs/kakarot-controller/src/config"
 )
 
-type RPCConfig struct {
-	HTTP *jsonrpchttp.Config `json:"http"` // Configuration for an RPC HTTP client
-	WS   *jsonrpcws.Config   `json:"ws"`   // Configuration for an RPC WebSocket client
-}
-
 type ChainConfig struct {
 	ID  *big.Int
-	RPC *RPCConfig
+	RPC *jsonrpcmrgd.Config
 }
 
 // Config is the configuration for the RPCPreflight.
@@ -59,7 +53,7 @@ func FromGlobalConfig(gcfg *config.Config) (*Service, error) {
 	return New(cfg)
 }
 
-// Service is a service for managing blocks.
+// Service is a service that enables the generation of prover inpunts for EVM compatible blocks.
 type Service struct {
 	cfg   *Config
 	store blockstore.BlockStore
@@ -71,6 +65,7 @@ type Service struct {
 	err      error
 }
 
+// New creates a new Service.
 func New(cfg *Config) (*Service, error) {
 	cfg = cfg.SetDefault()
 
@@ -80,7 +75,7 @@ func New(cfg *Config) (*Service, error) {
 	}
 
 	if cfg.Chain.RPC != nil {
-		remote, err := newRPCRemote(cfg)
+		remote, err := jsonrpcmrgd.New(cfg.Chain.RPC)
 		if err != nil {
 			return nil, err
 		}
@@ -100,6 +95,7 @@ func New(cfg *Config) (*Service, error) {
 	return s, nil
 }
 
+// Start starts the service.
 func (s *Service) Start(ctx context.Context) error {
 	s.initOnce.Do(func() {
 		if s.cfg.Chain.RPC == nil && s.cfg.Chain.ID == nil {
@@ -145,6 +141,8 @@ func (s *Service) Generate(ctx context.Context, blockNumber *big.Int, format blo
 	return nil
 }
 
+// Preflight executes the preflight checks for the given block number.
+// If requires the remote RPC to be configured and started
 func (s *Service) Preflight(ctx context.Context, blockNumber *big.Int) error {
 	_, err := s.preflight(ctx, blockNumber)
 
@@ -211,39 +209,7 @@ func (s *Service) execute(ctx context.Context, blockNumber *big.Int, format bloc
 	return err
 }
 
-// newRPC creates a new Ethereum RPC client
-func newRPCRemote(cfg *Config) (remote jsonrpc.Client, err error) {
-	switch {
-	case cfg.Chain.RPC.HTTP != nil:
-		if cfg.Chain.RPC.HTTP.Address == "" {
-			return nil, fmt.Errorf("no RPC url provided")
-		}
-
-		remote, err = jsonrpchttp.NewClient(cfg.Chain.RPC.HTTP)
-		if err != nil {
-			return nil, fmt.Errorf("failed to create RPC client: %v", err)
-		}
-	case cfg.Chain.RPC.WS != nil:
-
-		if cfg.Chain.RPC.WS.Address == "" {
-			return nil, fmt.Errorf("no RPC url provided")
-		}
-
-		wsRemote := jsonrpcws.NewClient(cfg.Chain.RPC.WS)
-		fmt.Printf("Starting websocket client\n")
-		err := wsRemote.Start(context.Background())
-		if err != nil {
-			return nil, err
-		}
-
-		remote = wsRemote
-	default:
-		return nil, fmt.Errorf("no RPC configuration provided")
-	}
-
-	return remote, nil
-}
-
+// Errors returns the error channel for possible internal errors of the service.
 func (s *Service) Errors() <-chan error {
 	if errorable, ok := s.remote.(svc.ErrorReporter); ok {
 		return errorable.Errors()
@@ -251,6 +217,8 @@ func (s *Service) Errors() <-chan error {
 	return nil
 }
 
+// Stop stops the service.
+// Must be called to release resources.
 func (s *Service) Stop(ctx context.Context) error {
 	if runnable, ok := s.remote.(svc.Runnable); ok {
 		return runnable.Stop(ctx)

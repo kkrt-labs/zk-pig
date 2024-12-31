@@ -13,9 +13,7 @@ import (
 )
 
 func TestClientImplementsInterface(t *testing.T) {
-	iClient := (*jsonrpc.Client)(nil)
-	client := new(Client)
-	assert.Implements(t, iClient, client)
+	assert.Implementsf(t, (*jsonrpc.Client)(nil), new(Client), "Client should implement jsonrpc.Client")
 }
 
 func TestCall(t *testing.T) {

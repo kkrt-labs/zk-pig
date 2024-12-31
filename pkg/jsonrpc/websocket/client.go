@@ -11,6 +11,7 @@ import (
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/gorilla/websocket"
 	"github.com/kkrt-labs/kakarot-controller/pkg/jsonrpc"
+	comurl "github.com/kkrt-labs/kakarot-controller/pkg/net/url"
 	ws "github.com/kkrt-labs/kakarot-controller/pkg/websocket"
 )
 
@@ -29,11 +30,20 @@ type Client struct {
 }
 
 // NewClient creates a new JSON-RPC WebSocket client.
-func NewClient(cfg *Config) *Client {
+func NewClient(addr string, cfg *Config) (*Client, error) {
+	u, err := comurl.Parse(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	if u.Scheme != "ws" && u.Scheme != "wss" {
+		return nil, fmt.Errorf("unsupported scheme for websocket connection: %s", u.Scheme)
+	}
+
 	var dialer ws.Dialer = ws.NewDialer(cfg.Dialer)
 	dialer = ws.WithError()(dialer)
 	dialer = ws.WithHeaders(http.Header{})(dialer)
-	dialer = ws.WithBaseURL(cfg.Address)(dialer)
+	dialer = ws.WithBaseURL(u)(dialer)
 
 	return &Client{
 		client: ws.NewClient(
@@ -42,7 +52,7 @@ func NewClient(cfg *Config) *Client {
 		),
 		inflights: make(map[interface{}]*operation),
 		closed:    make(chan struct{}),
-	}
+	}, nil
 }
 
 func (c *Client) Start(ctx context.Context) error {

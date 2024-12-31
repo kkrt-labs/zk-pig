@@ -7,6 +7,7 @@ import (
 
 	"github.com/Azure/go-autorest/autorest"
 	comhttp "github.com/kkrt-labs/kakarot-controller/pkg/net/http"
+	comurl "github.com/kkrt-labs/kakarot-controller/pkg/net/url"
 )
 
 type Client struct {
@@ -29,10 +30,15 @@ func NewClient(cfg *Config) (*Client, error) {
 		return nil, err
 	}
 
+	u, err := comurl.Parse(cfg.Addr)
+	if err != nil {
+		return nil, err
+	}
+
 	return NewClientFromClient(
 		autorest.Client{
 			Sender:           httpc,
-			RequestInspector: comhttp.WithBaseURL(cfg.Addr),
+			RequestInspector: comhttp.WithBaseURL(u),
 		},
 		cfg,
 	), nil
