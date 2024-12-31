@@ -7,7 +7,7 @@
 //
 
 // Package testutils is a generated GoMock package.
-package testutils
+package jsonrpcmock
 
 import (
 	context "context"

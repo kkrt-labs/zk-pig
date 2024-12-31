@@ -2,7 +2,7 @@ package jsonrpc
 
 import "context"
 
-//go:generate mockgen -source client.go -destination testutils/client.go -package testutils Client
+//go:generate mockgen -source client.go -destination mock/client.go -package jsonrpcmock Client
 
 type Client interface {
 	// Call performs a JSON-RPC call with the given request and store result in res
