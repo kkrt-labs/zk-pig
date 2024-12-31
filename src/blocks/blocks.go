@@ -15,43 +15,7 @@ import (
 	blockinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs"
 	blockstore "github.com/kkrt-labs/kakarot-controller/src/blocks/store"
 	filestore "github.com/kkrt-labs/kakarot-controller/src/blocks/store/file"
-	"github.com/kkrt-labs/kakarot-controller/src/config"
 )
-
-type ChainConfig struct {
-	ID  *big.Int
-	RPC *jsonrpcmrgd.Config
-}
-
-// Config is the configuration for the RPCPreflight.
-type Config struct {
-	Chain   ChainConfig
-	BaseDir string `json:"blocks-dir"` // Base directory for storing block data
-}
-
-func (cfg *Config) SetDefault() *Config {
-	if cfg.BaseDir == "" {
-		cfg.BaseDir = "data/blocks"
-	}
-
-	return cfg
-}
-
-func FromGlobalConfig(gcfg *config.Config) (*Service, error) {
-	cfg := &Config{
-		Chain:   ChainConfig{},
-		BaseDir: gcfg.DataDir,
-	}
-
-	if gcfg.Chain.ID != "" {
-		cfg.Chain.ID = new(big.Int)
-		if _, ok := cfg.Chain.ID.SetString(gcfg.Chain.ID, 10); !ok {
-			return nil, fmt.Errorf("invalid chain id %q", gcfg.Chain.ID)
-		}
-	}
-
-	return New(cfg)
-}
 
 // Service is a service that enables the generation of prover inpunts for EVM compatible blocks.
 type Service struct {

@@ -20,6 +20,9 @@ type DialerConfig struct {
 	ReadBufferSize, WriteBufferSize int           // ReadBufferSize and WriteBufferSize specify I/O buffer sizes in bytes.
 	MessageSizeLimit                *int64        // nil default, 0 no limit
 	EnableCompression               bool          // EnableCompression specifies if the client should attempt to negotiate per message compression (RFC 7692)
+
+	ReadLimit int64       // ReadLimit specifies the maximum size in bytes for a message read from the peer. If a message exceeds the limit, the connection sends a close message to the peer and returns ErrReadLimit.
+	Header    http.Header // Custom headers to be attached to the request opening the WebSocket connection
 }
 
 // SetDefault sets default values for DialerConfig
@@ -37,21 +40,29 @@ func (cfg *DialerConfig) SetDefault() *DialerConfig {
 		cfg.WriteBufferSize = 1024
 	}
 
+	if cfg.HandshakeTimeout == 0 {
+		cfg.HandshakeTimeout = 30 * time.Second
+	}
+
 	return cfg
 }
 
 // NewDialer creates a new websocket.Dialer with the given configuration.
-func NewDialer(cfg *DialerConfig) *websocket.Dialer {
-	dlr := comnet.NewDialer(cfg.Dialer)
-
-	return &websocket.Dialer{
-		NetDialContext:    dlr.DialContext,
+func NewDialer(cfg *DialerConfig) (dialer Dialer) {
+	dialer = &websocket.Dialer{
+		NetDialContext:    comnet.NewDialer(cfg.Dialer).DialContext,
 		ReadBufferSize:    cfg.ReadBufferSize,
 		WriteBufferSize:   cfg.WriteBufferSize,
 		HandshakeTimeout:  cfg.HandshakeTimeout,
 		EnableCompression: cfg.EnableCompression,
 		Proxy:             http.ProxyFromEnvironment,
 	}
+
+	dialer = WithError()(dialer)
+	dialer = WithHeaders(cfg.Header)(dialer)
+	dialer = WithReadLimit(cfg.ReadLimit)(dialer)
+
+	return dialer
 }
 
 // Dialer is an interface for dialing a websocket connection.

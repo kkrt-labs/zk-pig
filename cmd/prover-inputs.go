@@ -32,11 +32,16 @@ func NewProverInputsCommand(rootCtx *RootContext) *cobra.Command {
 		Use:   "prover-inputs",
 		Short: "Commands for generating and validating prover inputs",
 		RunE:  runHelp,
-		PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
+		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
 			var err error
 			ctx.svc, err = blocks.FromGlobalConfig(ctx.Config)
 			if err != nil {
 				return fmt.Errorf("failed to create prover inputs service: %v", err)
+			}
+
+			err = ctx.svc.Start(cmd.Context())
+			if err != nil {
+				return fmt.Errorf("failed to start prover inputs service: %v", err)
 			}
 
 			ctx.blockNumber, err = jsonrpc.FromBlockNumArg(blockNumber)
@@ -55,6 +60,9 @@ func NewProverInputsCommand(rootCtx *RootContext) *cobra.Command {
 			}
 
 			return nil
+		},
+		PersistentPostRunE: func(cmd *cobra.Command, _ []string) error {
+			return ctx.svc.Stop(cmd.Context())
 		},
 	}
 

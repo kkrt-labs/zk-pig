@@ -5,13 +5,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"sync"
 
 	"github.com/Azure/go-autorest/autorest"
 	"github.com/gorilla/websocket"
 	"github.com/kkrt-labs/kakarot-controller/pkg/jsonrpc"
-	comurl "github.com/kkrt-labs/kakarot-controller/pkg/net/url"
 	ws "github.com/kkrt-labs/kakarot-controller/pkg/websocket"
 )
 
@@ -31,28 +29,25 @@ type Client struct {
 
 // NewClient creates a new JSON-RPC WebSocket client.
 func NewClient(addr string, cfg *Config) (*Client, error) {
-	u, err := comurl.Parse(addr)
+	wsClient, err := ws.NewClient(
+		addr,
+		cfg.Client,
+		func(r io.Reader) (interface{}, error) { return jsonrpc.DecodeResponseMsg(r) },
+	)
 	if err != nil {
 		return nil, err
 	}
 
-	if u.Scheme != "ws" && u.Scheme != "wss" {
-		return nil, fmt.Errorf("unsupported scheme for websocket connection: %s", u.Scheme)
-	}
+	return NewFromClient(wsClient), nil
+}
 
-	var dialer ws.Dialer = ws.NewDialer(cfg.Dialer)
-	dialer = ws.WithError()(dialer)
-	dialer = ws.WithHeaders(http.Header{})(dialer)
-	dialer = ws.WithBaseURL(u)(dialer)
-
+// NewFromClient creates a new JSON-RPC WebSocket client from an existing WebSocket client.
+func NewFromClient(c *ws.Client) *Client {
 	return &Client{
-		client: ws.NewClient(
-			dialer,
-			func(r io.Reader) (interface{}, error) { return jsonrpc.DecodeResponseMsg(r) },
-		),
+		client:    c,
 		inflights: make(map[interface{}]*operation),
 		closed:    make(chan struct{}),
-	}, nil
+	}
 }
 
 func (c *Client) Start(ctx context.Context) error {
@@ -85,17 +80,20 @@ func (c *Client) call(ctx context.Context, r *jsonrpc.Request, res interface{}) 
 		return errorf(r, "missing request ID")
 	}
 
+	// Normalize the ID to make sure we can use it as a map key
 	var err error
 	r.ID, err = normalizeID(r.ID)
 	if err != nil {
 		return errorf(r, "%v", err)
 	}
 
+	// Create an operation to track the response
 	op := &operation{
 		result: make(chan *jsonrpc.ResponseMsg, 1),
 	}
 	defer close(op.result)
 
+	// We need to lock the inflights map as we are accessing it concurrenltly
 	c.mux.Lock()
 	c.inflights[r.ID] = op
 	c.mux.Unlock()
@@ -105,21 +103,24 @@ func (c *Client) call(ctx context.Context, r *jsonrpc.Request, res interface{}) 
 		c.mux.Unlock()
 	}()
 
+	// Send the request to the server
 	err = c.client.SendMessage(
 		ctx,
 		websocket.BinaryMessage,
 		func(w io.Writer) error { return json.NewEncoder(w).Encode(r) },
 	)
 	if err != nil {
-		c.mux.Lock()
-		delete(c.inflights, r.ID)
-		c.mux.Unlock()
 		return errorWithErrorf(err, r, "SendMessage failed")
 	}
 
+	// Wait for the response
 	select {
 	case msg := <-op.result:
-		return errorWithErrorf(msg.Unmarshal(res), r, "Failed to unmarshal response")
+		err := msg.Unmarshal(res)
+		if err != nil {
+			return errorWithErrorf(err, r, "Failed to unmarshal response")
+		}
+		return nil
 	case <-ctx.Done():
 		return errorWithErrorf(ctx.Err(), r, "Context canceled")
 	case <-c.closed:
@@ -128,9 +129,6 @@ func (c *Client) call(ctx context.Context, r *jsonrpc.Request, res interface{}) 
 }
 
 func errorWithErrorf(err error, r *jsonrpc.Request, message string, args ...interface{}) error {
-	if err == nil {
-		return nil
-	}
 	msg, _ := json.Marshal(r)
 	return autorest.NewErrorWithError(err, "jsonrpcws.Client", fmt.Sprintf("Call(%v)", string(msg)), nil, message, args...)
 }
@@ -140,6 +138,7 @@ func errorf(r *jsonrpc.Request, message string, args ...interface{}) error {
 	return autorest.NewError("jsonrpcws.Client", fmt.Sprintf("Call(%v)", string(msg)), message, args...)
 }
 
+// handleIncomingMessage handles incoming messages from the WebSocket client.
 func (c *Client) handleIncomingMessage(msg *ws.IncomingMessage) error {
 	if msg.Err() != nil {
 		return msg.Err()
@@ -166,8 +165,8 @@ func (c *Client) handleIncomingMessage(msg *ws.IncomingMessage) error {
 	c.mux.Lock()
 	op, ok := c.inflights[resp.ID]
 	if ok {
-		// we need to return the response with the lock held
-		// to ensure the channel is not closed by call() due to context cancellation
+		// we need publish the response to channel with the lock held
+		// otherwise it could be closed during call() in case of context cancellation
 		op.result <- resp
 	}
 	c.mux.Unlock()
@@ -179,6 +178,7 @@ func (c *Client) handleIncomingMessage(msg *ws.IncomingMessage) error {
 	return nil
 }
 
+// loop listens for incoming messages from the underlying WebSocket client.
 func (c *Client) loop() {
 	for msg := range c.client.Messages() {
 		_ = c.handleIncomingMessage(msg)

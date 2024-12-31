@@ -8,7 +8,45 @@ import (
 	"time"
 
 	"github.com/gorilla/websocket"
+	comurl "github.com/kkrt-labs/kakarot-controller/pkg/net/url"
 )
+
+// ClinetConfig is the configuration for the websocket client
+type ClientConfig struct {
+	Dialer *DialerConfig
+
+	// PingInterval is the interval at which the client sends ping messages to the server
+	PingInterval        time.Duration
+	PongTimeout         time.Duration
+	ReadTimeout         time.Duration
+	WriteTimeout        time.Duration
+	WriteControlTimeout time.Duration
+}
+
+func (cfg *ClientConfig) SetDefault() *ClientConfig {
+	if cfg.Dialer == nil {
+		cfg.Dialer = new(DialerConfig)
+	}
+	cfg.Dialer.SetDefault()
+
+	if cfg.PingInterval == 0 {
+		cfg.PingInterval = 30 * time.Second
+	}
+	if cfg.PongTimeout == 0 {
+		cfg.PongTimeout = 30 * time.Second
+	}
+	if cfg.ReadTimeout == 0 {
+		cfg.ReadTimeout = 30 * time.Second
+	}
+	if cfg.WriteTimeout == 0 {
+		cfg.WriteTimeout = 10 * time.Second
+	}
+	if cfg.WriteControlTimeout == 0 {
+		cfg.WriteControlTimeout = 5 * time.Second
+	}
+
+	return cfg
+}
 
 // Client is a client to a websocket server
 // It is responsible for
@@ -16,6 +54,8 @@ import (
 // - handling ping/pong heartbeat to keep the connection alive
 type Client struct {
 	dialer Dialer
+
+	cfg *ClientConfig
 
 	conn *websocket.Conn
 
@@ -28,12 +68,7 @@ type Client struct {
 	closeOnce sync.Once // close conn once
 	closeErr  error
 
-	// Controls
-	writeControlTimeout time.Duration
-
 	// Ping/Pong
-	pingInterval  time.Duration
-	pongTimeout   time.Duration
 	pingReset     chan struct{}
 	outgoingPongs chan struct{}
 	outgoingPings chan struct{}
@@ -43,9 +78,6 @@ type Client struct {
 	incomingErr      error
 	decode           func(io.Reader) (interface{}, error)
 
-	writeTimeout time.Duration
-	readTimeout  time.Duration
-
 	// outgoing messages
 	outgoingMessages chan *outgoingMessage
 	notifyErrors     chan error
@@ -54,27 +86,28 @@ type Client struct {
 // NewClient creates a new websocket client
 //   - wsConn is the underlying websocket connection
 //   - decode is the function that is used to decode incoming messages
-func NewClient(dialer Dialer, decode func(io.Reader) (interface{}, error)) *Client {
+func NewClient(addr string, cfg *ClientConfig, decode func(io.Reader) (interface{}, error)) (*Client, error) {
+	u, err := comurl.Parse(addr)
+	if err != nil {
+		return nil, err
+	}
+
+	if u.Scheme != "ws" && u.Scheme != "wss" {
+		return nil, fmt.Errorf("unsupported scheme for websocket connection: %s", u.Scheme)
+	}
+
 	return &Client{
-		dialer: dialer,
-
-		stopped: make(chan interface{}),
-
-		pingInterval:        30 * time.Second,
-		writeControlTimeout: 5 * time.Second,
-		pingReset:           make(chan struct{}),
-		outgoingPongs:       make(chan struct{}),
-		outgoingPings:       make(chan struct{}),
-
-		readTimeout:  30 * time.Second,
-		writeTimeout: 10 * time.Second,
-
+		dialer:           WithBaseURL(u)(NewDialer(cfg.Dialer)),
+		cfg:              cfg,
+		stopped:          make(chan interface{}),
+		pingReset:        make(chan struct{}),
+		outgoingPongs:    make(chan struct{}),
+		outgoingPings:    make(chan struct{}),
 		incomingMessages: make(chan *IncomingMessage, 100),
 		decode:           decode,
-
 		outgoingMessages: make(chan *outgoingMessage),
 		notifyErrors:     make(chan error, 1),
-	}
+	}, nil
 }
 
 // Start the client
@@ -191,7 +224,7 @@ func (c *Client) incomingMessageLoop() {
 		}
 
 		// We secussfully read a message, so we reset the read deadline
-		c.resetReadDeadline(c.readTimeout)
+		c.resetReadDeadline(c.cfg.ReadTimeout)
 
 		if msgType != websocket.BinaryMessage && msgType != websocket.TextMessage {
 			c.incomingErr = fmt.Errorf("unsupported message type %v", msgType)
@@ -232,7 +265,7 @@ func (c *Client) outgoingMessageLoop() {
 			c.writeControlMessage(websocket.PongMessage, nil)
 		case <-c.outgoingPings:
 			c.writeControlMessage(websocket.PingMessage, nil)
-			c.resetReadDeadline(c.pongTimeout)
+			c.resetReadDeadline(c.cfg.PongTimeout)
 		case msg, ok := <-c.outgoingMessages:
 			if ok {
 				select {
@@ -251,10 +284,10 @@ func (c *Client) outgoingMessageLoop() {
 func (c *Client) writeMessage(msg *outgoingMessage) {
 	// Set the write deadline to the minimum of the context deadline and
 	// the connection write deadline
-	writeDeadline := time.Now().Add(c.writeTimeout)
+	writeDeadline := time.Now().Add(c.cfg.WriteTimeout)
 	deadline, ok := msg.ctx.Deadline()
 	if !ok {
-		deadline = time.Now().Add(c.writeTimeout)
+		deadline = time.Now().Add(c.cfg.WriteTimeout)
 	} else if deadline.After(writeDeadline) {
 		deadline = writeDeadline
 	}
@@ -276,7 +309,7 @@ func (c *Client) writeMessage(msg *outgoingMessage) {
 // handlePong is called when a pong message is received
 func (c *Client) handlePong(_ string) error {
 	// We secussfully read a message, so we reset the read deadline
-	c.resetReadDeadline(c.readTimeout)
+	c.resetReadDeadline(c.cfg.ReadTimeout)
 
 	c.pingReset <- struct{}{}
 	return nil
@@ -285,7 +318,7 @@ func (c *Client) handlePong(_ string) error {
 // handlePing is called when a ping message is received
 func (c *Client) handlePing(_ string) error {
 	// We secussfully read a message, so we reset the read deadline
-	c.resetReadDeadline(c.readTimeout)
+	c.resetReadDeadline(c.cfg.ReadTimeout)
 
 	select {
 	case c.outgoingPongs <- struct{}{}:
@@ -298,7 +331,7 @@ func (c *Client) handlePing(_ string) error {
 // handleClose is called when a close message is received
 func (c *Client) handleClose(code int, _ string) error {
 	// We secussfully read a message, so we reset the read deadline
-	c.resetReadDeadline(c.readTimeout)
+	c.resetReadDeadline(c.cfg.ReadTimeout)
 
 	c.serverStop(code)
 	return nil
@@ -306,7 +339,7 @@ func (c *Client) handleClose(code int, _ string) error {
 
 // pingLoop sends periodic ping frames when the connection is idle.
 func (c *Client) pingLoop() {
-	var pingTimer = time.NewTimer(c.pingInterval)
+	var pingTimer = time.NewTimer(c.cfg.PingInterval)
 	defer pingTimer.Stop()
 
 	for {
@@ -317,10 +350,10 @@ func (c *Client) pingLoop() {
 			if !pingTimer.Stop() {
 				<-pingTimer.C
 			}
-			pingTimer.Reset(c.pingInterval)
+			pingTimer.Reset(c.cfg.PingInterval)
 		case <-pingTimer.C:
 			c.outgoingPings <- struct{}{}
-			pingTimer.Reset(c.pingInterval)
+			pingTimer.Reset(c.cfg.PingInterval)
 		}
 	}
 }
@@ -331,7 +364,7 @@ func (c *Client) writeCloseMessage(closeCode int) {
 }
 
 func (c *Client) writeControlMessage(msgType int, data []byte) {
-	_ = c.conn.WriteControl(msgType, data, time.Now().Add(c.writeControlTimeout))
+	_ = c.conn.WriteControl(msgType, data, time.Now().Add(c.cfg.WriteControlTimeout))
 }
 
 func (c *Client) setWriteDeadline(deadline time.Time) {

@@ -5,15 +5,14 @@ import (
 )
 
 type Config struct {
-	Dialer *ws.DialerConfig
+	Client *ws.ClientConfig // WebSocket client configuration
 }
 
 func (cfg *Config) SetDefault() *Config {
-	if cfg.Dialer == nil {
-		cfg.Dialer = new(ws.DialerConfig)
+	if cfg.Client == nil {
+		cfg.Client = new(ws.ClientConfig)
 	}
-
-	cfg.Dialer.SetDefault()
+	cfg.Client.SetDefault()
 
 	return cfg
 }

@@ -85,19 +85,17 @@ func (h handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func newClient(t *testing.T, addr string) *Client {
-	dialer := &websocket.Dialer{
-		ReadBufferSize:   1024,
-		WriteBufferSize:  1024,
-		HandshakeTimeout: 30 * time.Second,
-	}
 	u, err := comurl.Parse(addr)
 	require.NoError(t, err, "ParseURL should not error")
 	u.Scheme = "ws" // override the scheme
-	return NewClient(WithBaseURL(u)(dialer), func(r io.Reader) (interface{}, error) {
+	c, err := NewClient(u.String(), (&ClientConfig{}).SetDefault(), func(r io.Reader) (interface{}, error) {
 		msg := new(Msg)
 		err := json.NewDecoder(r).Decode(msg)
 		return msg, err
 	})
+	require.NoError(t, err, "NewClient should not error")
+
+	return c
 }
 
 func TestWsClientStartStop(t *testing.T) {
