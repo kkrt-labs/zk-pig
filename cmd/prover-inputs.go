@@ -15,6 +15,11 @@ import (
 	"github.com/kkrt-labs/kakarot-controller/src/blocks"
 )
 
+const (
+	blockNumberFlag = "block-number"
+)
+
+// 1. Main command
 func NewProverInputsCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "prover-inputs",
@@ -32,10 +37,11 @@ func NewProverInputsCommand() *cobra.Command {
 	return cmd
 }
 
-func runHelp(cmd *cobra.Command, args []string) error {
+func runHelp(cmd *cobra.Command, _ []string) error {
 	return cmd.Help()
 }
 
+// 2. Subcommands
 func NewGenerateCommand() *cobra.Command {
 	var (
 		rpcURL      string
@@ -50,10 +56,12 @@ func NewGenerateCommand() *cobra.Command {
 		Short: "Generate prover inputs",
 		Long:  "Generate prover inputs by running preflight, prepare and execute in a single run",
 		Run: func(_ *cobra.Command, _ []string) {
-			setupLogger(logLevel, logFormat)
+			if err := setupLogger(logLevel, logFormat); err != nil {
+				zap.L().Fatal("Failed to setup logger", zap.Error(err))
+			}
 
 			cfg := &blocks.Config{
-				BaseDir: defaultIfEmpty(dataDir, "data"),
+				BaseDir: defaultIfEmpty(dataDir),
 				RPC:     &jsonrpchttp.Config{Address: rpcURL},
 			}
 
@@ -87,10 +95,12 @@ func NewPreflightCommand() *cobra.Command {
 		Short: "Collect necessary data for proving a block from a remote RPC node",
 		Long:  "Collect necessary data for proving a block from a remote RPC node. It processes the EVM block on a state and chain which database have been replaced with a connector to a remote JSON-RPC node",
 		Run: func(_ *cobra.Command, _ []string) {
-			setupLogger(logLevel, logFormat)
+			if err := setupLogger(logLevel, logFormat); err != nil {
+				zap.L().Fatal("Failed to setup logger", zap.Error(err))
+			}
 
 			cfg := &blocks.Config{
-				BaseDir: defaultIfEmpty(dataDir, "data"),
+				BaseDir: defaultIfEmpty(dataDir),
 				RPC:     &jsonrpchttp.Config{Address: rpcURL},
 			}
 
@@ -125,10 +135,12 @@ func NewPrepareCommand() *cobra.Command {
 		Short: "Prepare prover inputs, basing on data collected during preflight",
 		Long:  "Prepare prover inputs, basing on data collected during preflight. It processes and validates an EVM block over in memory state and chain prefilled with data collected during preflight.",
 		Run: func(_ *cobra.Command, _ []string) {
-			setupLogger(logLevel, logFormat)
+			if err := setupLogger(logLevel, logFormat); err != nil {
+				zap.L().Fatal("Failed to setup logger", zap.Error(err))
+			}
 
 			cfg := &blocks.Config{
-				BaseDir: defaultIfEmpty(dataDir, "data"),
+				BaseDir: defaultIfEmpty(dataDir),
 				RPC:     &jsonrpchttp.Config{Address: rpcURL},
 			}
 
@@ -165,10 +177,12 @@ func NewExecuteCommand() *cobra.Command {
 		Short: "Run an EVM execution, basing on prover inputs generated during prepare",
 		Long:  "Run an EVM execution, basing on prover inputs generated during prepare. It processes and validates an EVM block over in memory state and chain prefilled with prover inputs.",
 		Run: func(_ *cobra.Command, _ []string) {
-			setupLogger(logLevel, logFormat)
+			if err := setupLogger(logLevel, logFormat); err != nil {
+				zap.L().Fatal("Failed to setup logger", zap.Error(err))
+			}
 
 			cfg := &blocks.Config{
-				BaseDir: defaultIfEmpty(dataDir, "data"),
+				BaseDir: defaultIfEmpty(dataDir),
 				RPC:     &jsonrpchttp.Config{Address: rpcURL},
 			}
 
@@ -190,6 +204,7 @@ func NewExecuteCommand() *cobra.Command {
 	return cmd
 }
 
+// 3. Common flag helpers
 func addCommonFlags(cmd *cobra.Command, rpcURL, dataDir, logLevel, logFormat, blockNumber *string) {
 	f := cmd.Flags()
 	rpcURLFlag := AddRPCURLFlag(rpcURL, f)
@@ -202,6 +217,43 @@ func addCommonFlags(cmd *cobra.Command, rpcURL, dataDir, logLevel, logFormat, bl
 	_ = cmd.MarkFlagRequired(rpcURLFlag)
 }
 
+func AddRPCURLFlag(rpcURL *string, f *pflag.FlagSet) string {
+	flagName := "rpc-url"
+	f.StringVar(rpcURL, flagName, "RPC_URL", "Ethereum RPC URL (default from RPC_URL env var)")
+	return flagName
+}
+
+func AddDataDirFlag(dataDir *string, f *pflag.FlagSet) string {
+	flagName := "data-dir"
+	f.StringVar(dataDir, flagName, "data", "Path to data directory")
+	return flagName
+}
+
+func AddLogLevelFlag(logLevel *string, f *pflag.FlagSet) string {
+	flagName := "log-level"
+	f.StringVar(logLevel, flagName, "info", "Log level (debug|info|warn|error)")
+	return flagName
+}
+
+func AddLogFormatFlag(logFormat *string, f *pflag.FlagSet) string {
+	flagName := "log-format"
+	f.StringVar(logFormat, flagName, "text", "Log format (json|text)")
+	return flagName
+}
+
+func AddBlockNumberFlag(blockNumber *string, f *pflag.FlagSet) string {
+	flagName := blockNumberFlag
+	f.StringVar(blockNumber, flagName, "", "Block number")
+	return flagName
+}
+
+func AddChainIDFlag(chainID *string, f *pflag.FlagSet) string {
+	flagName := "chain-id"
+	f.StringVar(chainID, flagName, "", "Chain ID (decimal)")
+	return flagName
+}
+
+// 4. Utility functions
 func setupLogger(logLevel, logFormat string) error {
 	cfg := zap.NewProductionConfig()
 
@@ -242,7 +294,7 @@ func parseBigIntOrDie(val, flagName string) *big.Int {
 	}
 
 	// Use FromBlockNumArg for block-number flag to support special values
-	if flagName == "block-number" {
+	if flagName == blockNumberFlag {
 		bn, err := jsonrpc.FromBlockNumArg(val)
 		if err != nil {
 			zap.L().Fatal("Invalid block number",
@@ -263,45 +315,9 @@ func parseBigIntOrDie(val, flagName string) *big.Int {
 	return bn
 }
 
-func AddRPCURLFlag(rpcURL *string, f *pflag.FlagSet) string {
-	flagName := "rpc-url"
-	f.StringVar(rpcURL, flagName, "RPC_URL", "Ethereum RPC URL (default from RPC_URL env var)")
-	return flagName
-}
-
-func AddDataDirFlag(dataDir *string, f *pflag.FlagSet) string {
-	flagName := "data-dir"
-	f.StringVar(dataDir, flagName, "data", "Path to data directory")
-	return flagName
-}
-
-func AddLogLevelFlag(logLevel *string, f *pflag.FlagSet) string {
-	flagName := "log-level"
-	f.StringVar(logLevel, flagName, "info", "Log level (debug|info|warn|error)")
-	return flagName
-}
-
-func AddLogFormatFlag(logFormat *string, f *pflag.FlagSet) string {
-	flagName := "log-format"
-	f.StringVar(logFormat, flagName, "text", "Log format (json|text)")
-	return flagName
-}
-
-func AddBlockNumberFlag(blockNumber *string, f *pflag.FlagSet) string {
-	flagName := "block-number"
-	f.StringVar(blockNumber, flagName, "", "Block number")
-	return flagName
-}
-
-func AddChainIDFlag(chainID *string, f *pflag.FlagSet) string {
-	flagName := "chain-id"
-	f.StringVar(chainID, flagName, "", "Chain ID (decimal)")
-	return flagName
-}
-
-func defaultIfEmpty(value, defaultValue string) string {
+func defaultIfEmpty(value string) string {
 	if value == "" {
-		return defaultValue
+		return "data"
 	}
 	return value
 }
