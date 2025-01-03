@@ -69,7 +69,7 @@ builds:
 release:
   github:
     owner: kkrt-labs
-    name: test-ci
+    name: kakarot-controller
   make_latest: true
   draft: true
   use_existing_draft: true
