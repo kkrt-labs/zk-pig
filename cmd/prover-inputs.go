@@ -55,7 +55,7 @@ func NewGenerateCommand() *cobra.Command {
 		Long:  "Generate prover inputs by running preflight, prepare and execute in a single run",
 		Run: func(_ *cobra.Command, _ []string) {
 			cfg := &blocks.Config{
-				BaseDir: defaultIfEmpty(dataDir),
+				BaseDir: dataDir,
 				RPC:     &jsonrpchttp.Config{Address: rpcURL},
 			}
 
@@ -91,7 +91,7 @@ func NewPreflightCommand() *cobra.Command {
 		Long:  "Collect necessary data for proving a block from a remote RPC node. It processes the EVM block on a state and chain which database have been replaced with a connector to a remote JSON-RPC node",
 		Run: func(_ *cobra.Command, _ []string) {
 			cfg := &blocks.Config{
-				BaseDir: defaultIfEmpty(dataDir),
+				BaseDir: dataDir,
 				RPC:     &jsonrpchttp.Config{Address: rpcURL},
 			}
 
@@ -128,7 +128,7 @@ func NewPrepareCommand() *cobra.Command {
 		Long:  "Prepare prover inputs, basing on data collected during preflight. It processes and validates an EVM block over in memory state and chain prefilled with data collected during preflight.",
 		Run: func(_ *cobra.Command, _ []string) {
 			cfg := &blocks.Config{
-				BaseDir: defaultIfEmpty(dataDir),
+				BaseDir: dataDir,
 				RPC:     &jsonrpchttp.Config{Address: rpcURL},
 			}
 
@@ -170,7 +170,7 @@ func NewExecuteCommand() *cobra.Command {
 		Long:  "Run an EVM execution, basing on prover inputs generated during prepare. It processes and validates an EVM block over in memory state and chain prefilled with prover inputs.",
 		Run: func(_ *cobra.Command, _ []string) {
 			cfg := &blocks.Config{
-				BaseDir: defaultIfEmpty(dataDir),
+				BaseDir: dataDir,
 				RPC:     &jsonrpchttp.Config{Address: rpcURL},
 			}
 
@@ -300,11 +300,4 @@ func parseBigInt(val, flagName string) (*big.Int, error) {
 		return nil, fmt.Errorf("invalid integer value %q for flag %s", val, flagName)
 	}
 	return bn, nil
-}
-
-func defaultIfEmpty(value string) string {
-	if value == "" {
-		return "data"
-	}
-	return value
 }
