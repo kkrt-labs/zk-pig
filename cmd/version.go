@@ -7,10 +7,13 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var versionCmd = &cobra.Command{
-	Use:   "version",
-	Short: "Print the version number",
-	Run: func(_ *cobra.Command, _ []string) {
-		fmt.Printf("kkrtctl version %s\n", src.Version)
-	},
+func VersionCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "version",
+		Short: "Print the version number",
+		Run: func(_ *cobra.Command, _ []string) {
+			fmt.Printf("kkrtctl version %s\n", src.Version)
+		},
+	}
+	return cmd
 }
