@@ -67,7 +67,7 @@ func (s *Service) initRemote(ctx context.Context) error {
 	return s.err
 }
 
-func (s *Service) Generate(ctx context.Context, blockNumber *big.Int) error {
+func (s *Service) Generate(ctx context.Context, blockNumber *big.Int, format string) error {
 	if err := s.initRemote(ctx); err != nil {
 		return err
 	}
@@ -77,11 +77,11 @@ func (s *Service) Generate(ctx context.Context, blockNumber *big.Int) error {
 		return err
 	}
 
-	if err := s.prepare(ctx, data.ChainConfig.ChainID, data.Block.Number.ToInt()); err != nil {
+	if err := s.prepare(ctx, data.ChainConfig.ChainID, data.Block.Number.ToInt(), format); err != nil {
 		return err
 	}
 
-	if err := s.execute(ctx, data.ChainConfig.ChainID, data.Block.Number.ToInt()); err != nil {
+	if err := s.execute(ctx, data.ChainConfig.ChainID, data.Block.Number.ToInt(), format); err != nil {
 		return err
 	}
 
@@ -111,7 +111,7 @@ func (s *Service) preflight(ctx context.Context, blockNumber *big.Int) (*blockin
 	return data, nil
 }
 
-func (s *Service) Prepare(ctx context.Context, chainID, blockNumber *big.Int) error {
+func (s *Service) Prepare(ctx context.Context, chainID, blockNumber *big.Int, format string) error {
 	if chainID == nil {
 		if err := s.initRemote(ctx); err != nil {
 			return err
@@ -119,10 +119,10 @@ func (s *Service) Prepare(ctx context.Context, chainID, blockNumber *big.Int) er
 		chainID = s.chainID
 	}
 
-	return s.prepare(ctx, chainID, blockNumber)
+	return s.prepare(ctx, chainID, blockNumber, format)
 }
 
-func (s *Service) prepare(ctx context.Context, chainID, blockNumber *big.Int) error {
+func (s *Service) prepare(ctx context.Context, chainID, blockNumber *big.Int, format string) error {
 	data, err := s.store.LoadHeavyProverInputs(ctx, chainID.Uint64(), blockNumber.Uint64())
 	if err != nil {
 		return fmt.Errorf("failed to load preflight data: %v", err)
@@ -133,7 +133,7 @@ func (s *Service) prepare(ctx context.Context, chainID, blockNumber *big.Int) er
 		return fmt.Errorf("failed to prepare provable inputs: %v", err)
 	}
 
-	err = s.store.StoreProverInputs(ctx, inputs)
+	err = s.store.StoreProverInputs(ctx, inputs, format)
 	if err != nil {
 		return fmt.Errorf("failed to store provable inputs: %v", err)
 	}
@@ -141,7 +141,7 @@ func (s *Service) prepare(ctx context.Context, chainID, blockNumber *big.Int) er
 	return nil
 }
 
-func (s *Service) Execute(ctx context.Context, chainID, blockNumber *big.Int) error {
+func (s *Service) Execute(ctx context.Context, chainID, blockNumber *big.Int, format string) error {
 	if chainID == nil {
 		if err := s.initRemote(ctx); err != nil {
 			return err
@@ -149,15 +149,14 @@ func (s *Service) Execute(ctx context.Context, chainID, blockNumber *big.Int) er
 		chainID = s.chainID
 	}
 
-	return s.execute(ctx, chainID, blockNumber)
+	return s.execute(ctx, chainID, blockNumber, format)
 }
 
-func (s *Service) execute(ctx context.Context, chainID, blockNumber *big.Int) error {
-	inputs, err := s.store.LoadProverInputs(ctx, chainID.Uint64(), blockNumber.Uint64())
+func (s *Service) execute(ctx context.Context, chainID, blockNumber *big.Int, format string) error {
+	inputs, err := s.store.LoadProverInputs(ctx, chainID.Uint64(), blockNumber.Uint64(), format)
 	if err != nil {
 		return fmt.Errorf("failed to load provable inputs: %v", err)
 	}
-
 	_, err = blockinputs.NewExecutor().Execute(ctx, inputs)
 	if err != nil {
 		return fmt.Errorf("failed to execute block on provable inputs: %v", err)

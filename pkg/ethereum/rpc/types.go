@@ -187,6 +187,12 @@ func (tx *Transaction) UnmarshalJSON(msg []byte) error {
 	return json.Unmarshal(msg, &tx.txExtraInfo)
 }
 
+func NewTransactionFromGeth(tx *gethtypes.Transaction) *Transaction {
+	return &Transaction{
+		Transaction: tx,
+	}
+}
+
 // func (tx *RPCTransaction) MarshalJSON() ([]byte, error) {
 // 	return json.Marshal(tx)
 // }

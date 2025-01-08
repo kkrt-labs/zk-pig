@@ -13,6 +13,12 @@ import (
 	"path/filepath"
 
 	blockinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs"
+	conversions "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs/proto"
+	"google.golang.org/protobuf/proto"
+)
+
+const (
+	protobufFormat = "protobuf"
 )
 
 type FileBlockStore struct {
@@ -25,27 +31,27 @@ func New(baseDir string) *FileBlockStore {
 
 func (s *FileBlockStore) StoreHeavyProverInputs(_ context.Context, inputs *blockinputs.HeavyProverInputs) error {
 	path := s.preflightPath(inputs.ChainConfig.ChainID.Uint64(), inputs.Block.Number.ToInt().Uint64())
-	return s.storeData(path, inputs)
+	return s.storeData(path, inputs, "json")
 }
 
 func (s *FileBlockStore) LoadHeavyProverInputs(_ context.Context, chainID, blockNumber uint64) (*blockinputs.HeavyProverInputs, error) {
 	path := s.preflightPath(chainID, blockNumber)
 	data := &blockinputs.HeavyProverInputs{}
-	if err := s.loadData(path, data); err != nil {
+	if err := s.loadData(path, data, "json"); err != nil {
 		return nil, err
 	}
 	return data, nil
 }
 
-func (s *FileBlockStore) StoreProverInputs(_ context.Context, data *blockinputs.ProverInputs) error {
-	path := s.proverPath(data.ChainConfig.ChainID.Uint64(), data.Block.Number.ToInt().Uint64())
-	return s.storeData(path, data)
+func (s *FileBlockStore) StoreProverInputs(_ context.Context, data *blockinputs.ProverInputs, format string) error {
+	path := s.proverPath(data.ChainConfig.ChainID.Uint64(), data.Block.Header.Number.ToInt().Uint64(), format)
+	return s.storeData(path, data, format)
 }
 
-func (s *FileBlockStore) LoadProverInputs(_ context.Context, chainID, blockNumber uint64) (*blockinputs.ProverInputs, error) {
-	path := s.proverPath(chainID, blockNumber)
+func (s *FileBlockStore) LoadProverInputs(_ context.Context, chainID, blockNumber uint64, format string) (*blockinputs.ProverInputs, error) {
+	path := s.proverPath(chainID, blockNumber, format)
 	data := &blockinputs.ProverInputs{}
-	if err := s.loadData(path, data); err != nil {
+	if err := s.loadData(path, data, format); err != nil {
 		return nil, err
 	}
 	return data, nil
@@ -55,11 +61,11 @@ func (s *FileBlockStore) preflightPath(chainID, blockNumber uint64) string {
 	return filepath.Join(s.baseDir, fmt.Sprintf("%d", chainID), "preflight", fmt.Sprintf("%d.json", blockNumber))
 }
 
-func (s *FileBlockStore) proverPath(chainID, blockNumber uint64) string {
-	return filepath.Join(s.baseDir, fmt.Sprintf("%d", chainID), "prover-inputs", fmt.Sprintf("%d.json", blockNumber))
+func (s *FileBlockStore) proverPath(chainID, blockNumber uint64, format string) string {
+	return filepath.Join(s.baseDir, fmt.Sprintf("%d", chainID), "prover-inputs", fmt.Sprintf("%d.%s", blockNumber, format))
 }
 
-func (s *FileBlockStore) storeData(path string, data interface{}) error {
+func (s *FileBlockStore) storeData(path string, data interface{}, format string) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("failed to create directory for file %s: %v", path, err)
 	}
@@ -70,23 +76,57 @@ func (s *FileBlockStore) storeData(path string, data interface{}) error {
 	}
 	defer file.Close()
 
-	if err := json.NewEncoder(file).Encode(data); err != nil {
-		return fmt.Errorf("failed to encode data to file %s: %v", path, err)
+	switch format {
+	case protobufFormat:
+		proverInputs, ok := data.(*blockinputs.ProverInputs)
+		if !ok {
+			return fmt.Errorf("data must be of type *blockinputs.ProverInputs for protobuf format")
+		}
+		protoMsg := conversions.FromGoToProtoProverInputs(proverInputs)
+		bytes, err := proto.Marshal(protoMsg)
+		if err != nil {
+			return fmt.Errorf("failed to marshal protobuf data: %v", err)
+		}
+		if _, err := file.Write(bytes); err != nil {
+			return fmt.Errorf("failed to write protobuf data to file %s: %v", path, err)
+		}
+	case "json":
+		if err := json.NewEncoder(file).Encode(data); err != nil {
+			return fmt.Errorf("failed to encode data to file %s: %v", path, err)
+		}
+	default:
+		return fmt.Errorf("unsupported format: %s", format)
 	}
 
 	return nil
 }
 
-func (s *FileBlockStore) loadData(path string, data interface{}) error {
+func (s *FileBlockStore) loadData(path string, data interface{}, format string) error {
 	file, err := os.Open(path)
 	if err != nil {
 		return fmt.Errorf("failed to open file %s: %v", path, err)
 	}
 	defer file.Close()
 
-	if err := json.NewDecoder(file).Decode(data); err != nil {
-		return fmt.Errorf("failed to decode data from file %s: %v", path, err)
+	switch format {
+	case protobufFormat:
+		protoMsg := &conversions.ProverInputs{}
+		bytes, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("failed to read file: %v", err)
+		}
+		if err := proto.Unmarshal(bytes, protoMsg); err != nil {
+			return fmt.Errorf("failed to unmarshal protobuf data: %v", err)
+		}
+		if proverInputs, ok := data.(*blockinputs.ProverInputs); ok {
+			*proverInputs = *conversions.FromProtoToGoProverInputs(protoMsg)
+		} else {
+			return fmt.Errorf("invalid data type: expected *blockinputs.ProverInputs")
+		}
+	case "json":
+		if err := json.NewDecoder(file).Decode(data); err != nil {
+			return fmt.Errorf("failed to decode data from file %s: %v", path, err)
+		}
 	}
-
 	return nil
 }
