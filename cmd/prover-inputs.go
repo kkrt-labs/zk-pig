@@ -64,7 +64,7 @@ func NewGenerateCommand() *cobra.Command {
 			}
 
 			svc := blocks.New(cfg)
-			if err := svc.Generate(context.Background(), blockNum); err != nil {
+			if err := svc.Generate(context.Background(), blockNum, "json"); err != nil {
 				zap.L().Fatal("Failed to generate prover inputs", zap.Error(err))
 			}
 			zap.L().Info("Prover inputs generated")
@@ -141,7 +141,7 @@ func NewPrepareCommand() *cobra.Command {
 			}
 
 			svc := blocks.New(cfg)
-			if err := svc.Prepare(context.Background(), chainIDBig, blockNum); err != nil {
+			if err := svc.Prepare(context.Background(), chainIDBig, blockNum, "json"); err != nil {
 				zap.L().Fatal("Failed to prepare prover inputs", zap.Error(err))
 			}
 			zap.L().Info("Prover inputs prepared")
@@ -183,7 +183,7 @@ func NewExecuteCommand() *cobra.Command {
 			}
 
 			svc := blocks.New(cfg)
-			if err := svc.Execute(context.Background(), chainIDBig, blockNum); err != nil {
+			if err := svc.Execute(context.Background(), chainIDBig, blockNum, "json"); err != nil {
 				zap.L().Fatal("Execute failed", zap.Error(err))
 			}
 			zap.L().Info("Execute succeeded")
