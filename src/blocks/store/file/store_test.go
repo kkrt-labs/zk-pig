@@ -68,7 +68,7 @@ func TestFileBlockStoreProtobuf(t *testing.T) {
 	store := New(baseDir)
 
 	// Test storing and loading preflight data
-	preflightData := &blockinputs.HeavyProverInputs{
+	heavyProverInputs := &blockinputs.HeavyProverInputs{
 		ChainConfig: &params.ChainConfig{
 			ChainID: big.NewInt(1),
 		},
@@ -78,14 +78,14 @@ func TestFileBlockStoreProtobuf(t *testing.T) {
 			},
 		},
 	}
-	err := store.StorePreflightData(context.Background(), preflightData)
+	err := store.StoreHeavyProverInputs(context.Background(), heavyProverInputs)
 	assert.NoError(t, err)
 
-	_, err = store.LoadPreflightData(context.Background(), 1, 10)
+	_, err = store.LoadHeavyProverInputs(context.Background(), 1, 10)
 	assert.NoError(t, err)
 
 	// Test loading non-existent preflight data
-	_, err = store.LoadPreflightData(context.Background(), 1, 20)
+	_, err = store.LoadHeavyProverInputs(context.Background(), 1, 20)
 	assert.Error(t, err)
 
 	// Test storing and loading prover inputs
