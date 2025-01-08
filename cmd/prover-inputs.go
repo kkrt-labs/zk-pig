@@ -125,6 +125,7 @@ func NewPrepareCommand() *cobra.Command {
 		dataDir     string
 		blockNumber string
 		chainID     string
+		format      string
 	)
 
 	cmd := &cobra.Command{
@@ -147,7 +148,7 @@ func NewPrepareCommand() *cobra.Command {
 			}
 
 			svc := blocks.New(cfg)
-			if err := svc.Prepare(context.Background(), chainIDBig, blockNum, "json"); err != nil {
+			if err := svc.Prepare(context.Background(), chainIDBig, blockNum, format); err != nil {
 				zap.L().Fatal("Failed to prepare prover inputs", zap.Error(err))
 			}
 			zap.L().Info("Prover inputs prepared")
@@ -155,6 +156,7 @@ func NewPrepareCommand() *cobra.Command {
 	}
 
 	addCommonFlags(cmd, &rpcURL, &dataDir, &blockNumber)
+	AddFormatFlag(cmd, &format)
 	cmd.Flags().StringVar(&chainID, "chain-id", "", "Chain ID (decimal)")
 	_ = cmd.MarkFlagRequired("chain-id")
 
@@ -167,6 +169,7 @@ func NewExecuteCommand() *cobra.Command {
 		dataDir     string
 		blockNumber string
 		chainID     string
+		format      string
 	)
 
 	cmd := &cobra.Command{
@@ -189,7 +192,7 @@ func NewExecuteCommand() *cobra.Command {
 			}
 
 			svc := blocks.New(cfg)
-			if err := svc.Execute(context.Background(), chainIDBig, blockNum, "json"); err != nil {
+			if err := svc.Execute(context.Background(), chainIDBig, blockNum, format); err != nil {
 				zap.L().Fatal("Execute failed", zap.Error(err))
 			}
 			zap.L().Info("Execute succeeded")
@@ -197,6 +200,7 @@ func NewExecuteCommand() *cobra.Command {
 	}
 
 	addCommonFlags(cmd, &rpcURL, &dataDir, &blockNumber)
+	AddFormatFlag(cmd, &format)
 	cmd.Flags().StringVar(&chainID, "chain-id", "", "Chain ID (decimal)")
 	_ = cmd.MarkFlagRequired("chain-id")
 
