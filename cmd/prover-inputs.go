@@ -16,6 +16,7 @@ import (
 
 const (
 	blockNumberFlag = "block-number"
+	formatFlag      = "format"
 )
 
 // 1. Main command
@@ -46,6 +47,7 @@ func NewGenerateCommand() *cobra.Command {
 		rpcURL      string
 		dataDir     string
 		blockNumber string
+		format      string
 	)
 
 	cmd := &cobra.Command{
@@ -58,13 +60,16 @@ func NewGenerateCommand() *cobra.Command {
 				RPC:     &jsonrpchttp.Config{Address: rpcURL},
 			}
 
-			blockNum, err := parseBigInt(blockNumber, "block-number")
+			blockNum, err := parseBigInt(blockNumber, blockNumberFlag)
 			if err != nil {
 				zap.L().Fatal("Failed to parse block number", zap.Error(err))
 			}
+			if format != "json" && format != "protobuf" {
+				zap.L().Fatal("Invalid format. Must be json or protobuf.", zap.String("format", format))
+			}
 
 			svc := blocks.New(cfg)
-			if err := svc.Generate(context.Background(), blockNum, "json"); err != nil {
+			if err := svc.Generate(context.Background(), blockNum, format); err != nil {
 				zap.L().Fatal("Failed to generate prover inputs", zap.Error(err))
 			}
 			zap.L().Info("Prover inputs generated")
@@ -72,6 +77,7 @@ func NewGenerateCommand() *cobra.Command {
 	}
 
 	addCommonFlags(cmd, &rpcURL, &dataDir, &blockNumber)
+	AddFormatFlag(cmd, &format)
 	_ = cmd.MarkFlagRequired("rpc-url")
 
 	return cmd
@@ -230,6 +236,11 @@ func AddChainIDFlag(chainID *string, f *pflag.FlagSet) string {
 	flagName := "chain-id"
 	f.StringVar(chainID, flagName, "", "Chain ID (decimal)")
 	return flagName
+}
+
+func AddFormatFlag(cmd *cobra.Command, format *string) {
+	flagName := formatFlag
+	cmd.Flags().StringVar(format, flagName, "json", "Output format (json or protobuf).")
 }
 
 func parseBigInt(val, flagName string) (*big.Int, error) {
