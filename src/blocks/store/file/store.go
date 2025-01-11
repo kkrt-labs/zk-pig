@@ -71,7 +71,7 @@ func (s *FileBlockStore) preflightPath(chainID, blockNumber uint64) string {
 	return filepath.Join(s.baseDir, fmt.Sprintf("%d", chainID), "preflight", fmt.Sprintf("%d.json", blockNumber))
 }
 
-func (s *FileBlockStore) proverPath(chainID, blockNumber uint64, format string, compression string) string {
+func (s *FileBlockStore) proverPath(chainID, blockNumber uint64, format, compression string) string {
 	filename := fmt.Sprintf("%d.%s", blockNumber, format)
 	if compression != "" {
 		filename = filename + "." + compression
