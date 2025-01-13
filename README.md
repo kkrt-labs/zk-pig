@@ -58,6 +58,7 @@ kkrtctl prover-inputs generate \
   --block-number 1234 \
   --rpc-url http://127.0.0.1:8545 \
   --data-dir ./data
+  --format json
 ```
 
 2. `kkrtctl prover-inputs preflight`
@@ -81,7 +82,8 @@ kkrtctl prover-inputs prepare \
   --chain-id 1 \
   --block-number 1234 \
   --rpc-url http://127.0.0.1:8545 \
-  --data-dir ./data
+  --data-dir ./data \
+  --format json
 ```
 
 4. `kkrtctl prover-inputs execute`
@@ -94,7 +96,8 @@ kkrtctl prover-inputs execute \
   --chain-id 1 \
   --block-number 1234 \
   --rpc-url http://127.0.0.1:8545 \
-  --data-dir ./data
+  --data-dir ./data \
+  --format json
 ```
 
 ### Logging
@@ -105,6 +108,7 @@ kkrtctl prover-inputs generate \
   --block-number 1234 \
   --rpc-url http://127.0.0.1:8545 \
   --data-dir ./data \
+  --format json \
   --log-level debug \
   --log-format text
 ```
@@ -123,3 +127,15 @@ kkrtctl prover-inputs generate \
 1. `kkrtctl prover-inputs preflight --block-number <block-number> --rpc-url <rpc-url> --data-dir <data-dir>` - Preflight the prover inputs generation
 1. `kkrtctl prover-inputs prepare --block-number <block-number> --rpc-url <rpc-url> --data-dir <data-dir>` - Prepare the prover inputs generation
 1. `kkrtctl prover-inputs execute --block-number <block-number> --rpc-url <rpc-url> --data-dir <data-dir>` - Execute the prover inputs generation
+
+### Flags
+
+| Flag | Description | Default | Environment Variable |
+|------|-------------|---------|---------------------|
+| `--block-number` | The block number to generate prover inputs for | Required | - |
+| `--rpc-url` | URL of the Ethereum JSON-RPC endpoint | - | `RPC_URL` |
+| `--data-dir` | Directory to store generated block data | - | `DATA_DIR` |
+| `--format` | Output format for prover inputs (`json` or `protobuf`) | `json` | - |
+| `--chain-id` | Chain ID for block validation (required for prepare/execute) | Required | - |
+| `--log-level` | Logging verbosity (`debug`, `info`, `warn`, `error`) | `info` | `LOG_LEVEL` |
+| `--log-format` | Logging format (`json` or `text`) | `text` | `LOG_FORMAT` |
