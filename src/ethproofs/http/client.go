@@ -1,95 +1,91 @@
 package http
 
 import (
-	"bytes"
 	"context"
-	"encoding/json"
 	"fmt"
 	"net/http"
-	"net/url"
-)
 
-const (
-	defaultBaseURL = "https://staging--ethproofs.netlify.app/api/v0"
+	"github.com/Azure/go-autorest/autorest"
+	comhttp "github.com/kkrt-labs/kakarot-controller/pkg/net/http"
 )
 
 type Client struct {
-	baseURL    *url.URL
-	httpClient *http.Client
-	apiKey     string
+	client autorest.Sender
+	apiKey string
 }
 
-func NewClient(apiKey string, opts ...Option) (*Client, error) {
-	baseURL, err := url.Parse(defaultBaseURL)
+func NewClientFromClient(s autorest.Sender, apiKey string) *Client {
+	return &Client{
+		client: s,
+		apiKey: apiKey,
+	}
+}
+
+func NewClient(cfg *Config) (*Client, error) {
+	cfg.SetDefault()
+
+	httpc, err := comhttp.NewClient(cfg.HTTPConfig)
 	if err != nil {
-		return nil, fmt.Errorf("invalid base URL: %w", err)
+		return nil, err
 	}
 
-	c := &Client{
-		baseURL:    baseURL,
-		httpClient: http.DefaultClient,
-		apiKey:     apiKey,
-	}
-
-	for _, opt := range opts {
-		opt(c)
-	}
-
-	return c, nil
+	return NewClientFromClient(
+		autorest.Client{
+			Sender:           httpc,
+			RequestInspector: comhttp.WithBaseURL(cfg.Addr),
+		},
+		cfg.APIKey,
+	), nil
 }
 
-type Option func(*Client)
-
-func WithBaseURL(baseURL string) Option {
-	return func(c *Client) {
-		if u, err := url.Parse(baseURL); err == nil {
-			c.baseURL = u
-		}
+func (c *Client) do(ctx context.Context, method, path string, body, res interface{}) error {
+	req, err := c.prepareRequest(ctx, method, path, body)
+	if err != nil {
+		return autorest.NewErrorWithError(err, "ethproofs.Client", "do", nil, "PrepareRequest")
 	}
+
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return autorest.NewErrorWithError(err, "ethproofs.Client", "do", resp, "Do")
+	}
+
+	err = c.inspectResponse(resp, res)
+	if err != nil {
+		return autorest.NewErrorWithError(err, "ethproofs.Client", "do", resp, "Inspect Response")
+	}
+
+	return nil
 }
 
-func WithHTTPClient(httpClient *http.Client) Option {
-	return func(c *Client) {
-		c.httpClient = httpClient
+func (c *Client) prepareRequest(ctx context.Context, method, path string, body interface{}) (*http.Request, error) {
+	preparers := []autorest.PrepareDecorator{
+		autorest.AsContentType("application/json"),
+		autorest.WithPath(path),
+		autorest.WithMethod(method),
+		autorest.WithHeader("Authorization", fmt.Sprintf("Bearer %s", c.apiKey)),
 	}
-}
 
-func (c *Client) newRequest(ctx context.Context, method, path string, body interface{}) (*http.Request, error) {
-	u := c.baseURL.JoinPath(path)
-
-	var buf bytes.Buffer
 	if body != nil {
-		if err := json.NewEncoder(&buf).Encode(body); err != nil {
-			return nil, fmt.Errorf("failed to encode request body: %w", err)
-		}
+		preparers = append(preparers, autorest.WithJSON(body))
 	}
 
-	req, err := http.NewRequestWithContext(ctx, method, u.String(), &buf)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", c.apiKey))
-
-	return req, nil
+	return autorest.CreatePreparer(preparers...).Prepare(newRequest(ctx))
 }
 
-func (c *Client) do(req *http.Request, v interface{}) error {
-	resp, err := c.httpClient.Do(req)
+func newRequest(ctx context.Context) *http.Request {
+	req, _ := http.NewRequestWithContext(ctx, "", "", http.NoBody)
+	return req
+}
+
+func (c *Client) inspectResponse(resp *http.Response, res interface{}) error {
+	err := autorest.Respond(
+		resp,
+		autorest.WithErrorUnlessOK(),
+		autorest.ByUnmarshallingJSON(res),
+		autorest.ByClosing(),
+	)
 	if err != nil {
-		return fmt.Errorf("failed to send request: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode >= 400 {
-		return fmt.Errorf("request failed with status %d", resp.StatusCode)
-	}
-
-	if v != nil {
-		if err := json.NewDecoder(resp.Body).Decode(v); err != nil {
-			return fmt.Errorf("failed to decode response: %w", err)
-		}
+		return err
 	}
 
 	return nil

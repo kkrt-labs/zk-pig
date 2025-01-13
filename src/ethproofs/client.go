@@ -4,6 +4,13 @@ import (
 	"context"
 )
 
+// Package ethproofs provides a Go client for the EthProofs API.
+//
+// For more information about EthProofs, visit:
+//   - API Documentation: https://staging--ethproofs.netlify.app/api.html
+//   - App Preview: https://staging--ethproofs.netlify.app/
+//   - Repository: https://github.com/ethproofs/ethproofs
+//
 //go:generate mockgen -source client.go -destination mock/client.go -package mock Client
 
 // Client defines the interface for interacting with the EthProofs API
