@@ -6,8 +6,8 @@ import (
 	"log"
 	"os"
 
-	"github.com/kkrt-labs/kakarot-controller/src/ethproofs"
-	ethproofshttp "github.com/kkrt-labs/kakarot-controller/src/ethproofs/http"
+	ethproofs "github.com/kkrt-labs/kakarot-controller/src/ethproofs/client"
+	ethproofshttp "github.com/kkrt-labs/kakarot-controller/src/ethproofs/client/http"
 )
 
 func main() {

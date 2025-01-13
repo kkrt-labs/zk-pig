@@ -13,7 +13,7 @@ import (
 	context "context"
 	reflect "reflect"
 
-	ethproofs "github.com/kkrt-labs/kakarot-controller/src/ethproofs"
+	ethproofs "github.com/kkrt-labs/kakarot-controller/src/ethproofs/client"
 	gomock "go.uber.org/mock/gomock"
 )
 
