@@ -42,6 +42,7 @@ help:
 	@echo "  test-race           Run unit tests with race detector" 
 	@echo "  test-lint           Check linting"
 	@echo "  lint                Run linter to fix linting issues"
+	@echo "  generate-proto      Generate protobuf files"
 	@echo "  mockgen-install     Install mockgen command"
 	@echo "  generate-mocks      Generate mocks"
 	@echo "  goreleaser-snapshot Execute goreleaser with --snapshot flag"
@@ -83,6 +84,9 @@ lint: ## Run linter to fix issues
 	} || { \
 		docker run --rm -v $(shell pwd):/app -w /app golangci/golangci-lint:$(GOLANGCI_VERSION) golangci-lint run --fix; \
 	}
+
+generate-proto:
+	@protoc --go_out=. --go_opt=paths=source_relative src/blocks/inputs/proto/input.proto
 
 # Install mockgen command
 mockgen-install:
