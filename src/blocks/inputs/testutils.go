@@ -37,14 +37,16 @@ func NormalizeProverInputs(input *ProverInputs) *ProverInputs {
 
 	// Normalize PreState ([]string)
 	if len(input.PreState) > 0 {
-		normalized.PreState = make([]string, len(input.PreState))
+		normalized.PreState = make([]hexutil.Bytes, len(input.PreState))
 		copy(normalized.PreState, input.PreState)
-		sort.Strings(normalized.PreState)
+		sort.Slice(normalized.PreState, func(i, j int) bool {
+			return bytes.Compare(normalized.PreState[i], normalized.PreState[j]) < 0
+		})
 	}
 
 	// Normalize AccessList (map[gethcommon.Address][]string)
 	if len(input.AccessList) > 0 {
-		normalized.AccessList = make(map[gethcommon.Address][]string)
+		normalized.AccessList = make(map[gethcommon.Address][]hexutil.Bytes)
 
 		// Get sorted addresses
 		addresses := make([]gethcommon.Address, 0, len(input.AccessList))
@@ -58,9 +60,11 @@ func NormalizeProverInputs(input *ProverInputs) *ProverInputs {
 		// Build normalized access list with sorted storage slots
 		for _, addr := range addresses {
 			if slots, ok := input.AccessList[addr]; ok {
-				normalizedSlots := make([]string, len(slots))
+				normalizedSlots := make([]hexutil.Bytes, len(slots))
 				copy(normalizedSlots, slots)
-				sort.Strings(normalizedSlots)
+				sort.Slice(normalizedSlots, func(i, j int) bool {
+					return bytes.Compare(normalizedSlots[i], normalizedSlots[j]) < 0
+				})
 				normalized.AccessList[addr] = normalizedSlots
 			}
 		}

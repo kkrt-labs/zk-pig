@@ -184,16 +184,16 @@ func (p *preparer) prepareProverInputs(ctx *preparerContext, execParams *evm.Exe
 
 	for node := range witness.State {
 		blob := []byte(node)
-		proverInputs.PreState = append(proverInputs.PreState, hexutil.Encode(blob))
+		proverInputs.PreState = append(proverInputs.PreState, blob)
 	}
 
-	proverInputs.AccessList = make(map[gethcommon.Address][]string)
+	proverInputs.AccessList = make(map[gethcommon.Address][]hexutil.Bytes)
 	tracker := ctx.trackers.GetAccessTracker(proverInputs.Ancestors[0].Root)
 	for account := range tracker.Accounts {
 		if storage, ok := tracker.Storage[account]; ok {
-			proverInputs.AccessList[account] = []string{}
+			proverInputs.AccessList[account] = []hexutil.Bytes{}
 			for slot := range storage {
-				proverInputs.AccessList[account] = append(proverInputs.AccessList[account], slot.Hex())
+				proverInputs.AccessList[account] = append(proverInputs.AccessList[account], slot.Bytes())
 			}
 		}
 	}

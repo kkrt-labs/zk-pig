@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	gethstate "github.com/ethereum/go-ethereum/core/state"
@@ -118,11 +117,7 @@ func (e *executor) preparePreState(ctx *executorContext, inputs *ProverInputs) e
 	// -- Preload the pre-state nodes to database ---
 	nodes := make([][]byte, 0)
 	for _, node := range inputs.PreState {
-		b, err := hexutil.Decode(node)
-		if err != nil {
-			return fmt.Errorf("failed to decode node %v: %v", node, err)
-		}
-		nodes = append(nodes, b)
+		nodes = append(nodes, node)
 	}
 	ethereum.WriteNodesToHashDB(ctx.stateDB.TrieDB().Disk(), nodes...)
 

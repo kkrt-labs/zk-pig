@@ -12,12 +12,12 @@ import (
 // ProverInputs contains the data expected by an EVM prover engine to execute & prove the block.
 // It contains the minimal partial state & chain data necessary for processing the block and validating the final state.
 type ProverInputs struct {
-	Block       *ethrpc.Block                   `json:"block"`       // Block to execute
-	Ancestors   []*gethtypes.Header             `json:"ancestors"`   // Ancestors of the block that are accessed during the block execution
-	ChainConfig *params.ChainConfig             `json:"chainConfig"` // Chain configuration
-	Codes       []hexutil.Bytes                 `json:"codes"`       // Contract bytecodes used during the block execution
-	PreState    []string                        `json:"preState"`    // Partial pre-state, consisting in a list of MPT nodes
-	AccessList  map[gethcommon.Address][]string `json:"accessList"`  // Access list of accounts and storage slots accessed during the block processing
+	Block       *ethrpc.Block                          `json:"block"`       // Block to execute
+	Ancestors   []*gethtypes.Header                    `json:"ancestors"`   // Ancestors of the block that are accessed during the block execution
+	ChainConfig *params.ChainConfig                    `json:"chainConfig"` // Chain configuration
+	Codes       []hexutil.Bytes                        `json:"codes"`       // Contract bytecodes used during the block execution
+	PreState    []hexutil.Bytes                        `json:"preState"`    // Partial pre-state, consisting in a list of MPT nodes
+	AccessList  map[gethcommon.Address][]hexutil.Bytes `json:"accessList"`  // Access list of accounts and storage slots accessed during the block processing
 }
 
 // HeavyProverInputs contains data expected by an EVM prover engine to execute & prove the block.
