@@ -11,13 +11,13 @@ import (
 
 type Client struct {
 	client autorest.Sender
-	apiKey string
+	cfg    *Config
 }
 
-func NewClientFromClient(s autorest.Sender, apiKey string) *Client {
+func NewClientFromClient(s autorest.Sender, cfg *Config) *Client {
 	return &Client{
 		client: s,
-		apiKey: apiKey,
+		cfg:    cfg,
 	}
 }
 
@@ -34,7 +34,7 @@ func NewClient(cfg *Config) (*Client, error) {
 			Sender:           httpc,
 			RequestInspector: comhttp.WithBaseURL(cfg.Addr),
 		},
-		cfg.APIKey,
+		cfg,
 	), nil
 }
 
@@ -62,7 +62,7 @@ func (c *Client) prepareRequest(ctx context.Context, method, path string, body i
 		autorest.AsContentType("application/json"),
 		autorest.WithPath(path),
 		autorest.WithMethod(method),
-		autorest.WithHeader("Authorization", fmt.Sprintf("Bearer %s", c.apiKey)),
+		autorest.WithHeader("Authorization", fmt.Sprintf("Bearer %s", c.cfg.APIKey)),
 	}
 
 	if body != nil {
