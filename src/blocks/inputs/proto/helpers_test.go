@@ -33,11 +33,11 @@ func TestFromGoToProtoProverInputs(t *testing.T) {
 	}
 
 	// Convert to proto
-	protoInputs := FromGoToProtoProverInputs(goInputs)
+	protoInputs := ToProto(goInputs)
 	require.NotNil(t, protoInputs)
 
 	// Convert back to Go
-	backToGo := FromProtoToGoProverInputs(protoInputs)
+	backToGo := FromProto(protoInputs)
 	require.NotNil(t, backToGo)
 
 	normalizedGoInputs := blockinputs.NormalizeProverInputs(goInputs)

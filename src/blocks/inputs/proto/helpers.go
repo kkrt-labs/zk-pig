@@ -12,8 +12,8 @@ import (
 	blockinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs"
 )
 
-// FromProverInputs converts Go ProverInputs to protobuf format
-func FromGoToProtoProverInputs(pi *blockinputs.ProverInputs) *ProverInputs {
+// ToProto converts Go ProverInputs to protobuf format
+func ToProto(pi *blockinputs.ProverInputs) *ProverInputs {
 	return &ProverInputs{
 		Block:       blockToProto(pi.Block),
 		Ancestors:   ancesterHeadersToProto(pi.Ancestors),
@@ -24,8 +24,8 @@ func FromGoToProtoProverInputs(pi *blockinputs.ProverInputs) *ProverInputs {
 	}
 }
 
-// FromProtoToGoProverInputs converts protobuf format to Go ProverInputs
-func FromProtoToGoProverInputs(p *ProverInputs) *blockinputs.ProverInputs {
+// FromProto converts protobuf format to Go ProverInputs
+func FromProto(p *ProverInputs) *blockinputs.ProverInputs {
 	return &blockinputs.ProverInputs{
 		Block:       blockFromProto(p.GetBlock()),
 		Ancestors:   ancesterHeadersFromProto(p.GetAncestors()),
