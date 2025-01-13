@@ -26,7 +26,8 @@ func TestListAWSPricing(t *testing.T) {
 				VCPU:           2,
 			},
 		}
-		json.NewEncoder(w).Encode(instances)
+		err := json.NewEncoder(w).Encode(instances)
+		require.NoError(t, err)
 	}))
 	defer server.Close()
 

@@ -19,7 +19,8 @@ func TestCreateMachine(t *testing.T) {
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 
 		resp := ethproofs.CreateMachineResponse{ID: 456}
-		json.NewEncoder(w).Encode(resp)
+		err := json.NewEncoder(w).Encode(resp)
+		require.NoError(t, err)
 	}))
 	defer server.Close()
 

@@ -19,7 +19,8 @@ func TestQueueProof(t *testing.T) {
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 
 		resp := ethproofs.ProofResponse{ProofID: 789}
-		json.NewEncoder(w).Encode(resp)
+		err := json.NewEncoder(w).Encode(resp)
+		require.NoError(t, err)
 	}))
 	defer server.Close()
 
@@ -46,7 +47,8 @@ func TestStartProving(t *testing.T) {
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 
 		resp := ethproofs.ProofResponse{ProofID: 790}
-		json.NewEncoder(w).Encode(resp)
+		err := json.NewEncoder(w).Encode(resp)
+		require.NoError(t, err)
 	}))
 	defer server.Close()
 
@@ -73,7 +75,8 @@ func TestSubmitProof(t *testing.T) {
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 
 		resp := ethproofs.ProofResponse{ProofID: 791}
-		json.NewEncoder(w).Encode(resp)
+		err := json.NewEncoder(w).Encode(resp)
+		require.NoError(t, err)
 	}))
 	defer server.Close()
 

@@ -21,7 +21,8 @@ func TestCreateCluster(t *testing.T) {
 
 		// Return response
 		resp := ethproofs.CreateClusterResponse{ID: 123}
-		json.NewEncoder(w).Encode(resp)
+		err := json.NewEncoder(w).Encode(resp)
+		require.NoError(t, err)
 	}))
 	defer server.Close()
 
@@ -52,7 +53,8 @@ func TestListClusters(t *testing.T) {
 				Nickname: "test-cluster",
 			},
 		}
-		json.NewEncoder(w).Encode(clusters)
+		err := json.NewEncoder(w).Encode(clusters)
+		require.NoError(t, err)
 	}))
 	defer server.Close()
 
