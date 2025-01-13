@@ -19,7 +19,7 @@ func FromGoToProtoProverInputs(pi *blockinputs.ProverInputs) *ProverInputs {
 		Ancestors:   ancesterHeadersToProto(pi.Ancestors),
 		ChainConfig: chainConfigToProto(pi.ChainConfig),
 		Codes:       codesToProto(pi.Codes),
-		PreState:    bytesFromStrings(pi.PreState),
+		PreState:    bytesFromHexutil(pi.PreState),
 		AccessList:  accessListToProto(pi.AccessList),
 	}
 }
@@ -31,7 +31,7 @@ func FromProtoToGoProverInputs(p *ProverInputs) *blockinputs.ProverInputs {
 		Ancestors:   ancesterHeadersFromProto(p.GetAncestors()),
 		ChainConfig: chainConfigFromProto(p.GetChainConfig()),
 		Codes:       codesFromProto(p.GetCodes()),
-		PreState:    stringsFromBytes(p.GetPreState()),
+		PreState:    bytesToHexutil(p.GetPreState()),
 		AccessList:  accessListFromProto(p.GetAccessList()),
 	}
 }
@@ -333,14 +333,18 @@ func txAccessListToProto(al gethtypes.AccessList) []*AccessTuple {
 	return result
 }
 
-func accessListToProto(al map[gethcommon.Address][]string) map[string]*AccessList {
+func accessListToProto(al map[gethcommon.Address][]hexutil.Bytes) map[string]*AccessList {
 	if len(al) == 0 {
 		return nil
 	}
 	result := make(map[string]*AccessList, len(al))
 	for addr, slots := range al {
+		storageSlots := make([][]byte, len(slots))
+		for i, slot := range slots {
+			storageSlots[i] = []byte(slot)
+		}
 		result[addr.Hex()] = &AccessList{
-			StorageSlots: bytesFromStrings(slots),
+			StorageSlots: storageSlots,
 		}
 	}
 	return result
@@ -501,10 +505,10 @@ func ancesterHeadersFromProto(headers []*AncestorHeader) []*gethtypes.Header {
 	return result
 }
 
-func accessListFromProto(al map[string]*AccessList) map[gethcommon.Address][]string {
-	result := make(map[gethcommon.Address][]string)
+func accessListFromProto(al map[string]*AccessList) map[gethcommon.Address][]hexutil.Bytes {
+	result := make(map[gethcommon.Address][]hexutil.Bytes)
 	for addrHex, slots := range al {
-		result[gethcommon.HexToAddress(addrHex)] = stringsFromBytes(slots.StorageSlots)
+		result[gethcommon.HexToAddress(addrHex)] = bytesToHexutil(slots.StorageSlots)
 	}
 	return result
 }
@@ -693,21 +697,18 @@ func bytesOrNil(h *gethcommon.Hash) []byte {
 	return h[:]
 }
 
-func bytesFromStrings(strs []string) [][]byte {
-	if len(strs) == 0 {
-		return nil
-	}
-	result := make([][]byte, len(strs))
-	for i, s := range strs {
-		result[i] = []byte(s)
+func bytesFromHexutil(hexBytes []hexutil.Bytes) [][]byte {
+	result := make([][]byte, len(hexBytes))
+	for i, b := range hexBytes {
+		result[i] = []byte(b)
 	}
 	return result
 }
 
-func stringsFromBytes(bytes [][]byte) []string {
-	result := make([]string, len(bytes))
+func bytesToHexutil(bytes [][]byte) []hexutil.Bytes {
+	result := make([]hexutil.Bytes, len(bytes))
 	for i, b := range bytes {
-		result[i] = string(b)
+		result[i] = hexutil.Bytes(b)
 	}
 	return result
 }
