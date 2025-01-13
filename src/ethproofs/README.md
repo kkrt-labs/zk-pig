@@ -29,7 +29,7 @@ All API endpoints require authentication using an API key. You can obtain one by
 ```go
 import (
     "github.com/kkrt-labs/kakarot-controller/src/ethproofs"
-    ethproofshttp "github.com/kkrt-labs/kakarot-controller/src/ethproofs/http"
+    ethproofshttp "github.com/kkrt-labs/kakarot-controller/src/ethproofs/client/http"
 )
 
 // Create client with configuration
@@ -164,20 +164,22 @@ func TestYourFunction(t *testing.T) {
 
 ```
 src/ethproofs/
-├── client.go           # Main interface definition
-├── http/
-│   ├── client.go      # HTTP implementation using autorest
-│   ├── config.go      # Client configuration
-│   ├── clusters.go    # Clusters endpoint implementation
-│   ├── clusters_test.go
-│   ├── proofs.go      # Proofs endpoint implementation
-│   ├── proofs_test.go
-│   ├── machine.go     # Single machine endpoint implementation
-│   ├── machine_test.go
-│   ├── aws.go         # AWS pricing endpoint implementation
-│   └── aws_test.go
-└── mock/
-    └── client.go      # Generated mock client
+└── client/
+    ├── README.md          # This file
+    ├── client.go          # Main interface definition
+    ├── http/
+    │   ├── client.go      # HTTP implementation using autorest
+    │   ├── config.go      # Client configuration
+    │   ├── clusters.go    # Clusters endpoint implementation
+    │   ├── clusters_test.go
+    │   ├── proofs.go      # Proofs endpoint implementation
+    │   ├── proofs_test.go
+    │   ├── machine.go     # Single machine endpoint implementation
+    │   ├── machine_test.go
+    │   ├── aws.go         # AWS pricing endpoint implementation
+    │   └── aws_test.go
+    └── mock/
+        └── client.go      # Generated mock client
 ```
 
 ## API Documentation

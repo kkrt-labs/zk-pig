@@ -7,7 +7,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/kkrt-labs/kakarot-controller/src/ethproofs"
+	ethproofs "github.com/kkrt-labs/kakarot-controller/src/ethproofs/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

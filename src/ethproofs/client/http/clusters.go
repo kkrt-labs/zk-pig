@@ -4,7 +4,7 @@ import (
 	"context"
 	"net/http"
 
-	"github.com/kkrt-labs/kakarot-controller/src/ethproofs"
+	ethproofs "github.com/kkrt-labs/kakarot-controller/src/ethproofs/client"
 )
 
 func (c *Client) CreateCluster(ctx context.Context, req *ethproofs.CreateClusterRequest) (*ethproofs.CreateClusterResponse, error) {
