@@ -13,17 +13,23 @@ import (
 	blockinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs"
 	blockstore "github.com/kkrt-labs/kakarot-controller/src/blocks/store"
 	filestore "github.com/kkrt-labs/kakarot-controller/src/blocks/store/file"
+	"github.com/kkrt-labs/kakarot-controller/src/config"
 )
+
+type ChainConfig struct {
+	ID  *big.Int
+	RPC *jsonrpchttp.Config
+}
 
 // Config is the configuration for the RPCPreflight.
 type Config struct {
-	RPC     *jsonrpchttp.Config `json:"rpc"`        // Configuration for an RPC HTTP client
-	BaseDir string              `json:"blocks-dir"` // Base directory for storing block data
+	Chain   ChainConfig
+	BaseDir string `json:"blocks-dir"` // Base directory for storing block data
 }
 
 func (cfg *Config) SetDefault() *Config {
-	if cfg.RPC == nil {
-		cfg.RPC = new(jsonrpchttp.Config).SetDefault()
+	if cfg.Chain.RPC == nil {
+		cfg.Chain.RPC = new(jsonrpchttp.Config).SetDefault()
 	}
 
 	if cfg.BaseDir == "" {
@@ -31,6 +37,24 @@ func (cfg *Config) SetDefault() *Config {
 	}
 
 	return cfg
+}
+
+func FromGlobalConfig(gcfg *config.Config) (*Service, error) {
+	cfg := &Config{
+		Chain: ChainConfig{
+			RPC: &jsonrpchttp.Config{Address: gcfg.Chain.RPC.URL},
+		},
+		BaseDir: gcfg.DataDir,
+	}
+
+	if gcfg.Chain.ID != "" {
+		cfg.Chain.ID = new(big.Int)
+		if _, ok := cfg.Chain.ID.SetString(gcfg.Chain.ID, 10); !ok {
+			return nil, fmt.Errorf("invalid chain id %q", gcfg.Chain.ID)
+		}
+	}
+
+	return New(cfg), nil
 }
 
 // Service is a service for managing blocks.
@@ -53,12 +77,22 @@ func New(cfg *Config) *Service {
 	}
 }
 
-func (s *Service) initRemote(ctx context.Context) error {
+func (s *Service) init(ctx context.Context) error {
 	s.initOnce.Do(func() {
-		s.remote, s.err = newRPC(s.cfg.RPC)
-		if s.err == nil {
-			s.chainID, s.err = s.remote.ChainID(ctx)
+		if s.cfg.Chain.RPC == nil && s.cfg.Chain.ID == nil {
+			s.err = fmt.Errorf("no chain configuration provided")
+			return
 		}
+
+		if s.cfg.Chain.RPC != nil {
+			s.remote, s.err = newRPC(s.cfg.Chain.RPC)
+			if s.err == nil {
+				s.chainID, s.err = s.remote.ChainID(ctx)
+			}
+		} else {
+			s.chainID = s.cfg.Chain.ID
+		}
+
 		if s.err != nil {
 			s.err = fmt.Errorf("failed to initialize RPC client: %v", s.err)
 		}
@@ -68,7 +102,7 @@ func (s *Service) initRemote(ctx context.Context) error {
 }
 
 func (s *Service) Generate(ctx context.Context, blockNumber *big.Int, format blockstore.Format) error {
-	if err := s.initRemote(ctx); err != nil {
+	if err := s.init(ctx); err != nil {
 		return err
 	}
 
@@ -89,7 +123,7 @@ func (s *Service) Generate(ctx context.Context, blockNumber *big.Int, format blo
 }
 
 func (s *Service) Preflight(ctx context.Context, blockNumber *big.Int) error {
-	if err := s.initRemote(ctx); err != nil {
+	if err := s.init(ctx); err != nil {
 		return err
 	}
 
@@ -99,6 +133,10 @@ func (s *Service) Preflight(ctx context.Context, blockNumber *big.Int) error {
 }
 
 func (s *Service) preflight(ctx context.Context, blockNumber *big.Int) (*blockinputs.HeavyProverInputs, error) {
+	if s.remote == nil {
+		return nil, fmt.Errorf("no RPC client configured")
+	}
+
 	data, err := blockinputs.NewPreflight(s.remote).Preflight(ctx, blockNumber)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute preflight: %v", err)
@@ -111,15 +149,12 @@ func (s *Service) preflight(ctx context.Context, blockNumber *big.Int) (*blockin
 	return data, nil
 }
 
-func (s *Service) Prepare(ctx context.Context, chainID, blockNumber *big.Int, format blockstore.Format) error {
-	if chainID == nil {
-		if err := s.initRemote(ctx); err != nil {
-			return err
-		}
-		chainID = s.chainID
+func (s *Service) Prepare(ctx context.Context, blockNumber *big.Int, format blockstore.Format) error {
+	if err := s.init(ctx); err != nil {
+		return err
 	}
 
-	return s.prepare(ctx, chainID, blockNumber, format)
+	return s.prepare(ctx, s.chainID, blockNumber, format)
 }
 
 func (s *Service) prepare(ctx context.Context, chainID, blockNumber *big.Int, format blockstore.Format) error {
@@ -141,15 +176,12 @@ func (s *Service) prepare(ctx context.Context, chainID, blockNumber *big.Int, fo
 	return nil
 }
 
-func (s *Service) Execute(ctx context.Context, chainID, blockNumber *big.Int, format blockstore.Format) error {
-	if chainID == nil {
-		if err := s.initRemote(ctx); err != nil {
-			return err
-		}
-		chainID = s.chainID
+func (s *Service) Execute(ctx context.Context, blockNumber *big.Int, format blockstore.Format) error {
+	if err := s.init(ctx); err != nil {
+		return err
 	}
 
-	return s.execute(ctx, chainID, blockNumber, format)
+	return s.execute(ctx, s.chainID, blockNumber, format)
 }
 
 func (s *Service) execute(ctx context.Context, chainID, blockNumber *big.Int, format blockstore.Format) error {

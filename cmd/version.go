@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func VersionCommand() *cobra.Command {
+func VersionCommand(_ *RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "version",
 		Short: "Print the version number",

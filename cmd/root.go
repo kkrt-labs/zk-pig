@@ -2,85 +2,66 @@ package cmd
 
 import (
 	"fmt"
-	"strings"
 
+	"github.com/kkrt-labs/kakarot-controller/pkg/log"
+	"github.com/kkrt-labs/kakarot-controller/src/config"
 	"github.com/spf13/cobra"
-	"github.com/spf13/pflag"
-	"go.uber.org/zap"
+	"github.com/spf13/viper"
 )
+
+func init() {
+	cobra.EnableTraverseRunHooks = true
+}
+
+type RootContext struct {
+	Config *config.Config
+	Viper  *viper.Viper
+}
 
 // NewKKRTCtlCommand creates and returns the root command
 func NewKKRTCtlCommand() *cobra.Command {
-	var (
-		logLevel  string
-		logFormat string
-	)
+	ctx := &RootContext{
+		Viper:  viper.New(),
+		Config: new(config.Config),
+	}
 
 	rootCmd := &cobra.Command{
 		Use:   "kkrtctl",
 		Short: "kkrtctl is a CLI tool for managing prover inputs and more.",
-		PersistentPreRunE: func(_ *cobra.Command, _ []string) error {
-			if err := setupLogger(logLevel, logFormat); err != nil {
-				return fmt.Errorf("failed to setup logger: %w", err)
+		PersistentPreRunE: func(rootCmd *cobra.Command, _ []string) error {
+			if err := ctx.Config.Load(ctx.Viper); err != nil {
+				return fmt.Errorf("failed to load configuration: %w", err)
 			}
+
+			level, err := log.ParseLevel(ctx.Config.Log.Level)
+			if err != nil {
+				return err
+			}
+
+			format, err := log.ParseFormat(ctx.Config.Log.Format)
+			if err != nil {
+				return err
+			}
+
+			logger, err := log.NewLogger(level, format)
+			if err != nil {
+				return fmt.Errorf("failed to create logger: %w", err)
+			}
+
+			ctx := log.WithLogger(rootCmd.Context(), logger)
+			rootCmd.SetContext(ctx)
+
 			return nil
 		},
 	}
 
 	// Add persistent flags for logging
-	pf := rootCmd.PersistentFlags()
-	AddLogLevelFlag(&logLevel, pf)
-	AddLogFormatFlag(&logFormat, pf)
+	log.AddFlags(ctx.Viper, rootCmd.PersistentFlags())
+	config.AddConfigFileFlag(ctx.Viper, rootCmd.PersistentFlags())
 
 	// Add subcommands
-	rootCmd.AddCommand(VersionCommand())
-	rootCmd.AddCommand(NewProverInputsCommand())
+	rootCmd.AddCommand(VersionCommand(ctx))
+	rootCmd.AddCommand(NewProverInputsCommand(ctx))
 
 	return rootCmd
-}
-
-func AddLogLevelFlag(logLevel *string, f *pflag.FlagSet) string {
-	flagName := "log-level"
-	f.StringVar(logLevel, flagName, "info", "Log level (debug|info|warn|error)")
-	return flagName
-}
-
-func AddLogFormatFlag(logFormat *string, f *pflag.FlagSet) string {
-	flagName := "log-format"
-	f.StringVar(logFormat, flagName, "text", "Log format (json|text)")
-	return flagName
-}
-
-func setupLogger(logLevel, logFormat string) error {
-	cfg := zap.NewProductionConfig()
-
-	// Log Level
-	switch strings.ToLower(logLevel) {
-	case "debug":
-		cfg.Level.SetLevel(zap.DebugLevel)
-	case "info":
-		cfg.Level.SetLevel(zap.InfoLevel)
-	case "warn":
-		cfg.Level.SetLevel(zap.WarnLevel)
-	case "error":
-		cfg.Level.SetLevel(zap.ErrorLevel)
-	case "":
-		// do nothing, keep default from Production
-	default:
-		return fmt.Errorf("invalid log-level %q, must be one of: debug, info, warn, error", logLevel)
-	}
-
-	// Log Format
-	if strings.EqualFold(logFormat, "text") {
-		cfg.Encoding = "console"
-	} else {
-		cfg.Encoding = "json"
-	}
-
-	logger, err := cfg.Build()
-	if err != nil {
-		return fmt.Errorf("failed to build logger: %w", err)
-	}
-	zap.ReplaceGlobals(logger)
-	return nil
 }
