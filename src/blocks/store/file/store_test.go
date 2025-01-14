@@ -14,6 +14,7 @@ import (
 	gethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/rpc"
 	blockinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs"
+	filestore "github.com/kkrt-labs/kakarot-controller/src/blocks/store"
 )
 
 func TestFileBlockStoreJSON(t *testing.T) {
@@ -52,14 +53,14 @@ func TestFileBlockStoreJSON(t *testing.T) {
 			},
 		},
 	}
-	err = store.StoreProverInputs(context.Background(), proverInputs, "json")
+	err = store.StoreProverInputs(context.Background(), proverInputs, filestore.JSONFormat)
 	assert.NoError(t, err)
 
-	_, err = store.LoadProverInputs(context.Background(), 2, 15, "json")
+	_, err = store.LoadProverInputs(context.Background(), 2, 15, filestore.JSONFormat)
 	assert.NoError(t, err)
 
 	// Test loading non-existent prover inputs
-	_, err = store.LoadProverInputs(context.Background(), 2, 25, "json")
+	_, err = store.LoadProverInputs(context.Background(), 2, 25, filestore.JSONFormat)
 	assert.Error(t, err)
 }
 
@@ -102,13 +103,13 @@ func TestFileBlockStoreProtobuf(t *testing.T) {
 			},
 		},
 	}
-	err = store.StoreProverInputs(context.Background(), proverInputs, "protobuf")
+	err = store.StoreProverInputs(context.Background(), proverInputs, filestore.ProtobufFormat)
 	assert.NoError(t, err)
 
-	_, err = store.LoadProverInputs(context.Background(), 2, 15, "protobuf")
+	_, err = store.LoadProverInputs(context.Background(), 2, 15, filestore.ProtobufFormat)
 	assert.NoError(t, err)
 
 	// Test loading non-existent prover inputs
-	_, err = store.LoadProverInputs(context.Background(), 2, 25, "protobuf")
+	_, err = store.LoadProverInputs(context.Background(), 2, 25, filestore.ProtobufFormat)
 	assert.Error(t, err)
 }

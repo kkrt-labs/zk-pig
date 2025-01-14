@@ -11,6 +11,13 @@ type BlockStore interface {
 	ProverInputsStore
 }
 
+type Format int
+
+const (
+	JSONFormat Format = iota
+	ProtobufFormat
+)
+
 type HeavyProverInputsStore interface {
 	// StoreHeavyProverInputs stores the heavy prover inputs for a block.
 	StoreHeavyProverInputs(ctx context.Context, inputs *blockinputs.HeavyProverInputs) error
@@ -22,9 +29,9 @@ type HeavyProverInputsStore interface {
 type ProverInputsStore interface {
 	// StoreProverInputs stores the prover inputs for a block.
 	// format can be "protobuf" or "json"
-	StoreProverInputs(ctx context.Context, inputs *blockinputs.ProverInputs, format string) error
+	StoreProverInputs(ctx context.Context, inputs *blockinputs.ProverInputs, format Format) error
 
 	// LoadProverInputs loads the prover inputs for a block.
 	// format can be "protobuf" or "json"
-	LoadProverInputs(ctx context.Context, chainID, blockNumber uint64, format string) (*blockinputs.ProverInputs, error)
+	LoadProverInputs(ctx context.Context, chainID, blockNumber uint64, format Format) (*blockinputs.ProverInputs, error)
 }

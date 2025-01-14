@@ -67,7 +67,7 @@ func (s *Service) initRemote(ctx context.Context) error {
 	return s.err
 }
 
-func (s *Service) Generate(ctx context.Context, blockNumber *big.Int, format string) error {
+func (s *Service) Generate(ctx context.Context, blockNumber *big.Int, format blockstore.Format) error {
 	if err := s.initRemote(ctx); err != nil {
 		return err
 	}
@@ -111,7 +111,7 @@ func (s *Service) preflight(ctx context.Context, blockNumber *big.Int) (*blockin
 	return data, nil
 }
 
-func (s *Service) Prepare(ctx context.Context, chainID, blockNumber *big.Int, format string) error {
+func (s *Service) Prepare(ctx context.Context, chainID, blockNumber *big.Int, format blockstore.Format) error {
 	if chainID == nil {
 		if err := s.initRemote(ctx); err != nil {
 			return err
@@ -122,7 +122,7 @@ func (s *Service) Prepare(ctx context.Context, chainID, blockNumber *big.Int, fo
 	return s.prepare(ctx, chainID, blockNumber, format)
 }
 
-func (s *Service) prepare(ctx context.Context, chainID, blockNumber *big.Int, format string) error {
+func (s *Service) prepare(ctx context.Context, chainID, blockNumber *big.Int, format blockstore.Format) error {
 	data, err := s.store.LoadHeavyProverInputs(ctx, chainID.Uint64(), blockNumber.Uint64())
 	if err != nil {
 		return fmt.Errorf("failed to load preflight data: %v", err)
@@ -141,7 +141,7 @@ func (s *Service) prepare(ctx context.Context, chainID, blockNumber *big.Int, fo
 	return nil
 }
 
-func (s *Service) Execute(ctx context.Context, chainID, blockNumber *big.Int, format string) error {
+func (s *Service) Execute(ctx context.Context, chainID, blockNumber *big.Int, format blockstore.Format) error {
 	if chainID == nil {
 		if err := s.initRemote(ctx); err != nil {
 			return err
@@ -152,7 +152,7 @@ func (s *Service) Execute(ctx context.Context, chainID, blockNumber *big.Int, fo
 	return s.execute(ctx, chainID, blockNumber, format)
 }
 
-func (s *Service) execute(ctx context.Context, chainID, blockNumber *big.Int, format string) error {
+func (s *Service) execute(ctx context.Context, chainID, blockNumber *big.Int, format blockstore.Format) error {
 	inputs, err := s.store.LoadProverInputs(ctx, chainID.Uint64(), blockNumber.Uint64(), format)
 	if err != nil {
 		return fmt.Errorf("failed to load provable inputs: %v", err)

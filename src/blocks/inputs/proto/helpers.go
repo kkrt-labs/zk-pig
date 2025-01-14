@@ -90,14 +90,6 @@ func blockToProto(b *ethrpc.Block) *Block {
 }
 
 func chainConfigToProto(c *params.ChainConfig) *ChainConfig {
-	// Helper function to convert *big.Int to []byte
-	toBytesIfNotNil := func(b *big.Int) []byte {
-		if b != nil {
-			return b.Bytes()
-		}
-		return nil
-	}
-
 	daoForkSupport := c.DAOForkSupport
 
 	return &ChainConfig{
@@ -711,4 +703,12 @@ func bytesToHexutil(bytes [][]byte) []hexutil.Bytes {
 		result[i] = hexutil.Bytes(b)
 	}
 	return result
+}
+
+// Helper function to convert *big.Int to []byte
+func toBytesIfNotNil(b *big.Int) []byte {
+	if b != nil {
+		return b.Bytes()
+	}
+	return nil
 }
