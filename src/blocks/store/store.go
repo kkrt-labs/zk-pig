@@ -35,3 +35,14 @@ type ProverInputsStore interface {
 	// format can be "protobuf" or "json"
 	LoadProverInputs(ctx context.Context, chainID, blockNumber uint64, format Format) (*blockinputs.ProverInputs, error)
 }
+
+func (f Format) String() string {
+	switch f {
+	case JSONFormat:
+		return "json"
+	case ProtobufFormat:
+		return "protobuf"
+	default:
+		return "json"
+	}
+}

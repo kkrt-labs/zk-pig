@@ -60,7 +60,7 @@ func (s *FileBlockStore) preflightPath(chainID, blockNumber uint64) string {
 }
 
 func (s *FileBlockStore) proverPath(chainID, blockNumber uint64, format filestore.Format) string {
-	return filepath.Join(s.baseDir, fmt.Sprintf("%d", chainID), "prover-inputs", fmt.Sprintf("%d.%s", blockNumber, format))
+	return filepath.Join(s.baseDir, fmt.Sprintf("%d", chainID), "prover-inputs", fmt.Sprintf("%d.%s", blockNumber, format.String()))
 }
 
 func (s *FileBlockStore) storeData(path string, data interface{}, format filestore.Format) error {
@@ -93,7 +93,7 @@ func (s *FileBlockStore) storeData(path string, data interface{}, format filesto
 			return fmt.Errorf("failed to encode data to file %s: %v", path, err)
 		}
 	default:
-		return fmt.Errorf("unsupported format: %s", format)
+		return fmt.Errorf("unsupported format: %s", format.String())
 	}
 
 	return nil
