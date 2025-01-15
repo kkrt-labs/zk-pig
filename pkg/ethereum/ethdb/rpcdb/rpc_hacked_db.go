@@ -45,6 +45,12 @@ func (db *Database) Get(key []byte) ([]byte, error) {
 		return db.Database.Get(key)
 	}
 
+	// First attempts to get the header from the underlying database
+	b, err := db.Database.Get(key)
+	if err == nil {
+		return b, nil
+	}
+
 	// Fetch the header from the remote RPC server
 	// Note: We use the context.TODO() because the ethdb.Database.Get method does not accept a context.
 	header, err := db.remote.HeaderByHash(context.TODO(), hash)
@@ -53,7 +59,7 @@ func (db *Database) Get(key []byte) ([]byte, error) {
 	}
 
 	// Encode the header to RLP
-	b, err := rlp.EncodeToBytes(header)
+	b, err = rlp.EncodeToBytes(header)
 	if err != nil {
 		return nil, err
 	}

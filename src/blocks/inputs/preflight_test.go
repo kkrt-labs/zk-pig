@@ -27,7 +27,7 @@ func loadTestDataInputs(t *testing.T, path string) *TestDataInputs {
 }
 
 func TestUnmarshal(t *testing.T) {
-	_ = loadTestDataInputs(t, testDataInputsPath("Ethereum_Mainnet_21465322.json"))
+	_ = loadTestDataInputs(t, testDataInputsPath("Ethereum_Mainnet_21630258.json"))
 }
 
 // TODO: Add unit-tests for the preflight block execution
