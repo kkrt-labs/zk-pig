@@ -101,10 +101,18 @@ func (t *LoggerTracer) OnBlockEnd(_ error) {
 	t.blockLogger = nil
 }
 
+var txTypes = map[byte]string{
+	gethtypes.LegacyTxType:     "legacy",
+	gethtypes.AccessListTxType: "access_list",
+	gethtypes.DynamicFeeTxType: "dynamic_fee",
+	gethtypes.BlobTxType:       "blob",
+	gethtypes.DepositTxType:    "deposit",
+}
+
 // OnTxStart logs transaction execution start
 func (t *LoggerTracer) OnTxStart(vm *tracing.VMContext, tx *gethtypes.Transaction, from gethcommon.Address) {
 	t.txLogger = t.blockLogger.With(
-		zap.String("tx.type", "transaction"),
+		zap.String("tx.type", txTypes[tx.Type()]),
 		zap.String("tx.hash", tx.Hash().Hex()),
 		zap.String("tx.from", from.Hex()),
 	)

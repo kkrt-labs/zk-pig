@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 )
 
 type Level int
@@ -64,6 +65,7 @@ func ParseFormat(format string) (Format, error) {
 // NewLogger creates a new logger with the given log level and format.
 func NewLogger(level Level, format Format) (*zap.Logger, error) {
 	cfg := zap.NewProductionConfig()
+	cfg.EncoderConfig.EncodeLevel = zapcore.CapitalColorLevelEncoder
 
 	// Log Level
 	switch level {

@@ -7,6 +7,7 @@ import (
 	"github.com/kkrt-labs/kakarot-controller/src/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 )
 
 func init() {
@@ -48,6 +49,7 @@ func NewKKRTCtlCommand() *cobra.Command {
 				return fmt.Errorf("failed to create logger: %w", err)
 			}
 
+			zap.ReplaceGlobals(logger)
 			ctx := log.WithLogger(rootCmd.Context(), logger)
 			rootCmd.SetContext(ctx)
 
