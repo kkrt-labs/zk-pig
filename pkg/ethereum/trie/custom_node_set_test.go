@@ -85,7 +85,7 @@ func testAccountsNodeSet(t *testing.T, data *accountsData) {
 	t.Logf("Nodes.Len %v", len(pset.Set().Nodes))
 	t.Logf("Leaf.Len %v", len(pset.Set().Leaves))
 
-	err = trieDB.Update(data.Root, gethtypes.EmptyRootHash, 0, trienode.NewWithNodeSet(pset.Set()), triedb.NewStateSet())
+	err = trieDB.Update(data.Root, gethtypes.EmptyRootHash, 0, trienode.NewWithNodeSet(pset.Set()), nil)
 	require.NoError(t, err)
 
 	tr, err := trie.NewStateTrie(trie.StateTrieID(data.Root), trieDB)
@@ -164,7 +164,7 @@ func testNodeSetFromDiffProofs(t *testing.T, d *diffData) {
 	err = psetWithOrphans.AddOrphanNodes(postRoot, postProofDB, key)
 	require.NoError(t, err)
 
-	err = partialPreTrieDBWithOrphans.Update(preRoot, gethcommon.Hash{}, 0, trienode.NewWithNodeSet(psetWithOrphans.Set()), triedb.NewStateSet())
+	err = partialPreTrieDBWithOrphans.Update(preRoot, gethcommon.Hash{}, 0, trienode.NewWithNodeSet(psetWithOrphans.Set()), nil)
 	require.NoError(t, err)
 
 	partialPreTrieWithOrphans, err := trie.New(trie.TrieID(preRoot), partialPreTrieDBWithOrphans)
@@ -207,7 +207,7 @@ func testNodeSetFromStateProofs(t *testing.T, stateRoot gethcommon.Hash) {
 
 	// Ensure the node set can be inserted into a trie database
 	trieDB := newTestTrieDB()
-	err = trieDB.Update(stateRoot, gethcommon.Hash{}, 0, set, triedb.NewStateSet())
+	err = trieDB.Update(stateRoot, gethcommon.Hash{}, 0, set, nil)
 	require.NoError(t, err)
 
 	stateTrie, err := trie.NewStateTrie(trie.StateTrieID(stateRoot), trieDB)
@@ -297,7 +297,7 @@ func testNodeSetFromStateTransitionProofs(t *testing.T, id string) {
 
 	// Ensure the node set can be inserted into a trie database
 	trieDB := newTestTrieDB()
-	err = trieDB.Update(data.PreRoot, gethcommon.Hash{}, 0, set, triedb.NewStateSet())
+	err = trieDB.Update(data.PreRoot, gethcommon.Hash{}, 0, set, nil)
 	require.NoError(t, err)
 
 	// Create a custom trie
@@ -418,7 +418,7 @@ func TestCustomTrie(t *testing.T) {
 	// --- Test delete on partial trie built on partial Geth trie ---
 	t.Run("Geth Trie", func(t *testing.T) {
 		gethTrieDB := newTestTrieDB()
-		err = gethTrieDB.Update(preRoot, gethcommon.Hash{}, 0, trienode.NewWithNodeSet(set), triedb.NewStateSet())
+		err = gethTrieDB.Update(preRoot, gethcommon.Hash{}, 0, trienode.NewWithNodeSet(set), nil)
 		require.NoError(t, err)
 
 		partialGethTrie, err := trie.New(trie.TrieID(preRoot), gethTrieDB)
@@ -432,7 +432,7 @@ func TestCustomTrie(t *testing.T) {
 	// --- Test delete on partial trie built on custom trie ---
 	t.Run("Custom Trie", func(t *testing.T) {
 		customTrieDB := newTestTrieDB()
-		err = customTrieDB.Update(preRoot, gethcommon.Hash{}, 0, trienode.NewWithNodeSet(set), triedb.NewStateSet())
+		err = customTrieDB.Update(preRoot, gethcommon.Hash{}, 0, trienode.NewWithNodeSet(set), nil)
 		require.NoError(t, err)
 
 		partialCustomTrie, err := New(TrieID(preRoot), customTrieDB)
