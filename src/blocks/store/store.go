@@ -19,6 +19,15 @@ const (
 	ProtobufFormat
 )
 
+type Compression int
+
+const (
+	GzipCompression Compression = iota
+	FlateCompression
+	ZlibCompression
+	NoCompression
+)
+
 func (f Format) String() string {
 	switch f {
 	case JSONFormat:
@@ -30,9 +39,29 @@ func (f Format) String() string {
 	}
 }
 
+func (c Compression) String() string {
+	switch c {
+	case GzipCompression:
+		return "gzip"
+	case FlateCompression:
+		return "flate"
+	case ZlibCompression:
+		return "zlib"
+	case NoCompression:
+		return ""
+	}
+	return ""
+}
+
 var formats = map[string]Format{
 	"json":     JSONFormat,
 	"protobuf": ProtobufFormat,
+}
+
+var compressions = map[string]Compression{
+	"gzip":  GzipCompression,
+	"flate": FlateCompression,
+	"zlib":  ZlibCompression,
 }
 
 func ParseFormat(formatStr string) (Format, error) {
@@ -40,6 +69,13 @@ func ParseFormat(formatStr string) (Format, error) {
 		return f, nil
 	}
 	return 0, fmt.Errorf("unsupported store format %q", formatStr)
+}
+
+func ParseCompression(compressionStr string) (Compression, error) {
+	if c, ok := compressions[compressionStr]; ok {
+		return c, nil
+	}
+	return 0, fmt.Errorf("unsupported store compression %q", compressionStr)
 }
 
 type HeavyProverInputsStore interface {
@@ -52,10 +88,9 @@ type HeavyProverInputsStore interface {
 
 type ProverInputsStore interface {
 	// StoreProverInputs stores the prover inputs for a block.
-	// format can be "protobuf" or "json"
-	StoreProverInputs(ctx context.Context, inputs *blockinputs.ProverInputs, format Format, compression string) error
+	StoreProverInputs(ctx context.Context, inputs *blockinputs.ProverInputs, format Format, compression Compression) error
 
 	// LoadProverInputs loads the prover inputs for a block.
 	// format can be "protobuf" or "json"
-	LoadProverInputs(ctx context.Context, chainID, blockNumber uint64, format Format, compression string) (*blockinputs.ProverInputs, error)
+	LoadProverInputs(ctx context.Context, chainID, blockNumber uint64, format Format, compression Compression) (*blockinputs.ProverInputs, error)
 }

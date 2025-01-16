@@ -41,24 +41,24 @@ func New(baseDir string) *FileBlockStore {
 
 func (s *FileBlockStore) StoreHeavyProverInputs(_ context.Context, inputs *blockinputs.HeavyProverInputs) error {
 	path := s.preflightPath(inputs.ChainConfig.ChainID.Uint64(), inputs.Block.Number.ToInt().Uint64())
-	return s.storeData(path, inputs, filestore.JSONFormat, "")
+	return s.storeData(path, inputs, filestore.JSONFormat, filestore.NoCompression)
 }
 
 func (s *FileBlockStore) LoadHeavyProverInputs(_ context.Context, chainID, blockNumber uint64) (*blockinputs.HeavyProverInputs, error) {
 	path := s.preflightPath(chainID, blockNumber)
 	data := &blockinputs.HeavyProverInputs{}
-	if err := s.loadData(path, data, filestore.JSONFormat, ""); err != nil {
+	if err := s.loadData(path, data, filestore.JSONFormat, filestore.NoCompression); err != nil {
 		return nil, err
 	}
 	return data, nil
 }
 
-func (s *FileBlockStore) StoreProverInputs(_ context.Context, data *blockinputs.ProverInputs, format filestore.Format, compression string) error {
+func (s *FileBlockStore) StoreProverInputs(_ context.Context, data *blockinputs.ProverInputs, format filestore.Format, compression filestore.Compression) error {
 	path := s.proverPath(data.ChainConfig.ChainID.Uint64(), data.Block.Header.Number.ToInt().Uint64(), format, compression)
 	return s.storeData(path, data, format, compression)
 }
 
-func (s *FileBlockStore) LoadProverInputs(_ context.Context, chainID, blockNumber uint64, format filestore.Format, compression string) (*blockinputs.ProverInputs, error) {
+func (s *FileBlockStore) LoadProverInputs(_ context.Context, chainID, blockNumber uint64, format filestore.Format, compression filestore.Compression) (*blockinputs.ProverInputs, error) {
 	path := s.proverPath(chainID, blockNumber, format, compression)
 	data := &blockinputs.ProverInputs{}
 	if err := s.loadData(path, data, format, compression); err != nil {
@@ -71,10 +71,10 @@ func (s *FileBlockStore) preflightPath(chainID, blockNumber uint64) string {
 	return filepath.Join(s.baseDir, fmt.Sprintf("%d", chainID), "preflight", fmt.Sprintf("%d.json", blockNumber))
 }
 
-func (s *FileBlockStore) proverPath(chainID, blockNumber uint64, format, compression string) string {
-	filename := fmt.Sprintf("%d.%s", blockNumber, format)
-	if compression != "" {
-		filename = filename + "." + compression
+func (s *FileBlockStore) proverPath(chainID, blockNumber uint64, format filestore.Format, compression filestore.Compression) string {
+	filename := fmt.Sprintf("%d.%s", blockNumber, format.String())
+	if compression != filestore.NoCompression {
+		filename = filename + "." + compression.String()
 	}
 
 	return filepath.Join(s.baseDir, fmt.Sprintf("%d", chainID), "prover-inputs", filename)
@@ -114,7 +114,7 @@ func getCompressReader(r io.Reader, compression string) (io.ReadCloser, error) {
 	}
 }
 
-func (s *FileBlockStore) storeData(path string, data interface{}, format filestore.Format, compression string) error {
+func (s *FileBlockStore) storeData(path string, data interface{}, format filestore.Format, compression filestore.Compression) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("failed to create directory for file %s: %v", path, err)
 	}
@@ -128,7 +128,7 @@ func (s *FileBlockStore) storeData(path string, data interface{}, format filesto
 	var writer io.Writer = file
 
 	// Apply compression if specified
-	compressor, err := getCompressWriter(file, compression)
+	compressor, err := getCompressWriter(file, compression.String())
 	if err != nil {
 		return err
 	}
@@ -174,7 +174,7 @@ func (s *FileBlockStore) storeData(path string, data interface{}, format filesto
 	return nil
 }
 
-func (s *FileBlockStore) loadData(path string, data interface{}, format filestore.Format, compression string) error {
+func (s *FileBlockStore) loadData(path string, data interface{}, format filestore.Format, compression filestore.Compression) error {
 	file, err := os.Open(path)
 	if err != nil {
 		return fmt.Errorf("failed to open file %s: %v", path, err)
@@ -184,7 +184,7 @@ func (s *FileBlockStore) loadData(path string, data interface{}, format filestor
 	var reader io.Reader = file
 
 	// Apply compression if specified
-	decompressor, err := getCompressReader(file, compression)
+	decompressor, err := getCompressReader(file, compression.String())
 	if err != nil {
 		return err
 	}
