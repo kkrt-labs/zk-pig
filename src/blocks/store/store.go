@@ -62,6 +62,8 @@ var compressions = map[string]Compression{
 	"gzip":  GzipCompression,
 	"flate": FlateCompression,
 	"zlib":  ZlibCompression,
+	"none":  NoCompression,
+	"":      NoCompression,
 }
 
 func ParseFormat(formatStr string) (Format, error) {

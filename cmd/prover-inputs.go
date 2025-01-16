@@ -25,6 +25,7 @@ func NewProverInputsCommand(rootCtx *RootContext) *cobra.Command {
 		ctx         = &ProverInputsContext{RootContext: *rootCtx}
 		blockNumber string
 		format      string
+		compression string
 	)
 
 	cmd := &cobra.Command{
@@ -48,6 +49,11 @@ func NewProverInputsCommand(rootCtx *RootContext) *cobra.Command {
 				return fmt.Errorf("invalid format: %v", err)
 			}
 
+			ctx.compression, err = blockstore.ParseCompression(compression)
+			if err != nil {
+				return fmt.Errorf("invalid compression: %v", err)
+			}
+
 			return nil
 		},
 	}
@@ -56,6 +62,7 @@ func NewProverInputsCommand(rootCtx *RootContext) *cobra.Command {
 
 	cmd.PersistentFlags().StringVarP(&blockNumber, "block-number", "b", "latest", "Block number")
 	cmd.PersistentFlags().StringVarP(&format, "format", "f", "json", fmt.Sprintf("Format for storing prover inputs (one of %q)", []string{"json", "protobuf"}))
+	cmd.PersistentFlags().StringVarP(&compression, "compression", "z", "none", fmt.Sprintf("Compression for storing prover inputs (one of %q)", []string{"none", "flate", "zlib"}))
 
 	cmd.AddCommand(
 		NewGenerateCommand(ctx),
