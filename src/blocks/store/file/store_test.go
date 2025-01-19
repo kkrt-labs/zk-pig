@@ -103,13 +103,13 @@ func TestFileBlockStoreProtobuf(t *testing.T) {
 			},
 		},
 	}
-	err = store.StoreProverInputs(context.Background(), proverInputs, filestore.ProtobufFormat, filestore.NoCompression)
+	err = store.StoreProverInputs(context.Background(), proverInputs, filestore.ProtobufFormat, filestore.ZlibCompression)
 	assert.NoError(t, err)
 
-	_, err = store.LoadProverInputs(context.Background(), 2, 15, filestore.ProtobufFormat, filestore.NoCompression)
+	_, err = store.LoadProverInputs(context.Background(), 2, 15, filestore.ProtobufFormat, filestore.ZlibCompression)
 	assert.NoError(t, err)
 
 	// Test loading non-existent prover inputs
-	_, err = store.LoadProverInputs(context.Background(), 2, 25, filestore.ProtobufFormat, filestore.NoCompression)
+	_, err = store.LoadProverInputs(context.Background(), 2, 25, filestore.ProtobufFormat, filestore.ZlibCompression)
 	assert.Error(t, err)
 }

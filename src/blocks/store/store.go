@@ -22,10 +22,10 @@ const (
 type Compression int
 
 const (
-	GzipCompression Compression = iota
+	NoCompression Compression = iota
+	GzipCompression
 	FlateCompression
 	ZlibCompression
-	NoCompression
 )
 
 func (f Format) String() string {

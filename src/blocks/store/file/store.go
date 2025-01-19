@@ -80,17 +80,15 @@ func (s *FileBlockStore) proverPath(chainID, blockNumber uint64, format filestor
 	return filepath.Join(s.baseDir, fmt.Sprintf("%d", chainID), "prover-inputs", filename)
 }
 
-func getCompressWriter(w io.Writer, compression string) (io.WriteCloser, error) {
+func getCompressWriter(w io.Writer, compression filestore.Compression) (io.WriteCloser, error) {
 	switch compression {
-	case gzipCompression:
+	case filestore.GzipCompression:
 		return gzip.NewWriterLevel(w, gzip.BestCompression)
-	case flateCompression:
+	case filestore.FlateCompression:
 		return flate.NewWriter(w, flate.BestCompression)
-	case zlibCompression:
+	case filestore.ZlibCompression:
 		return zlib.NewWriterLevel(w, zlib.BestCompression)
-	case bzip2Compression:
-		return nil, fmt.Errorf("bzip2 compression not supported for writing")
-	case "":
+	case filestore.NoCompression:
 		return nil, nil
 	default:
 		return nil, fmt.Errorf("unsupported compression format: %s", compression)
@@ -128,7 +126,7 @@ func (s *FileBlockStore) storeData(path string, data interface{}, format filesto
 	var writer io.Writer = file
 
 	// Apply compression if specified
-	compressor, err := getCompressWriter(file, compression.String())
+	compressor, err := getCompressWriter(file, compression)
 	if err != nil {
 		return err
 	}
@@ -200,7 +198,7 @@ func (s *FileBlockStore) loadData(path string, data interface{}, format filestor
 	switch format {
 	case filestore.ProtobufFormat:
 		protoMsg := &protoinputs.ProverInputs{}
-		bytes, err := io.ReadAll(file)
+		bytes, err := io.ReadAll(reader)
 		if err != nil {
 			return fmt.Errorf("failed to read file: %v", err)
 		}
