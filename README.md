@@ -56,7 +56,7 @@ The `kkrtctl` CLI now supports multiple commands related to generating EVM prove
 ```sh
 kkrtctl prover-inputs generate \
   --block-number 1234 \
-  --rpc-url http://127.0.0.1:8545 \
+  --chain-rpc-url http://127.0.0.1:8545 \
   --data-dir ./data
   --format json
 ```
@@ -68,7 +68,7 @@ kkrtctl prover-inputs generate \
 ```sh
 kkrtctl prover-inputs preflight \
   --block-number 1234 \
-  --rpc-url http://127.0.0.1:8545 \
+  --chain-rpc-url http://127.0.0.1:8545 \
   --data-dir ./data
 ```
 
@@ -81,7 +81,7 @@ kkrtctl prover-inputs preflight \
 kkrtctl prover-inputs prepare \
   --chain-id 1 \
   --block-number 1234 \
-  --rpc-url http://127.0.0.1:8545 \
+  --chain-rpc-url http://127.0.0.1:8545 \
   --data-dir ./data \
   --format json
 ```
@@ -95,7 +95,7 @@ kkrtctl prover-inputs prepare \
 kkrtctl prover-inputs execute \
   --chain-id 1 \
   --block-number 1234 \
-  --rpc-url http://127.0.0.1:8545 \
+  --chain-rpc-url http://127.0.0.1:8545 \
   --data-dir ./data \
   --format json
 ```
@@ -106,7 +106,7 @@ Use `--log-level` to configure verbosity (`debug`, `info`, `warn`, `error`) and 
 ```sh
 kkrtctl prover-inputs generate \
   --block-number 1234 \
-  --rpc-url http://127.0.0.1:8545 \
+  --chain-rpc-url http://127.0.0.1:8545 \
   --data-dir ./data \
   --format json \
   --log-level debug \
@@ -114,7 +114,7 @@ kkrtctl prover-inputs generate \
 ```
 
 ### Environment Variables Fallback
-- `--rpc-url` falls back to `RPC_URL` if not explicitly set.
+- `--chain-rpc-url` falls back to `RPC_URL` if not explicitly set.
 - `--data-dir` falls back to `DATA_DIR`.
 - `--log-level` falls back to `LOG_LEVEL`.
 - `--log-format` falls back to `LOG_FORMAT`.
@@ -123,19 +123,20 @@ kkrtctl prover-inputs generate \
 ### Commands
 
 1. `kkrtctl version` - Print the version number
-1. `kkrtctl prover-inputs generate --block-number <block-number> --rpc-url <rpc-url> --data-dir <data-dir>` - Generate prover inputs for a specific block
-1. `kkrtctl prover-inputs preflight --block-number <block-number> --rpc-url <rpc-url> --data-dir <data-dir>` - Preflight the prover inputs generation
-1. `kkrtctl prover-inputs prepare --block-number <block-number> --rpc-url <rpc-url> --data-dir <data-dir>` - Prepare the prover inputs generation
-1. `kkrtctl prover-inputs execute --block-number <block-number> --rpc-url <rpc-url> --data-dir <data-dir>` - Execute the prover inputs generation
+1. `kkrtctl prover-inputs generate --block-number <block-number> --chain-rpc-url <rpc-url> --data-dir <data-dir>` - Generate prover inputs for a specific block
+1. `kkrtctl prover-inputs preflight --block-number <block-number> --chain-rpc-url <rpc-url> --data-dir <data-dir>` - Preflight the prover inputs generation
+1. `kkrtctl prover-inputs prepare --block-number <block-number> --chain-rpc-url <rpc-url> --data-dir <data-dir>` - Prepare the prover inputs generation
+1. `kkrtctl prover-inputs execute --block-number <block-number> --chain-rpc-url <rpc-url> --data-dir <data-dir>` - Execute the prover inputs generation
 
 ### Flags
 
 | Flag | Description | Default | Environment Variable |
 |------|-------------|---------|---------------------|
 | `--block-number` | The block number to generate prover inputs for | Required | - |
-| `--rpc-url` | URL of the Ethereum JSON-RPC endpoint | - | `RPC_URL` |
+| `--chain-rpc-url` | URL of the Ethereum JSON-RPC endpoint | - | `RPC_URL` |
 | `--data-dir` | Directory to store generated block data | - | `DATA_DIR` |
 | `--format` | Output format for prover inputs (`json` or `protobuf`) | `json` | - |
 | `--chain-id` | Chain ID for block validation (required for prepare/execute) | Required | - |
+| `--compression` | Compression for storing prover inputs (one of `none`, `flate`, `zlib`, `gzip`) | `none` | - |
 | `--log-level` | Logging verbosity (`debug`, `info`, `warn`, `error`) | `info` | `LOG_LEVEL` |
 | `--log-format` | Logging format (`json` or `text`) | `text` | `LOG_FORMAT` |

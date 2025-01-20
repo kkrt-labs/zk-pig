@@ -16,6 +16,7 @@ type ProverInputsContext struct {
 	svc         *blocks.Service
 	blockNumber *big.Int
 	format      blockstore.Format
+	compression blockstore.Compression
 }
 
 // 1. Main command
@@ -24,6 +25,7 @@ func NewProverInputsCommand(rootCtx *RootContext) *cobra.Command {
 		ctx         = &ProverInputsContext{RootContext: *rootCtx}
 		blockNumber string
 		format      string
+		compression string
 	)
 
 	cmd := &cobra.Command{
@@ -47,6 +49,11 @@ func NewProverInputsCommand(rootCtx *RootContext) *cobra.Command {
 				return fmt.Errorf("invalid format: %v", err)
 			}
 
+			ctx.compression, err = blockstore.ParseCompression(compression)
+			if err != nil {
+				return fmt.Errorf("invalid compression: %v", err)
+			}
+
 			return nil
 		},
 	}
@@ -55,6 +62,7 @@ func NewProverInputsCommand(rootCtx *RootContext) *cobra.Command {
 
 	cmd.PersistentFlags().StringVarP(&blockNumber, "block-number", "b", "latest", "Block number")
 	cmd.PersistentFlags().StringVarP(&format, "format", "f", "json", fmt.Sprintf("Format for storing prover inputs (one of %q)", []string{"json", "protobuf"}))
+	cmd.PersistentFlags().StringVarP(&compression, "compression", "z", "none", fmt.Sprintf("Compression for storing prover inputs (one of %q)", []string{"none", "flate", "zlib"}))
 
 	cmd.AddCommand(
 		NewGenerateCommand(ctx),
@@ -77,7 +85,7 @@ func NewGenerateCommand(ctx *ProverInputsContext) *cobra.Command {
 		Short: "Generate prover inputs",
 		Long:  "Generate prover inputs by running preflight, prepare and execute in a single run",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return ctx.svc.Generate(cmd.Context(), ctx.blockNumber, ctx.format)
+			return ctx.svc.Generate(cmd.Context(), ctx.blockNumber, ctx.format, ctx.compression)
 		},
 	}
 }
@@ -99,7 +107,7 @@ func NewPrepareCommand(ctx *ProverInputsContext) *cobra.Command {
 		Short: "Prepare prover inputs, basing on data collected during preflight",
 		Long:  "Prepare prover inputs, basing on data collected during preflight. It processes and validates an EVM block over in memory state and chain prefilled with data collected during preflight.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return ctx.svc.Prepare(cmd.Context(), ctx.blockNumber, ctx.format)
+			return ctx.svc.Prepare(cmd.Context(), ctx.blockNumber, ctx.format, ctx.compression)
 		},
 	}
 }
@@ -110,7 +118,7 @@ func NewExecuteCommand(ctx *ProverInputsContext) *cobra.Command {
 		Short: "Run an EVM execution, basing on prover inputs generated during prepare",
 		Long:  "Run an EVM execution, basing on prover inputs generated during prepare. It processes and validates an EVM block over in memory state and chain prefilled with prover inputs.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return ctx.svc.Execute(cmd.Context(), ctx.blockNumber, ctx.format)
+			return ctx.svc.Execute(cmd.Context(), ctx.blockNumber, ctx.format, ctx.compression)
 		},
 	}
 }

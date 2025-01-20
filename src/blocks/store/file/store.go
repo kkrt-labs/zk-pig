@@ -6,6 +6,9 @@ package fileblockstore
 // The prover inputs are stored in a file named `<base-dir>/<chainID>/prover/<blockNumber>.json`
 
 import (
+	"compress/flate"
+	"compress/gzip"
+	"compress/zlib"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -29,27 +32,27 @@ func New(baseDir string) *FileBlockStore {
 
 func (s *FileBlockStore) StoreHeavyProverInputs(_ context.Context, inputs *blockinputs.HeavyProverInputs) error {
 	path := s.preflightPath(inputs.ChainConfig.ChainID.Uint64(), inputs.Block.Number.ToInt().Uint64())
-	return s.storeData(path, inputs, filestore.JSONFormat)
+	return s.storeData(path, inputs, filestore.JSONFormat, filestore.NoCompression)
 }
 
 func (s *FileBlockStore) LoadHeavyProverInputs(_ context.Context, chainID, blockNumber uint64) (*blockinputs.HeavyProverInputs, error) {
 	path := s.preflightPath(chainID, blockNumber)
 	data := &blockinputs.HeavyProverInputs{}
-	if err := s.loadData(path, data, filestore.JSONFormat); err != nil {
+	if err := s.loadData(path, data, filestore.JSONFormat, filestore.NoCompression); err != nil {
 		return nil, err
 	}
 	return data, nil
 }
 
-func (s *FileBlockStore) StoreProverInputs(_ context.Context, data *blockinputs.ProverInputs, format filestore.Format) error {
-	path := s.proverPath(data.ChainConfig.ChainID.Uint64(), data.Block.Header.Number.ToInt().Uint64(), format)
-	return s.storeData(path, data, format)
+func (s *FileBlockStore) StoreProverInputs(_ context.Context, data *blockinputs.ProverInputs, format filestore.Format, compression filestore.Compression) error {
+	path := s.proverPath(data.ChainConfig.ChainID.Uint64(), data.Block.Header.Number.ToInt().Uint64(), format, compression)
+	return s.storeData(path, data, format, compression)
 }
 
-func (s *FileBlockStore) LoadProverInputs(_ context.Context, chainID, blockNumber uint64, format filestore.Format) (*blockinputs.ProverInputs, error) {
-	path := s.proverPath(chainID, blockNumber, format)
+func (s *FileBlockStore) LoadProverInputs(_ context.Context, chainID, blockNumber uint64, format filestore.Format, compression filestore.Compression) (*blockinputs.ProverInputs, error) {
+	path := s.proverPath(chainID, blockNumber, format, compression)
 	data := &blockinputs.ProverInputs{}
-	if err := s.loadData(path, data, format); err != nil {
+	if err := s.loadData(path, data, format, compression); err != nil {
 		return nil, err
 	}
 	return data, nil
@@ -59,11 +62,46 @@ func (s *FileBlockStore) preflightPath(chainID, blockNumber uint64) string {
 	return filepath.Join(s.baseDir, fmt.Sprintf("%d", chainID), "preflight", fmt.Sprintf("%d.json", blockNumber))
 }
 
-func (s *FileBlockStore) proverPath(chainID, blockNumber uint64, format filestore.Format) string {
-	return filepath.Join(s.baseDir, fmt.Sprintf("%d", chainID), "prover-inputs", fmt.Sprintf("%d.%s", blockNumber, format.String()))
+func (s *FileBlockStore) proverPath(chainID, blockNumber uint64, format filestore.Format, compression filestore.Compression) string {
+	filename := fmt.Sprintf("%d.%s", blockNumber, format.String())
+	if compression != filestore.NoCompression {
+		filename = filename + "." + compression.String()
+	}
+
+	return filepath.Join(s.baseDir, fmt.Sprintf("%d", chainID), "prover-inputs", filename)
 }
 
-func (s *FileBlockStore) storeData(path string, data interface{}, format filestore.Format) error {
+func getCompressWriter(w io.Writer, compression filestore.Compression) (io.WriteCloser, error) {
+	switch compression {
+	case filestore.GzipCompression:
+		return gzip.NewWriterLevel(w, gzip.BestCompression)
+	case filestore.FlateCompression:
+		return flate.NewWriter(w, flate.BestCompression)
+	case filestore.ZlibCompression:
+		return zlib.NewWriterLevel(w, zlib.BestCompression)
+	case filestore.NoCompression:
+		return nil, nil
+	default:
+		return nil, fmt.Errorf("unsupported compression format: %s", compression)
+	}
+}
+
+func getCompressReader(r io.Reader, compression filestore.Compression) (io.ReadCloser, error) {
+	switch compression {
+	case filestore.GzipCompression:
+		return gzip.NewReader(r)
+	case filestore.FlateCompression:
+		return flate.NewReader(r), nil
+	case filestore.ZlibCompression:
+		return zlib.NewReader(r)
+	case filestore.NoCompression:
+		return nil, nil
+	default:
+		return nil, fmt.Errorf("unsupported compression format: %s", compression)
+	}
+}
+
+func (s *FileBlockStore) storeData(path string, data interface{}, format filestore.Format, compression filestore.Compression) error {
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("failed to create directory for file %s: %v", path, err)
 	}
@@ -74,6 +112,30 @@ func (s *FileBlockStore) storeData(path string, data interface{}, format filesto
 	}
 	defer file.Close()
 
+	var writer io.Writer = file
+
+	// Apply compression if specified
+	compressor, err := getCompressWriter(file, compression)
+	if err != nil {
+		return err
+	}
+	if compressor != nil {
+		writer = compressor
+		defer func() {
+			// First flush
+			if c, ok := compressor.(interface{ Flush() error }); ok {
+				if err := c.Flush(); err != nil {
+					fmt.Printf("warning: failed to flush compressor: %v\n", err)
+				}
+			}
+			// Then close
+			if err := compressor.Close(); err != nil {
+				fmt.Printf("warning: failed to close compressor: %v\n", err)
+			}
+		}()
+	}
+
+	// Write the data
 	switch format {
 	case filestore.ProtobufFormat:
 		proverInputs, ok := data.(*blockinputs.ProverInputs)
@@ -85,11 +147,11 @@ func (s *FileBlockStore) storeData(path string, data interface{}, format filesto
 		if err != nil {
 			return fmt.Errorf("failed to marshal protobuf data: %v", err)
 		}
-		if _, err := file.Write(bytes); err != nil {
+		if _, err := writer.Write(bytes); err != nil {
 			return fmt.Errorf("failed to write protobuf data to file %s: %v", path, err)
 		}
 	case filestore.JSONFormat:
-		if err := json.NewEncoder(file).Encode(data); err != nil {
+		if err := json.NewEncoder(writer).Encode(data); err != nil {
 			return fmt.Errorf("failed to encode data to file %s: %v", path, err)
 		}
 	default:
@@ -99,17 +161,33 @@ func (s *FileBlockStore) storeData(path string, data interface{}, format filesto
 	return nil
 }
 
-func (s *FileBlockStore) loadData(path string, data interface{}, format filestore.Format) error {
+func (s *FileBlockStore) loadData(path string, data interface{}, format filestore.Format, compression filestore.Compression) error {
 	file, err := os.Open(path)
 	if err != nil {
 		return fmt.Errorf("failed to open file %s: %v", path, err)
 	}
 	defer file.Close()
 
+	var reader io.Reader = file
+
+	// Apply compression if specified
+	decompressor, err := getCompressReader(file, compression)
+	if err != nil {
+		return err
+	}
+	if decompressor != nil {
+		reader = decompressor
+		defer func() {
+			if err := decompressor.Close(); err != nil {
+				fmt.Printf("warning: failed to close decompressor: %v\n", err)
+			}
+		}()
+	}
+
 	switch format {
 	case filestore.ProtobufFormat:
 		protoMsg := &protoinputs.ProverInputs{}
-		bytes, err := io.ReadAll(file)
+		bytes, err := io.ReadAll(reader)
 		if err != nil {
 			return fmt.Errorf("failed to read file: %v", err)
 		}
@@ -122,7 +200,7 @@ func (s *FileBlockStore) loadData(path string, data interface{}, format filestor
 			return fmt.Errorf("invalid data type: expected *blockinputs.ProverInputs")
 		}
 	case filestore.JSONFormat:
-		if err := json.NewDecoder(file).Decode(data); err != nil {
+		if err := json.NewDecoder(reader).Decode(data); err != nil {
 			return fmt.Errorf("failed to decode data from file %s: %v", path, err)
 		}
 	}

@@ -53,14 +53,14 @@ func TestFileBlockStoreJSON(t *testing.T) {
 			},
 		},
 	}
-	err = store.StoreProverInputs(context.Background(), proverInputs, filestore.JSONFormat)
+	err = store.StoreProverInputs(context.Background(), proverInputs, filestore.JSONFormat, filestore.GzipCompression)
 	assert.NoError(t, err)
 
-	_, err = store.LoadProverInputs(context.Background(), 2, 15, filestore.JSONFormat)
+	_, err = store.LoadProverInputs(context.Background(), 2, 15, filestore.JSONFormat, filestore.GzipCompression)
 	assert.NoError(t, err)
 
 	// Test loading non-existent prover inputs
-	_, err = store.LoadProverInputs(context.Background(), 2, 25, filestore.JSONFormat)
+	_, err = store.LoadProverInputs(context.Background(), 2, 25, filestore.JSONFormat, filestore.GzipCompression)
 	assert.Error(t, err)
 }
 
@@ -103,13 +103,13 @@ func TestFileBlockStoreProtobuf(t *testing.T) {
 			},
 		},
 	}
-	err = store.StoreProverInputs(context.Background(), proverInputs, filestore.ProtobufFormat)
+	err = store.StoreProverInputs(context.Background(), proverInputs, filestore.ProtobufFormat, filestore.ZlibCompression)
 	assert.NoError(t, err)
 
-	_, err = store.LoadProverInputs(context.Background(), 2, 15, filestore.ProtobufFormat)
+	_, err = store.LoadProverInputs(context.Background(), 2, 15, filestore.ProtobufFormat, filestore.ZlibCompression)
 	assert.NoError(t, err)
 
 	// Test loading non-existent prover inputs
-	_, err = store.LoadProverInputs(context.Background(), 2, 25, filestore.ProtobufFormat)
+	_, err = store.LoadProverInputs(context.Background(), 2, 25, filestore.ProtobufFormat, filestore.ZlibCompression)
 	assert.Error(t, err)
 }

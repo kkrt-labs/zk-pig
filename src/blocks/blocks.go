@@ -101,7 +101,7 @@ func (s *Service) init(ctx context.Context) error {
 	return s.err
 }
 
-func (s *Service) Generate(ctx context.Context, blockNumber *big.Int, format blockstore.Format) error {
+func (s *Service) Generate(ctx context.Context, blockNumber *big.Int, format blockstore.Format, compression blockstore.Compression) error {
 	if err := s.init(ctx); err != nil {
 		return err
 	}
@@ -111,11 +111,11 @@ func (s *Service) Generate(ctx context.Context, blockNumber *big.Int, format blo
 		return err
 	}
 
-	if err := s.prepare(ctx, data.ChainConfig.ChainID, data.Block.Number.ToInt(), format); err != nil {
+	if err := s.prepare(ctx, data.ChainConfig.ChainID, data.Block.Number.ToInt(), format, compression); err != nil {
 		return err
 	}
 
-	if err := s.execute(ctx, data.ChainConfig.ChainID, data.Block.Number.ToInt(), format); err != nil {
+	if err := s.execute(ctx, data.ChainConfig.ChainID, data.Block.Number.ToInt(), format, compression); err != nil {
 		return err
 	}
 
@@ -149,15 +149,15 @@ func (s *Service) preflight(ctx context.Context, blockNumber *big.Int) (*blockin
 	return data, nil
 }
 
-func (s *Service) Prepare(ctx context.Context, blockNumber *big.Int, format blockstore.Format) error {
+func (s *Service) Prepare(ctx context.Context, blockNumber *big.Int, format blockstore.Format, compression blockstore.Compression) error {
 	if err := s.init(ctx); err != nil {
 		return err
 	}
 
-	return s.prepare(ctx, s.chainID, blockNumber, format)
+	return s.prepare(ctx, s.chainID, blockNumber, format, compression)
 }
 
-func (s *Service) prepare(ctx context.Context, chainID, blockNumber *big.Int, format blockstore.Format) error {
+func (s *Service) prepare(ctx context.Context, chainID, blockNumber *big.Int, format blockstore.Format, compression blockstore.Compression) error {
 	data, err := s.store.LoadHeavyProverInputs(ctx, chainID.Uint64(), blockNumber.Uint64())
 	if err != nil {
 		return fmt.Errorf("failed to load preflight data: %v", err)
@@ -168,7 +168,7 @@ func (s *Service) prepare(ctx context.Context, chainID, blockNumber *big.Int, fo
 		return fmt.Errorf("failed to prepare provable inputs: %v", err)
 	}
 
-	err = s.store.StoreProverInputs(ctx, inputs, format)
+	err = s.store.StoreProverInputs(ctx, inputs, format, compression)
 	if err != nil {
 		return fmt.Errorf("failed to store provable inputs: %v", err)
 	}
@@ -176,16 +176,16 @@ func (s *Service) prepare(ctx context.Context, chainID, blockNumber *big.Int, fo
 	return nil
 }
 
-func (s *Service) Execute(ctx context.Context, blockNumber *big.Int, format blockstore.Format) error {
+func (s *Service) Execute(ctx context.Context, blockNumber *big.Int, format blockstore.Format, compression blockstore.Compression) error {
 	if err := s.init(ctx); err != nil {
 		return err
 	}
 
-	return s.execute(ctx, s.chainID, blockNumber, format)
+	return s.execute(ctx, s.chainID, blockNumber, format, compression)
 }
 
-func (s *Service) execute(ctx context.Context, chainID, blockNumber *big.Int, format blockstore.Format) error {
-	inputs, err := s.store.LoadProverInputs(ctx, chainID.Uint64(), blockNumber.Uint64(), format)
+func (s *Service) execute(ctx context.Context, chainID, blockNumber *big.Int, format blockstore.Format, compression blockstore.Compression) error {
+	inputs, err := s.store.LoadProverInputs(ctx, chainID.Uint64(), blockNumber.Uint64(), format, compression)
 	if err != nil {
 		return fmt.Errorf("failed to load provable inputs: %v", err)
 	}
