@@ -73,7 +73,7 @@ func newTestDatabase(diskdb ethdb.Database, scheme string) *testDb {
 	}
 }
 
-func (db *testDb) NodeReader(stateRoot common.Hash) (database.NodeReader, error) {
+func (db *testDb) Reader(stateRoot common.Hash) (database.Reader, error) {
 	nodes, _ := db.dirties(stateRoot, true)
 	return &testReader{db: db.disk, scheme: db.scheme, nodes: nodes}, nil
 }

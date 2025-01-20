@@ -50,6 +50,7 @@ message Transaction {
     AccessListTransaction access_list_transaction = 2;
     DynamicFeeTransaction dynamic_fee_transaction = 3;
     BlobTransaction blob_transaction = 4;
+    DepositTransaction deposit_transaction = 5;
   }
 }
 
@@ -142,6 +143,17 @@ message BlobTransaction {
   bytes s = 14;
 }
 
+message DepositTransaction {
+  bytes source_hash = 1;
+  bytes from = 2;
+  bytes to = 3;
+  bytes mint = 4;
+  bytes value = 5;
+  uint64 gas = 6;
+  bool is_system_transaction = 7;
+  bytes data = 8;
+}
+
 message AccessTuple {
   bytes address = 1;
   repeated bytes storage_keys = 2;
@@ -173,8 +185,27 @@ message ChainConfig {
   optional uint64 cancun_time = 19;
   optional uint64 prague_time = 20;
   optional uint64 verkle_time = 21;
-  optional bytes terminal_total_difficulty = 22;
-  optional bytes deposit_contract_address = 23;
-  optional bytes ethash = 24;
-  optional bytes clique = 25;
+  
+  optional bytes bedrock_block = 22;
+  optional uint64 regolith_time = 23;
+  optional uint64 canyon_time = 24;
+  optional uint64 ecotone_time = 25;
+  optional uint64 fjord_time = 26;
+  optional uint64 granite_time = 27;
+  optional uint64 holocene_time = 28;
+  optional uint64 interop_time = 29;
+
+  optional bytes terminal_total_difficulty = 30;
+  optional bool terminal_total_difficulty_passed = 31;
+
+  optional bytes deposit_contract_address = 32;
+  optional bytes ethash = 33;
+  optional bytes clique = 34;
+  optional OptimismConfig optimism = 35;
+}
+
+message OptimismConfig {
+  uint64 eip1559_elasticity = 1;
+  uint64 eip1559_denominator = 2;
+  optional uint64 eip1559_denominator_canyon = 3;
 }

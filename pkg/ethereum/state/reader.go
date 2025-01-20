@@ -22,27 +22,54 @@ import (
 
 	"github.com/ethereum/go-ethereum/common"
 	gethstate "github.com/ethereum/go-ethereum/core/state"
+	"github.com/ethereum/go-ethereum/core/state/snapshot"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/crypto"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/ethereum/go-ethereum/trie/utils"
 	"github.com/ethereum/go-ethereum/triedb"
-	"github.com/ethereum/go-ethereum/triedb/database"
 )
 
-// stateReader wraps a database state reader.
-type stateReader struct {
-	reader database.StateReader
-	buff   crypto.KeccakState
+// Reader defines the interface for accessing accounts and storage slots
+// associated with a specific state.
+type Reader interface {
+	// Account retrieves the account associated with a particular address.
+	//
+	// - Returns a nil account if it does not exist
+	// - Returns an error only if an unexpected issue occurs
+	// - The returned account is safe to modify after the call
+	Account(addr common.Address) (*types.StateAccount, error)
+
+	// Storage retrieves the storage slot associated with a particular account
+	// address and slot key.
+	//
+	// - Returns an empty slot if it does not exist
+	// - Returns an error only if an unexpected issue occurs
+	// - The returned storage slot is safe to modify after the call
+	Storage(addr common.Address, slot common.Hash) (common.Hash, error)
+
+	// Copy returns a deep-copied state reader.
+	Copy() Reader
 }
 
-// newStateReader constructs a state reader with on the given state root.
-func newStateReader(reader database.StateReader) *stateReader {
-	return &stateReader{
-		reader: reader,
-		buff:   crypto.NewKeccakState(),
+// stateReader is a wrapper over the state snapshot and implements the Reader
+// interface. It provides an efficient way to access flat state.
+type stateReader struct {
+	snap snapshot.Snapshot
+	buff crypto.KeccakState
+}
+
+// newStateReader constructs a flat state reader with on the specified state root.
+func newStateReader(root common.Hash, snaps *snapshot.Tree) (*stateReader, error) {
+	snap := snaps.Snapshot(root)
+	if snap == nil {
+		return nil, errors.New("snapshot is not available")
 	}
+	return &stateReader{
+		snap: snap,
+		buff: crypto.NewKeccakState(),
+	}, nil
 }
 
 // Account implements Reader, retrieving the account specified by the address.
@@ -52,18 +79,18 @@ func newStateReader(reader database.StateReader) *stateReader {
 //
 // The returned account might be nil if it's not existent.
 func (r *stateReader) Account(addr common.Address) (*types.StateAccount, error) {
-	account, err := r.reader.Account(crypto.HashData(r.buff, addr.Bytes()))
+	ret, err := r.snap.Account(crypto.HashData(r.buff, addr.Bytes()))
 	if err != nil {
 		return nil, err
 	}
-	if account == nil {
+	if ret == nil {
 		return nil, nil
 	}
 	acct := &types.StateAccount{
-		Nonce:    account.Nonce,
-		Balance:  account.Balance,
-		CodeHash: account.CodeHash,
-		Root:     common.BytesToHash(account.Root),
+		Nonce:    ret.Nonce,
+		Balance:  ret.Balance,
+		CodeHash: ret.CodeHash,
+		Root:     common.BytesToHash(ret.Root),
 	}
 	if len(acct.CodeHash) == 0 {
 		acct.CodeHash = types.EmptyCodeHash.Bytes()
@@ -84,7 +111,7 @@ func (r *stateReader) Account(addr common.Address) (*types.StateAccount, error) 
 func (r *stateReader) Storage(addr common.Address, key common.Hash) (common.Hash, error) {
 	addrHash := crypto.HashData(r.buff, addr.Bytes())
 	slotHash := crypto.HashData(r.buff, key.Bytes())
-	ret, err := r.reader.Storage(addrHash, slotHash)
+	ret, err := r.snap.Storage(addrHash, slotHash)
 	if err != nil {
 		return common.Hash{}, err
 	}
@@ -105,8 +132,8 @@ func (r *stateReader) Storage(addr common.Address, key common.Hash) (common.Hash
 // Copy implements Reader, returning a deep-copied snap reader.
 func (r *stateReader) Copy() gethstate.Reader {
 	return &stateReader{
-		reader: r.reader,
-		buff:   crypto.NewKeccakState(),
+		snap: r.snap,
+		buff: crypto.NewKeccakState(),
 	}
 }
 

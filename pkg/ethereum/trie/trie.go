@@ -84,7 +84,7 @@ func (t *Trie) Copy() *Trie {
 // zero hash or the sha3 hash of an empty string, then trie is initially
 // empty, otherwise, the root node must be present in database or returns
 // a MissingNodeError if not.
-func New(id *ID, db database.NodeDatabase) (*Trie, error) {
+func New(id *ID, db database.Database) (*Trie, error) {
 	reader, err := newTrieReader(id.StateRoot, id.Owner, db)
 	if err != nil {
 		return nil, err
@@ -105,7 +105,7 @@ func New(id *ID, db database.NodeDatabase) (*Trie, error) {
 }
 
 // NewEmpty is a shortcut to create empty tree. It's mostly used in tests.
-func NewEmpty(db database.NodeDatabase) *Trie {
+func NewEmpty(db database.Database) *Trie {
 	tr, _ := New(TrieID(types.EmptyRootHash), db)
 	return tr
 }
@@ -659,7 +659,7 @@ func (t *Trie) Commit(collectLeaf bool) (common.Hash, *trienode.NodeSet) {
 		nodes.AddNode([]byte(path), trienode.NewDeleted())
 	}
 	// If the number of changes is below 100, we let one thread handle it
-	t.root = newCommitter(nodes, t.tracer, collectLeaf).Commit(t.root, t.uncommitted > 100)
+	t.root = newCommitter(nodes, t.tracer, collectLeaf).Commit(t.root)
 	t.uncommitted = 0
 	return rootHash, nodes
 }

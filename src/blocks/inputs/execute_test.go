@@ -14,7 +14,7 @@ func TestExecutor(t *testing.T) {
 			proverInputs := &testDataInputs.ProverInputs
 			e := NewExecutor().(*executor)
 			_, err := e.Execute(context.Background(), proverInputs)
-			assert.Equal(t, false, err != nil)
+			assert.NoError(t, err)
 		})
 	}
 }

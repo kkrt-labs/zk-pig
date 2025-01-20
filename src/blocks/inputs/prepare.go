@@ -10,6 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	gethstate "github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/vm"
+
 	"github.com/ethereum/go-ethereum/triedb"
 	"github.com/ethereum/go-ethereum/triedb/hashdb"
 	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum"
@@ -125,7 +126,7 @@ func (p *preparer) preparePreState(ctx *preparerContext, inputs *HeavyProverInpu
 		return fmt.Errorf("failed to create state nodes: %v", err)
 	}
 
-	err = ctx.stateDB.TrieDB().Update(parentHeader.Root, genesisHeader.Root, 0, nodeSet, triedb.NewStateSet())
+	err = ctx.stateDB.TrieDB().Update(parentHeader.Root, genesisHeader.Root, 0, nodeSet, nil)
 	if err != nil {
 		return fmt.Errorf("failed to update trie db with state nodes: %v", err)
 	}

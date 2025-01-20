@@ -4,11 +4,13 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 var testcases = []string{
-	"Ethereum_Mainnet_21465322.json",
+	"Ethereum_Mainnet_21630258.json",
+	"Optimism_Mainnet_130679264.json",
 }
 
 func TestPreparer(t *testing.T) {
@@ -19,8 +21,7 @@ func TestPreparer(t *testing.T) {
 			result, err := p.Prepare(context.Background(), &testDataInputs.HeavyProverInputs)
 			require.NoError(t, err)
 			require.NotNil(t, result)
-			equal := CompareProverInputs(&testDataInputs.ProverInputs, result)
-			require.True(t, equal)
+			assert.True(t, CompareProverInputs(result, &testDataInputs.ProverInputs))
 		})
 	}
 }

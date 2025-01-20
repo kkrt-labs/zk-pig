@@ -15,6 +15,10 @@ var ChainConfigs = map[string]*params.ChainConfig{
 }
 
 func getChainConfig(chainID *big.Int) (*params.ChainConfig, error) {
+	cfg, err := params.LoadOPStackChainConfig(chainID.Uint64())
+	if err == nil {
+		return cfg, nil
+	}
 	cfg, ok := ChainConfigs[chainID.String()]
 	if !ok {
 		return nil, fmt.Errorf("unsupported chain ID: %s", chainID)

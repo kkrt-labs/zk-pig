@@ -8,6 +8,7 @@ import (
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
+	"github.com/kkrt-labs/kakarot-controller/pkg/common"
 	ethrpc "github.com/kkrt-labs/kakarot-controller/pkg/ethereum/rpc"
 	blockinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs"
 )
@@ -37,16 +38,6 @@ func FromProto(p *ProverInputs) *blockinputs.ProverInputs {
 }
 
 func blockToProto(b *ethrpc.Block) *Block {
-	withdrawals := make([]*Withdrawal, len(b.Withdrawals))
-	for i, w := range b.Withdrawals {
-		withdrawals[i] = &Withdrawal{
-			Index:          w.Index,
-			ValidatorIndex: w.Validator,
-			Address:        w.Address.Bytes(),
-			Amount:         w.Amount,
-		}
-	}
-
 	// Convert *hexutil.Uint64 to *uint64
 	var excessBlobGas, blobGasUsed *uint64
 
@@ -59,7 +50,7 @@ func blockToProto(b *ethrpc.Block) *Block {
 		blobGasUsed = &value
 	}
 
-	return &Block{
+	pBlock := &Block{
 		Number:           b.Number.ToInt().Uint64(),
 		ParentHash:       b.ParentHash[:],
 		Nonce:            b.Nonce.Uint64(),
@@ -82,40 +73,59 @@ func blockToProto(b *ethrpc.Block) *Block {
 		RequestsRoot:     bytesOrNil(b.RequestsRoot),
 		Transactions:     transactionsToProto(b.Transactions),
 		Uncles:           unclesToProto(b.Uncles),
-		Withdrawals:      withdrawals,
 		ReceiptHash:      b.ReceiptsRoot[:],
 		ExcessBlobGas:    excessBlobGas,
 		BlobGasUsed:      blobGasUsed,
 	}
+
+	for _, w := range b.Withdrawals {
+		pBlock.Withdrawals = append(pBlock.Withdrawals, &Withdrawal{
+			Index:          w.Index,
+			ValidatorIndex: w.Validator,
+			Address:        w.Address.Bytes(),
+			Amount:         w.Amount,
+		})
+	}
+
+	return pBlock
 }
 
 func chainConfigToProto(c *params.ChainConfig) *ChainConfig {
 	daoForkSupport := c.DAOForkSupport
 
-	return &ChainConfig{
-		ChainId:                 c.ChainID.Uint64(),
-		HomesteadBlock:          toBytesIfNotNil(c.HomesteadBlock),
-		DaoForkBlock:            toBytesIfNotNil(c.DAOForkBlock),
-		DaoForkSupport:          &daoForkSupport,
-		Eip150Block:             toBytesIfNotNil(c.EIP150Block),
-		Eip155Block:             toBytesIfNotNil(c.EIP155Block),
-		Eip158Block:             toBytesIfNotNil(c.EIP158Block),
-		ByzantiumBlock:          toBytesIfNotNil(c.ByzantiumBlock),
-		ConstantinopleBlock:     toBytesIfNotNil(c.ConstantinopleBlock),
-		PetersburgBlock:         toBytesIfNotNil(c.PetersburgBlock),
-		IstanbulBlock:           toBytesIfNotNil(c.IstanbulBlock),
-		MuirGlacierBlock:        toBytesIfNotNil(c.MuirGlacierBlock),
-		BerlinBlock:             toBytesIfNotNil(c.BerlinBlock),
-		LondonBlock:             toBytesIfNotNil(c.LondonBlock),
-		ArrowGlacierBlock:       toBytesIfNotNil(c.ArrowGlacierBlock),
-		GrayGlacierBlock:        toBytesIfNotNil(c.GrayGlacierBlock),
-		MergeNetsplitBlock:      toBytesIfNotNil(c.MergeNetsplitBlock),
-		ShanghaiTime:            c.ShanghaiTime,
-		CancunTime:              c.CancunTime,
-		PragueTime:              c.PragueTime,
-		VerkleTime:              c.VerkleTime,
-		TerminalTotalDifficulty: toBytesIfNotNil(c.TerminalTotalDifficulty),
-		DepositContractAddress:  c.DepositContractAddress.Bytes(),
+	cfg := &ChainConfig{
+		ChainId:                       c.ChainID.Uint64(),
+		HomesteadBlock:                toBytesIfNotNil(c.HomesteadBlock),
+		DaoForkBlock:                  toBytesIfNotNil(c.DAOForkBlock),
+		DaoForkSupport:                &daoForkSupport,
+		Eip150Block:                   toBytesIfNotNil(c.EIP150Block),
+		Eip155Block:                   toBytesIfNotNil(c.EIP155Block),
+		Eip158Block:                   toBytesIfNotNil(c.EIP158Block),
+		ByzantiumBlock:                toBytesIfNotNil(c.ByzantiumBlock),
+		ConstantinopleBlock:           toBytesIfNotNil(c.ConstantinopleBlock),
+		PetersburgBlock:               toBytesIfNotNil(c.PetersburgBlock),
+		IstanbulBlock:                 toBytesIfNotNil(c.IstanbulBlock),
+		MuirGlacierBlock:              toBytesIfNotNil(c.MuirGlacierBlock),
+		BerlinBlock:                   toBytesIfNotNil(c.BerlinBlock),
+		LondonBlock:                   toBytesIfNotNil(c.LondonBlock),
+		ArrowGlacierBlock:             toBytesIfNotNil(c.ArrowGlacierBlock),
+		GrayGlacierBlock:              toBytesIfNotNil(c.GrayGlacierBlock),
+		MergeNetsplitBlock:            toBytesIfNotNil(c.MergeNetsplitBlock),
+		ShanghaiTime:                  c.ShanghaiTime,
+		CancunTime:                    c.CancunTime,
+		PragueTime:                    c.PragueTime,
+		VerkleTime:                    c.VerkleTime,
+		BedrockBlock:                  toBytesIfNotNil(c.BedrockBlock),
+		RegolithTime:                  c.RegolithTime,
+		CanyonTime:                    c.CanyonTime,
+		EcotoneTime:                   c.EcotoneTime,
+		FjordTime:                     c.FjordTime,
+		GraniteTime:                   c.GraniteTime,
+		HoloceneTime:                  c.HoloceneTime,
+		InteropTime:                   c.InteropTime,
+		TerminalTotalDifficulty:       toBytesIfNotNil(c.TerminalTotalDifficulty),
+		TerminalTotalDifficultyPassed: common.Ptr(c.TerminalTotalDifficultyPassed),
+		DepositContractAddress:        c.DepositContractAddress.Bytes(),
 		Ethash: func() []byte {
 			if c.Ethash != nil {
 				return []byte("Ethash")
@@ -123,6 +133,16 @@ func chainConfigToProto(c *params.ChainConfig) *ChainConfig {
 			return nil
 		}(),
 	}
+
+	if c.Optimism != nil {
+		cfg.Optimism = &OptimismConfig{
+			Eip1559Elasticity:        c.Optimism.EIP1559Elasticity,
+			Eip1559Denominator:       c.Optimism.EIP1559Denominator,
+			Eip1559DenominatorCanyon: c.Optimism.EIP1559DenominatorCanyon,
+		}
+	}
+
+	return cfg
 }
 
 func transactionsToProto(txs []*ethrpc.Transaction) []*Transaction {
@@ -218,6 +238,19 @@ func DynamicFeeTransactionToProto(tx *ethrpc.Transaction) *DynamicFeeTransaction
 
 }
 
+func DepositTransactionToProto(tx *ethrpc.Transaction) *DepositTransaction {
+	return &DepositTransaction{
+		SourceHash:          tx.SourceHash().Bytes(),
+		From:                tx.From.Bytes(),
+		To:                  tx.To().Bytes(),
+		Mint:                tx.Mint().Bytes(),
+		Value:               tx.Value().Bytes(),
+		Gas:                 tx.Gas(),
+		IsSystemTransaction: tx.IsSystemTx(),
+		Data:                tx.Data(),
+	}
+}
+
 func transactionToProto(tx *ethrpc.Transaction) *Transaction {
 	switch tx.Type() {
 	case gethtypes.LegacyTxType:
@@ -242,6 +275,12 @@ func transactionToProto(tx *ethrpc.Transaction) *Transaction {
 		return &Transaction{
 			TransactionType: &Transaction_DynamicFeeTransaction{
 				DynamicFeeTransaction: DynamicFeeTransactionToProto(tx),
+			},
+		}
+	case gethtypes.DepositTxType:
+		return &Transaction{
+			TransactionType: &Transaction_DepositTransaction{
+				DepositTransaction: DepositTransactionToProto(tx),
 			},
 		}
 	default:
@@ -352,6 +391,10 @@ func codesToProto(codes []hexutil.Bytes) [][]byte {
 
 // ************** From proto to Go **************
 func withdrawalsFromProto(withdrawals []*Withdrawal) []*gethtypes.Withdrawal {
+	if withdrawals == nil {
+		return nil
+	}
+
 	result := make([]*gethtypes.Withdrawal, len(withdrawals))
 	for i, withdrawal := range withdrawals {
 		result[i] = withdrawalFromProto(withdrawal)
@@ -440,6 +483,8 @@ func transactionFromProto(tx *Transaction) *ethrpc.Transaction {
 	case *Transaction_DynamicFeeTransaction:
 		gethTx := dynamicFeeTransactionFromProto(t.DynamicFeeTransaction)
 		return ethrpc.NewTransactionFromGeth(gethTx)
+	case *Transaction_DepositTransaction:
+		return depositTransactionFromProto(t.DepositTransaction)
 	default:
 		return nil
 	}
@@ -624,6 +669,24 @@ func dynamicFeeTransactionFromProto(t *DynamicFeeTransaction) *gethtypes.Transac
 	return gethtypes.NewTx(tx)
 }
 
+func depositTransactionFromProto(t *DepositTransaction) *ethrpc.Transaction {
+	innerTx := &gethtypes.DepositTx{
+		SourceHash:          gethcommon.BytesToHash(t.GetSourceHash()),
+		From:                gethcommon.BytesToAddress(t.GetFrom()),
+		To:                  common.Ptr(gethcommon.BytesToAddress(t.GetTo())),
+		Mint:                new(big.Int).SetBytes(t.GetMint()),
+		Value:               new(big.Int).SetBytes(t.GetValue()),
+		Gas:                 t.GetGas(),
+		IsSystemTransaction: t.GetIsSystemTransaction(),
+		Data:                t.GetData(),
+	}
+	tx := &ethrpc.Transaction{
+		Transaction: gethtypes.NewTx(innerTx),
+	}
+	tx.From = &(innerTx.From)
+	return tx
+}
+
 func chainConfigFromProto(c *ChainConfig) *params.ChainConfig {
 	if c == nil {
 		return nil
@@ -631,44 +694,45 @@ func chainConfigFromProto(c *ChainConfig) *params.ChainConfig {
 
 	// Helper function to convert []byte to *big.Int
 	toBigIntIfNotEmpty := func(b []byte) *big.Int {
-		if len(b) == 0 {
+		if b == nil {
 			return nil
 		}
 		return new(big.Int).SetBytes(b)
 	}
 
-	// Helper function to convert uint64 pointer to *uint64
-	toUint64Ptr := func(t uint64) *uint64 {
-		if t == 0 {
-			return nil
-		}
-		return &t
-	}
-
 	chainConfig := &params.ChainConfig{
-		ChainID:                 new(big.Int).SetUint64(c.GetChainId()),
-		HomesteadBlock:          toBigIntIfNotEmpty(c.GetHomesteadBlock()),
-		DAOForkBlock:            toBigIntIfNotEmpty(c.GetDaoForkBlock()),
-		DAOForkSupport:          c.GetDaoForkSupport(),
-		EIP150Block:             toBigIntIfNotEmpty(c.GetEip150Block()),
-		EIP155Block:             toBigIntIfNotEmpty(c.GetEip155Block()),
-		EIP158Block:             toBigIntIfNotEmpty(c.GetEip158Block()),
-		ByzantiumBlock:          toBigIntIfNotEmpty(c.GetByzantiumBlock()),
-		ConstantinopleBlock:     toBigIntIfNotEmpty(c.GetConstantinopleBlock()),
-		PetersburgBlock:         toBigIntIfNotEmpty(c.GetPetersburgBlock()),
-		IstanbulBlock:           toBigIntIfNotEmpty(c.GetIstanbulBlock()),
-		MuirGlacierBlock:        toBigIntIfNotEmpty(c.GetMuirGlacierBlock()),
-		BerlinBlock:             toBigIntIfNotEmpty(c.GetBerlinBlock()),
-		LondonBlock:             toBigIntIfNotEmpty(c.GetLondonBlock()),
-		ArrowGlacierBlock:       toBigIntIfNotEmpty(c.GetArrowGlacierBlock()),
-		GrayGlacierBlock:        toBigIntIfNotEmpty(c.GetGrayGlacierBlock()),
-		MergeNetsplitBlock:      toBigIntIfNotEmpty(c.GetMergeNetsplitBlock()),
-		ShanghaiTime:            toUint64Ptr(c.GetShanghaiTime()),
-		CancunTime:              toUint64Ptr(c.GetCancunTime()),
-		PragueTime:              toUint64Ptr(c.GetPragueTime()),
-		VerkleTime:              toUint64Ptr(c.GetVerkleTime()),
-		TerminalTotalDifficulty: toBigIntIfNotEmpty(c.GetTerminalTotalDifficulty()),
-		DepositContractAddress:  gethcommon.BytesToAddress(c.GetDepositContractAddress()),
+		ChainID:                       new(big.Int).SetUint64(c.GetChainId()),
+		HomesteadBlock:                toBigIntIfNotEmpty(c.GetHomesteadBlock()),
+		DAOForkBlock:                  toBigIntIfNotEmpty(c.GetDaoForkBlock()),
+		DAOForkSupport:                c.GetDaoForkSupport(),
+		EIP150Block:                   toBigIntIfNotEmpty(c.GetEip150Block()),
+		EIP155Block:                   toBigIntIfNotEmpty(c.GetEip155Block()),
+		EIP158Block:                   toBigIntIfNotEmpty(c.GetEip158Block()),
+		ByzantiumBlock:                toBigIntIfNotEmpty(c.GetByzantiumBlock()),
+		ConstantinopleBlock:           toBigIntIfNotEmpty(c.GetConstantinopleBlock()),
+		PetersburgBlock:               toBigIntIfNotEmpty(c.GetPetersburgBlock()),
+		IstanbulBlock:                 toBigIntIfNotEmpty(c.GetIstanbulBlock()),
+		MuirGlacierBlock:              toBigIntIfNotEmpty(c.GetMuirGlacierBlock()),
+		BerlinBlock:                   toBigIntIfNotEmpty(c.GetBerlinBlock()),
+		LondonBlock:                   toBigIntIfNotEmpty(c.GetLondonBlock()),
+		ArrowGlacierBlock:             toBigIntIfNotEmpty(c.GetArrowGlacierBlock()),
+		GrayGlacierBlock:              toBigIntIfNotEmpty(c.GetGrayGlacierBlock()),
+		MergeNetsplitBlock:            toBigIntIfNotEmpty(c.GetMergeNetsplitBlock()),
+		ShanghaiTime:                  c.ShanghaiTime,
+		CancunTime:                    c.CancunTime,
+		PragueTime:                    c.PragueTime,
+		VerkleTime:                    c.VerkleTime,
+		BedrockBlock:                  toBigIntIfNotEmpty(c.GetBedrockBlock()),
+		RegolithTime:                  c.RegolithTime,
+		CanyonTime:                    c.CanyonTime,
+		EcotoneTime:                   c.EcotoneTime,
+		FjordTime:                     c.FjordTime,
+		GraniteTime:                   c.GraniteTime,
+		HoloceneTime:                  c.HoloceneTime,
+		InteropTime:                   c.InteropTime,
+		TerminalTotalDifficulty:       toBigIntIfNotEmpty(c.GetTerminalTotalDifficulty()),
+		TerminalTotalDifficultyPassed: c.GetTerminalTotalDifficultyPassed(),
+		DepositContractAddress:        gethcommon.BytesToAddress(c.GetDepositContractAddress()),
 	}
 
 	// Handle consensus engine configs
@@ -678,7 +742,13 @@ func chainConfigFromProto(c *ChainConfig) *params.ChainConfig {
 	if len(c.GetClique()) > 0 {
 		chainConfig.Clique = &params.CliqueConfig{}
 	}
-
+	if c.GetOptimism() != nil {
+		chainConfig.Optimism = &params.OptimismConfig{
+			EIP1559Elasticity:        c.GetOptimism().GetEip1559Elasticity(),
+			EIP1559Denominator:       c.GetOptimism().GetEip1559Denominator(),
+			EIP1559DenominatorCanyon: common.Ptr(c.GetOptimism().GetEip1559DenominatorCanyon()),
+		}
+	}
 	return chainConfig
 }
 

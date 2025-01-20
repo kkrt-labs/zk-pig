@@ -69,6 +69,12 @@ func NewModifiedTrieDatabase(triedb *triedb.Database, snap *snapshot.Tree) *Cach
 	}
 }
 
+// NewDatabaseForTesting is similar to NewDatabase, but it initializes the caching
+// db by using an ephemeral memory db with default config for testing.
+func NewDatabaseForTesting() *CachingDB {
+	return NewModifiedTrieDatabase(triedb.NewDatabase(rawdb.NewMemoryDatabase(), nil), nil)
+}
+
 // Reader returns a state reader associated with the specified state root.
 func (db *CachingDB) Reader(stateRoot common.Hash) (gethstate.Reader, error) {
 	var readers []gethstate.Reader
@@ -77,9 +83,9 @@ func (db *CachingDB) Reader(stateRoot common.Hash) (gethstate.Reader, error) {
 	// is optional and may be partially useful if it's not fully
 	// generated.
 	if db.snap != nil {
-		snap := db.snap.Snapshot(stateRoot)
-		if snap != nil {
-			readers = append(readers, newStateReader(snap)) // snap reader is optional
+		sr, err := newStateReader(stateRoot, db.snap)
+		if err == nil {
+			readers = append(readers, sr) // snap reader is optional
 		}
 	}
 	// Set up the trie reader, which is expected to always be available
@@ -104,6 +110,12 @@ func (db *CachingDB) OpenTrie(root common.Hash) (gethstate.Trie, error) {
 
 // OpenStorageTrie opens the storage trie of an account.
 func (db *CachingDB) OpenStorageTrie(stateRoot common.Hash, address common.Address, root common.Hash, self gethstate.Trie) (gethstate.Trie, error) {
+	// In the verkle case, there is only one tree. But the two-tree structure
+	// is hardcoded in the codebase. So we need to return the same trie in this
+	// case.
+	if db.triedb.IsVerkle() {
+		return self, nil
+	}
 	tr, err := trie.NewStateTrie(trie.StorageTrieID(stateRoot, crypto.Keccak256Hash(address.Bytes()), root), db.triedb)
 	if err != nil {
 		return nil, err

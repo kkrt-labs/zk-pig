@@ -11,9 +11,22 @@ import (
 	blockinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs"
 )
 
+var testcases = []string{
+	"../testdata/Ethereum_Mainnet_21630258.json",
+	"../testdata/Optimism_Mainnet_130679264.json",
+}
+
 func TestFromGoToProtoProverInputs(t *testing.T) {
+	for _, name := range testcases {
+		t.Run(name, func(t *testing.T) {
+			testFromGoToProtoProverInputs(t, name)
+		})
+	}
+}
+
+func testFromGoToProtoProverInputs(t *testing.T, path string) {
 	// Load test data
-	testData, err := os.ReadFile("../testdata/Ethereum_Mainnet_21465322.json")
+	testData, err := os.ReadFile(path)
 	require.NoError(t, err)
 
 	var data struct {
@@ -72,5 +85,7 @@ func TestFromGoToProtoProverInputs(t *testing.T) {
 		assert.Equal(t, normalizedGoInputs.Block.Transactions[i].AccessList(), normalisedBackToGo.Block.Transactions[i].AccessList())
 		assert.Equal(t, normalizedGoInputs.Block.Transactions[i].Data(), normalisedBackToGo.Block.Transactions[i].Data())
 		assert.Equal(t, normalizedGoInputs.Block.Transactions[i].Value(), normalisedBackToGo.Block.Transactions[i].Value())
+		assert.Equal(t, normalizedGoInputs.Block.Transactions[i].IsDepositTx(), normalisedBackToGo.Block.Transactions[i].IsDepositTx())
+		assert.Equal(t, normalizedGoInputs.Block.Transactions[i].IsSystemTx(), normalisedBackToGo.Block.Transactions[i].IsSystemTx())
 	}
 }
