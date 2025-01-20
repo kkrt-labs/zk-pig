@@ -359,7 +359,6 @@ func (c *Client) pingLoop() {
 }
 
 func (c *Client) writeCloseMessage(closeCode int) {
-	fmt.Printf("writeCloseMessage: %v\n", closeCode)
 	c.writeControlMessage(websocket.CloseMessage, websocket.FormatCloseMessage(closeCode, ""))
 }
 
