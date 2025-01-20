@@ -6,7 +6,6 @@ package fileblockstore
 // The prover inputs are stored in a file named `<base-dir>/<chainID>/prover/<blockNumber>.json`
 
 import (
-	"compress/bzip2"
 	"compress/flate"
 	"compress/gzip"
 	"compress/zlib"
@@ -21,14 +20,6 @@ import (
 	protoinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs/proto"
 	filestore "github.com/kkrt-labs/kakarot-controller/src/blocks/store"
 	"google.golang.org/protobuf/proto"
-)
-
-const (
-	protobufFormat   = "protobuf"
-	gzipCompression  = "gzip"
-	flateCompression = "flate"
-	bzip2Compression = "bzip2"
-	zlibCompression  = "zlib"
 )
 
 type FileBlockStore struct {
@@ -95,17 +86,15 @@ func getCompressWriter(w io.Writer, compression filestore.Compression) (io.Write
 	}
 }
 
-func getCompressReader(r io.Reader, compression string) (io.ReadCloser, error) {
+func getCompressReader(r io.Reader, compression filestore.Compression) (io.ReadCloser, error) {
 	switch compression {
-	case gzipCompression:
+	case filestore.GzipCompression:
 		return gzip.NewReader(r)
-	case flateCompression:
+	case filestore.FlateCompression:
 		return flate.NewReader(r), nil
-	case zlibCompression:
+	case filestore.ZlibCompression:
 		return zlib.NewReader(r)
-	case bzip2Compression:
-		return io.NopCloser(bzip2.NewReader(r)), nil
-	case "":
+	case filestore.NoCompression:
 		return nil, nil
 	default:
 		return nil, fmt.Errorf("unsupported compression format: %s", compression)
@@ -182,7 +171,7 @@ func (s *FileBlockStore) loadData(path string, data interface{}, format filestor
 	var reader io.Reader = file
 
 	// Apply compression if specified
-	decompressor, err := getCompressReader(file, compression.String())
+	decompressor, err := getCompressReader(file, compression)
 	if err != nil {
 		return err
 	}
