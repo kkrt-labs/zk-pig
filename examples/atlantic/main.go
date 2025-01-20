@@ -27,7 +27,7 @@ func main() {
 	}
 
 	// Read pie file
-	pieFile, err := os.ReadFile("path/to/your/proof.pie")
+	pieFile, err := os.ReadFile("examples/atlantic/fibonacci_pie.zip")
 	if err != nil {
 		log.Fatalf("Failed to read pie file: %v", err)
 	}
