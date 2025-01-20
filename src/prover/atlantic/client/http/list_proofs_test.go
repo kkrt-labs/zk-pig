@@ -24,7 +24,7 @@ func TestListProofs(t *testing.T) {
 		// Return response
 		createdAt := time.Date(2023, 11, 7, 5, 31, 56, 0, time.UTC)
 		resp := atlantic.ListProofsResponse{
-			SharpQueries: []atlantic.AtlanticQuery{
+			SharpQueries: []atlantic.Query{
 				{
 					ID:        "test-query-id",
 					Status:    "RECEIVED",

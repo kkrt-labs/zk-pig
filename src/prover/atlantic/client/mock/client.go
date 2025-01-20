@@ -57,18 +57,18 @@ func (mr *MockClientMockRecorder) GenerateProof(ctx, req any) *gomock.Call {
 }
 
 // GetProof mocks base method.
-func (m *MockClient) GetProof(ctx context.Context, atlanticQueryId string) (*atlantic.AtlanticQuery, error) {
+func (m *MockClient) GetProof(ctx context.Context, atlanticQueryID string) (*atlantic.Query, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetProof", ctx, atlanticQueryId)
-	ret0, _ := ret[0].(*atlantic.AtlanticQuery)
+	ret := m.ctrl.Call(m, "GetProof", ctx, atlanticQueryID)
+	ret0, _ := ret[0].(*atlantic.Query)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetProof indicates an expected call of GetProof.
-func (mr *MockClientMockRecorder) GetProof(ctx, atlanticQueryId any) *gomock.Call {
+func (mr *MockClientMockRecorder) GetProof(ctx, atlanticQueryID any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProof", reflect.TypeOf((*MockClient)(nil).GetProof), ctx, atlanticQueryId)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProof", reflect.TypeOf((*MockClient)(nil).GetProof), ctx, atlanticQueryID)
 }
 
 // ListProofs mocks base method.

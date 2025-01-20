@@ -22,9 +22,9 @@ func TestGetProof(t *testing.T) {
 		// Return response
 		createdAt := time.Date(2023, 11, 7, 5, 31, 56, 0, time.UTC)
 		resp := struct {
-			AtlanticQuery atlantic.AtlanticQuery `json:"atlanticQuery"`
+			AtlanticQuery atlantic.Query `json:"atlanticQuery"`
 		}{
-			AtlanticQuery: atlantic.AtlanticQuery{
+			AtlanticQuery: atlantic.Query{
 				ID:        "test-query-id",
 				Status:    "RECEIVED",
 				CreatedAt: createdAt,

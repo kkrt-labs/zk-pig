@@ -17,7 +17,7 @@ type Client interface {
 	// Proofs
 	GenerateProof(ctx context.Context, req *GenerateProofRequest) (*GenerateProofResponse, error)
 	ListProofs(ctx context.Context, req *ListProofsRequest) (*ListProofsResponse, error)
-	GetProof(ctx context.Context, atlanticQueryId string) (*AtlanticQuery, error)
+	GetProof(ctx context.Context, atlanticQueryID string) (*Query, error)
 }
 
 // Layout represents the supported proof layout types
@@ -59,12 +59,12 @@ type ListProofsRequest struct {
 }
 
 type ListProofsResponse struct {
-	SharpQueries []AtlanticQuery `json:"sharpQueries"`
-	Total        int             `json:"total"`
+	SharpQueries []Query `json:"sharpQueries"`
+	Total        int     `json:"total"`
 }
 
-// AtlanticQuery represents a proof generation query
-type AtlanticQuery struct {
+// Query represents a proof generation query
+type Query struct {
 	ID                string     `json:"id"`
 	SubmittedByClient string     `json:"submittedByClient"`
 	Status            string     `json:"status"`
