@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 
 	"github.com/Azure/go-autorest/autorest"
 	comhttp "github.com/kkrt-labs/kakarot-controller/pkg/net/http"
@@ -24,10 +25,15 @@ func NewClient(cfg *Config) (*Client, error) {
 		return nil, err
 	}
 
+	baseURL, err := url.Parse(cfg.Addr)
+	if err != nil {
+		return nil, fmt.Errorf("invalid base URL: %w", err)
+	}
+
 	return &Client{
 		client: autorest.Client{
 			Sender:           httpc,
-			RequestInspector: comhttp.WithBaseURL(cfg.Addr),
+			RequestInspector: comhttp.WithBaseURL(baseURL),
 		},
 		cfg: cfg,
 	}, nil
