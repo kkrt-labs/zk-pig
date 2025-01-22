@@ -8,6 +8,10 @@ import (
 	atlantic "github.com/kkrt-labs/kakarot-controller/src/prover/atlantic/client"
 )
 
+type atlanticQueryRespMsg struct {
+	AtlanticQuery atlantic.Query `json:"atlanticQuery"`
+}
+
 func (c *Client) GetProof(ctx context.Context, atlanticQueryID string) (*atlantic.Query, error) {
 	path := fmt.Sprintf("/v1/atlantic-query/%s", atlanticQueryID)
 	httpReq, err := c.prepareRequest(ctx, http.MethodGet, path, nil, "")
@@ -15,9 +19,7 @@ func (c *Client) GetProof(ctx context.Context, atlanticQueryID string) (*atlanti
 		return nil, err
 	}
 
-	var resp struct {
-		AtlanticQuery atlantic.Query `json:"atlanticQuery"`
-	}
+	var resp atlanticQueryRespMsg
 	if err := c.doRequest(httpReq, &resp); err != nil {
 		return nil, err
 	}
