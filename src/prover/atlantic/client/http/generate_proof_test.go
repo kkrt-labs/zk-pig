@@ -18,7 +18,7 @@ func TestGenerateProof(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Verify request
 		assert.Equal(t, "/v1/proof-generation", r.URL.Path)
-		assert.Equal(t, "test-key", r.Header.Get("apiKey"))
+		assert.Equal(t, "test-key", r.URL.Query().Get("apiKey"))
 		assert.True(t, strings.HasPrefix(r.Header.Get("Content-Type"), "multipart/form-data"))
 
 		// Parse multipart form

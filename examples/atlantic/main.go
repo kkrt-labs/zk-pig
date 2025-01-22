@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -41,7 +40,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("Failed to generate proof: %v", err)
 	}
-	fmt.Printf("Generated proof with query ID: %s\n", proof.AtlanticQueryID)
+	log.Printf("Generated proof with query ID: %s", proof.AtlanticQueryID)
 
 	// List existing proofs with pagination
 	limit := 10
@@ -54,20 +53,20 @@ func main() {
 		log.Fatalf("Failed to list proofs: %v", err)
 	}
 
-	fmt.Printf("\nExisting proofs (showing %d of %d):\n", len(proofs.SharpQueries), proofs.Total)
+	log.Printf("\nExisting proofs (showing %d of %d):", len(proofs.SharpQueries), proofs.Total)
 	for _, p := range proofs.SharpQueries {
-		fmt.Printf("- ID: %s\n", p.ID)
-		fmt.Printf("  Status: %s\n", p.Status)
-		fmt.Printf("  Created: %s\n", p.CreatedAt.Format(time.RFC3339))
+		log.Printf("- ID: %s", p.ID)
+		log.Printf("  Status: %s", p.Status)
+		log.Printf("  Created: %s", p.CreatedAt.Format(time.RFC3339))
 		if p.CompletedAt != nil {
-			fmt.Printf("  Completed: %s\n", p.CompletedAt.Format(time.RFC3339))
+			log.Printf("  Completed: %s", p.CompletedAt.Format(time.RFC3339))
 		}
-		fmt.Printf("  Layout: %s\n", p.Layout)
-		fmt.Printf("  Prover: %s\n", p.Prover)
+		log.Printf("  Layout: %s", p.Layout)
+		log.Printf("  Prover: %s", p.Prover)
 		if p.GasUsed > 0 {
-			fmt.Printf("  Gas Used: %d\n", p.GasUsed)
+			log.Printf("  Gas Used: %d", p.GasUsed)
 		}
-		fmt.Println()
+		log.Print("\n")
 	}
 
 	// Get details of a specific proof
@@ -77,20 +76,20 @@ func main() {
 		log.Fatalf("Failed to get proof details: %v", err)
 	}
 
-	fmt.Printf("\nDetailed proof information for %s:\n", queryID)
-	fmt.Printf("Status: %s\n", proofDetails.Status)
-	fmt.Printf("Program Hash: %s\n", proofDetails.ProgramHash)
-	fmt.Printf("Program Fact Hash: %s\n", proofDetails.ProgramFactHash)
+	log.Printf("\nDetailed proof information for %s:", queryID)
+	log.Printf("Status: %s", proofDetails.Status)
+	log.Printf("Program Hash: %s", proofDetails.ProgramHash)
+	log.Printf("Program Fact Hash: %s", proofDetails.ProgramFactHash)
 	if proofDetails.Price != "" {
-		fmt.Printf("Price: %s\n", proofDetails.Price)
+		log.Printf("Price: %s", proofDetails.Price)
 	}
 	if proofDetails.GasUsed > 0 {
-		fmt.Printf("Gas Used: %d\n", proofDetails.GasUsed)
+		log.Printf("Gas Used: %d", proofDetails.GasUsed)
 	}
 	if proofDetails.CreditsUsed > 0 {
-		fmt.Printf("Credits Used: %d\n", proofDetails.CreditsUsed)
+		log.Printf("Credits Used: %d", proofDetails.CreditsUsed)
 	}
 	if len(proofDetails.Steps) > 0 {
-		fmt.Printf("Steps: %v\n", proofDetails.Steps)
+		log.Printf("Steps: %v", proofDetails.Steps)
 	}
 }

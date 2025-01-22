@@ -2,7 +2,6 @@ package http
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
@@ -40,19 +39,36 @@ func NewClient(cfg *Config) (*Client, error) {
 }
 
 func (c *Client) prepareRequest(ctx context.Context, method, path string, body io.Reader, contentType string) (*http.Request, error) {
-	req, err := http.NewRequestWithContext(ctx, method, path, body)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
+	preparers := []autorest.PrepareDecorator{
+		autorest.WithMethod(method),
+		autorest.WithPath(path),
 	}
 
 	if contentType != "" {
-		req.Header.Set("Content-Type", contentType)
+		preparers = append(preparers, autorest.AsContentType(contentType))
 	}
+
+	if body != nil {
+		preparers = append(preparers, autorest.WithFile(io.NopCloser(body)))
+	}
+
 	if c.cfg.APIKey != "" {
-		req.Header.Set("apiKey", c.cfg.APIKey)
+		preparers = append(preparers, autorest.WithQueryParameters(map[string]interface{}{
+			"apiKey": c.cfg.APIKey,
+		}))
+	}
+
+	req, err := autorest.CreatePreparer(preparers...).Prepare(newRequest(ctx))
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare request: %w", err)
 	}
 
 	return req, nil
+}
+
+func newRequest(ctx context.Context) *http.Request {
+	req, _ := http.NewRequestWithContext(ctx, "", "", http.NoBody)
+	return req
 }
 
 func (c *Client) doRequest(req *http.Request, v interface{}) error {
@@ -60,17 +76,15 @@ func (c *Client) doRequest(req *http.Request, v interface{}) error {
 	if err != nil {
 		return fmt.Errorf("failed to do request: %w", err)
 	}
-	defer resp.Body.Close()
 
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		body, _ := io.ReadAll(resp.Body)
-		return fmt.Errorf("request failed with status %d: %s", resp.StatusCode, string(body))
-	}
-
-	if v != nil {
-		if err := json.NewDecoder(resp.Body).Decode(v); err != nil {
-			return fmt.Errorf("failed to decode response: %w", err)
-		}
+	err = autorest.Respond(
+		resp,
+		autorest.WithErrorUnlessStatusCode(http.StatusOK, http.StatusCreated),
+		autorest.ByUnmarshallingJSON(v),
+		autorest.ByClosing(),
+	)
+	if err != nil {
+		return fmt.Errorf("request failed: %w", err)
 	}
 
 	return nil

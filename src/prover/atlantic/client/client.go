@@ -2,6 +2,7 @@ package atlantic
 
 import (
 	"context"
+	"encoding/json"
 	"time"
 )
 
@@ -21,25 +22,104 @@ type Client interface {
 }
 
 // Layout represents the supported proof layout types
-type Layout string
+type Layout int
 
 const (
-	LayoutAuto                  Layout = "auto"
-	LayoutRecursive             Layout = "recursive"
-	LayoutRecursiveWithPoseidon Layout = "recursive_with_poseidon"
-	LayoutSmall                 Layout = "small"
-	LayoutDex                   Layout = "dex"
-	LayoutStarknet              Layout = "starknet"
-	LayoutStarknetWithKeccak    Layout = "starknet_with_keccak"
-	LayoutDynamic               Layout = "dynamic"
+	LayoutUnknown Layout = iota
+	LayoutAuto
+	LayoutRecursive
+	LayoutRecursiveWithPoseidon
+	LayoutSmall
+	LayoutDex
+	LayoutStarknet
+	LayoutStarknetWithKeccak
+	LayoutDynamic
 )
+
+var layouts = []string{
+	"unknown",
+	"auto",
+	"recursive",
+	"recursive_with_poseidon",
+	"small",
+	"dex",
+	"starknet",
+	"starknet_with_keccak",
+	"dynamic",
+}
+
+func (l Layout) String() string {
+	if l < LayoutUnknown || l > LayoutDynamic {
+		return layouts[LayoutUnknown]
+	}
+	return layouts[l]
+}
+
+// MarshalJSON implements the json.Marshaler interface
+func (l Layout) MarshalJSON() ([]byte, error) {
+	return json.Marshal(l.String())
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface
+func (l *Layout) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+
+	for i, v := range layouts {
+		if v == s {
+			*l = Layout(i)
+			return nil
+		}
+	}
+
+	*l = LayoutUnknown
+	return nil
+}
 
 // Prover represents the supported prover types
-type Prover string
+type Prover int
 
 const (
-	ProverStarkwareSharp Prover = "starkware_sharp"
+	ProverUnknown Prover = iota
+	ProverStarkwareSharp
 )
+
+var provers = []string{
+	"stone",
+	"starkware_sharp",
+}
+
+func (p Prover) String() string {
+	if p < ProverUnknown || p > ProverStarkwareSharp {
+		return provers[ProverUnknown]
+	}
+	return provers[p]
+}
+
+// MarshalJSON implements the json.Marshaler interface
+func (p Prover) MarshalJSON() ([]byte, error) {
+	return json.Marshal(p.String())
+}
+
+// UnmarshalJSON implements the json.Unmarshaler interface
+func (p *Prover) UnmarshalJSON(data []byte) error {
+	var s string
+	if err := json.Unmarshal(data, &s); err != nil {
+		return err
+	}
+
+	for i, v := range provers {
+		if v == s {
+			*p = Prover(i)
+			return nil
+		}
+	}
+
+	*p = ProverUnknown
+	return nil
+}
 
 // Request/Response types for Proof Generation
 type GenerateProofRequest struct {

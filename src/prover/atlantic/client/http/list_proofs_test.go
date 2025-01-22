@@ -17,7 +17,7 @@ func TestListProofs(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Verify request
 		assert.Equal(t, "/v1/atlantic-queries", r.URL.Path)
-		assert.Equal(t, "test-key", r.Header.Get("apiKey"))
+		assert.Equal(t, "test-key", r.URL.Query().Get("apiKey"))
 		assert.Equal(t, "10", r.URL.Query().Get("limit"))
 		assert.Equal(t, "0", r.URL.Query().Get("offset"))
 

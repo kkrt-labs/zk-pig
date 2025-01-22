@@ -17,7 +17,7 @@ func TestGetProof(t *testing.T) {
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Verify request
 		assert.Equal(t, "/v1/atlantic-query/test-query-id", r.URL.Path)
-		assert.Equal(t, "test-key", r.Header.Get("apiKey"))
+		assert.Equal(t, "test-key", r.URL.Query().Get("apiKey"))
 
 		// Return response
 		createdAt := time.Date(2023, 11, 7, 5, 31, 56, 0, time.UTC)

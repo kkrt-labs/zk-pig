@@ -24,10 +24,10 @@ func (c *Client) GenerateProof(ctx context.Context, req *atlantic.GenerateProofR
 	}
 
 	// Add other form fields
-	if err := writer.WriteField("layout", string(req.Layout)); err != nil {
+	if err := writer.WriteField("layout", req.Layout.String()); err != nil {
 		return nil, err
 	}
-	if err := writer.WriteField("prover", string(req.Prover)); err != nil {
+	if err := writer.WriteField("prover", req.Prover.String()); err != nil {
 		return nil, err
 	}
 
