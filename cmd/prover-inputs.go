@@ -5,8 +5,8 @@ import (
 	"math/big"
 
 	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/rpc/jsonrpc"
+	filestore "github.com/kkrt-labs/kakarot-controller/pkg/store"
 	"github.com/kkrt-labs/kakarot-controller/src/blocks"
-	blockstore "github.com/kkrt-labs/kakarot-controller/src/blocks/store"
 	"github.com/kkrt-labs/kakarot-controller/src/config"
 	"github.com/spf13/cobra"
 )
@@ -15,8 +15,13 @@ type ProverInputsContext struct {
 	RootContext
 	svc         *blocks.Service
 	blockNumber *big.Int
-	format      blockstore.Format
-	compression blockstore.Compression
+	format      filestore.ContentType
+	compression filestore.ContentEncoding
+	storage     string
+	s3Bucket    string
+	keyPrefix   string
+	accessKey   string
+	secretKey   string
 }
 
 // 1. Main command
@@ -49,14 +54,36 @@ func NewProverInputsCommand(rootCtx *RootContext) *cobra.Command {
 				return fmt.Errorf("invalid block number: %v", err)
 			}
 
-			ctx.format, err = blockstore.ParseFormat(format)
+			ctx.format, err = filestore.ParseFormat(format)
 			if err != nil {
 				return fmt.Errorf("invalid format: %v", err)
 			}
 
-			ctx.compression, err = blockstore.ParseCompression(compression)
+			ctx.compression, err = filestore.ParseCompression(compression)
 			if err != nil {
 				return fmt.Errorf("invalid compression: %v", err)
+			}
+
+			// Validate storage type
+			if ctx.storage != "file" && ctx.storage != "s3" {
+				return fmt.Errorf("invalid storage type: %s (must be 'file' or 's3')", ctx.storage)
+			}
+
+			// Validate s3 bucket when storage is s3
+			if ctx.storage == "s3" && ctx.s3Bucket == "" {
+				return fmt.Errorf("s3-bucket must be specified when using s3 storage")
+			}
+
+			if ctx.storage == "s3" && ctx.keyPrefix == "" {
+				return fmt.Errorf("key-prefix must be specified when using s3 storage")
+			}
+
+			if ctx.storage == "s3" && ctx.accessKey == "" {
+				return fmt.Errorf("access-key must be specified when using s3 storage")
+			}
+
+			if ctx.storage == "s3" && ctx.secretKey == "" {
+				return fmt.Errorf("secret-key must be specified when using s3 storage")
 			}
 
 			return nil
@@ -71,6 +98,11 @@ func NewProverInputsCommand(rootCtx *RootContext) *cobra.Command {
 	cmd.PersistentFlags().StringVarP(&blockNumber, "block-number", "b", "latest", "Block number")
 	cmd.PersistentFlags().StringVarP(&format, "format", "f", "json", fmt.Sprintf("Format for storing prover inputs (one of %q)", []string{"json", "protobuf"}))
 	cmd.PersistentFlags().StringVarP(&compression, "compression", "z", "none", fmt.Sprintf("Compression for storing prover inputs (one of %q)", []string{"none", "flate", "zlib"}))
+	cmd.PersistentFlags().StringVar(&ctx.storage, "storage", "file", "Storage type (file or s3)")
+	cmd.PersistentFlags().StringVar(&ctx.s3Bucket, "s3-bucket", "", "S3 bucket name for storing prover inputs")
+	cmd.PersistentFlags().StringVar(&ctx.keyPrefix, "key-prefix", "", "Key prefix for storing prover inputs")
+	cmd.PersistentFlags().StringVar(&ctx.accessKey, "access-key", "", "Access key for storing prover inputs")
+	cmd.PersistentFlags().StringVar(&ctx.secretKey, "secret-key", "", "Secret key for storing prover inputs")
 
 	cmd.AddCommand(
 		NewGenerateCommand(ctx),
@@ -93,7 +125,12 @@ func NewGenerateCommand(ctx *ProverInputsContext) *cobra.Command {
 		Short: "Generate prover inputs",
 		Long:  "Generate prover inputs by running preflight, prepare and execute in a single run",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return ctx.svc.Generate(cmd.Context(), ctx.blockNumber, ctx.format, ctx.compression)
+			headers := filestore.Headers{
+				ContentType:     ctx.format,
+				ContentEncoding: ctx.compression,
+				KeyValue:        map[string]string{"storage": ctx.storage, "s3-bucket": ctx.s3Bucket, "key-prefix": ctx.keyPrefix, "access-key": ctx.accessKey, "secret-key": ctx.secretKey},
+			}
+			return ctx.svc.Generate(cmd.Context(), ctx.blockNumber, headers)
 		},
 	}
 }
@@ -115,7 +152,12 @@ func NewPrepareCommand(ctx *ProverInputsContext) *cobra.Command {
 		Short: "Prepare prover inputs, basing on data collected during preflight",
 		Long:  "Prepare prover inputs, basing on data collected during preflight. It processes and validates an EVM block over in memory state and chain prefilled with data collected during preflight.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return ctx.svc.Prepare(cmd.Context(), ctx.blockNumber, ctx.format, ctx.compression)
+			headers := filestore.Headers{
+				ContentType:     ctx.format,
+				ContentEncoding: ctx.compression,
+				KeyValue:        map[string]string{"storage": ctx.storage, "s3-bucket": ctx.s3Bucket, "key-prefix": ctx.keyPrefix, "access-key": ctx.accessKey, "secret-key": ctx.secretKey},
+			}
+			return ctx.svc.Prepare(cmd.Context(), ctx.blockNumber, headers)
 		},
 	}
 }
@@ -126,7 +168,12 @@ func NewExecuteCommand(ctx *ProverInputsContext) *cobra.Command {
 		Short: "Run an EVM execution, basing on prover inputs generated during prepare",
 		Long:  "Run an EVM execution, basing on prover inputs generated during prepare. It processes and validates an EVM block over in memory state and chain prefilled with prover inputs.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			return ctx.svc.Execute(cmd.Context(), ctx.blockNumber, ctx.format, ctx.compression)
+			headers := filestore.Headers{
+				ContentType:     ctx.format,
+				ContentEncoding: ctx.compression,
+				KeyValue:        map[string]string{"storage": ctx.storage, "s3-bucket": ctx.s3Bucket, "key-prefix": ctx.keyPrefix, "access-key": ctx.accessKey, "secret-key": ctx.secretKey},
+			}
+			return ctx.svc.Execute(cmd.Context(), ctx.blockNumber, headers)
 		},
 	}
 }
