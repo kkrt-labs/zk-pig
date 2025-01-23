@@ -22,7 +22,7 @@ func New(cfg Config) (store.Store, error) {
 	}
 
 	if cfg.S3Config != nil {
-		s3Store, err := s3.New(*cfg.S3Config)
+		s3Store, err := s3.New(cfg.S3Config)
 		if err != nil {
 			return nil, err
 		}

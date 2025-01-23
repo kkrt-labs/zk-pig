@@ -18,10 +18,10 @@ func New(cfg Config) store.Store {
 	return &fileStore{cfg: cfg}
 }
 
-func (f *fileStore) Store(ctx context.Context, key string, reader io.Reader, headers *store.Headers) error {
+func (f *fileStore) Store(_ context.Context, key string, reader io.Reader, _ *store.Headers) error {
 	path := filepath.Join(f.cfg.DataDir, key)
 
-	if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
@@ -38,7 +38,7 @@ func (f *fileStore) Store(ctx context.Context, key string, reader io.Reader, hea
 	return nil
 }
 
-func (f *fileStore) Load(ctx context.Context, key string, _ *store.Headers) (io.Reader, error) {
+func (f *fileStore) Load(_ context.Context, key string, _ *store.Headers) (io.Reader, error) {
 	path := filepath.Join(f.cfg.DataDir, key)
 	return os.Open(path)
 }

@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"strings"
 )
 
 type ContentType string
@@ -29,22 +30,24 @@ type Store interface {
 	Load(ctx context.Context, key string, headers *Headers) (io.Reader, error)
 }
 
-func (h *Headers) String() (string, string) {
-	return string(h.ContentType), string(h.ContentEncoding)
+func (h *Headers) String() (contentType string, contentEncoding ContentEncoding) {
+	contentType, _ = h.GetContentType()
+	contentEncoding, _ = h.GetContentEncoding()
+	return
 }
 
-func (headers *Headers) GetContentType() (ContentType, error) {
-	switch headers.ContentType {
+func (h *Headers) GetContentType() (string, error) {
+	switch h.ContentType {
 	case ContentTypeJSON:
-		return "json", nil
+		return strings.TrimPrefix(string(h.ContentType), "application/"), nil
 	case ContentTypeProtobuf:
-		return "protobuf", nil
+		return strings.TrimPrefix(string(h.ContentType), "application/"), nil
 	}
-	return "", fmt.Errorf("invalid format: %s", headers.ContentType)
+	return "", fmt.Errorf("invalid format: %s", h.ContentType)
 }
 
-func (headers *Headers) GetContentEncoding() (ContentEncoding, error) {
-	switch headers.ContentEncoding {
+func (h *Headers) GetContentEncoding() (ContentEncoding, error) {
+	switch h.ContentEncoding {
 	case ContentEncodingGzip:
 		return ContentEncodingGzip, nil
 	case ContentEncodingZlib:
@@ -54,7 +57,7 @@ func (headers *Headers) GetContentEncoding() (ContentEncoding, error) {
 	case ContentEncodingPlain:
 		return ContentEncodingPlain, nil
 	}
-	return "", fmt.Errorf("invalid compression: %s", headers.ContentEncoding)
+	return "", fmt.Errorf("invalid compression: %s", h.ContentEncoding)
 }
 
 func ParseFormat(format string) (ContentType, error) {

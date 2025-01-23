@@ -85,11 +85,11 @@ func (s *ProverInputsStore) StoreProverInputs(ctx context.Context, data *blockin
 	switch s.format {
 	case storeinputs.ContentTypeProtobuf:
 		protoMsg := protoinputs.ToProto(data)
-		bytes, err := proto.Marshal(protoMsg)
+		protoBytes, err := proto.Marshal(protoMsg)
 		if err != nil {
 			return fmt.Errorf("failed to marshal protobuf: %w", err)
 		}
-		buf.Write(bytes)
+		buf.Write(protoBytes)
 	case storeinputs.ContentTypeJSON:
 		if err := json.NewEncoder(&buf).Encode(data); err != nil {
 			return fmt.Errorf("failed to encode JSON: %w", err)
@@ -173,12 +173,12 @@ func (s *ProverInputsStore) LoadProverInputs(ctx context.Context, chainID, block
 			return nil, fmt.Errorf("failed to decode JSON: %w", err)
 		}
 	case storeinputs.ContentTypeProtobuf:
-		bytes, err := io.ReadAll(reader)
+		protoBytes, err := io.ReadAll(reader)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read protobuf data: %w", err)
 		}
 		protoMsg := &protoinputs.ProverInputs{}
-		if err := proto.Unmarshal(bytes, protoMsg); err != nil {
+		if err := proto.Unmarshal(protoBytes, protoMsg); err != nil {
 			return nil, fmt.Errorf("failed to unmarshal protobuf: %w", err)
 		}
 		data = protoinputs.FromProto(protoMsg)

@@ -75,8 +75,8 @@ var testCases = []testCase{
 	// },
 }
 
-func setupProverInputsTestStore(t *testing.T, tc testCase) (*ProverInputsStore, string) {
-	baseDir := t.TempDir()
+func setupProverInputsTestStore(t *testing.T, tc testCase) (store *ProverInputsStore, baseDir string) {
+	baseDir = t.TempDir()
 	cfg := &Config{
 		MultiConfig: multi.Config{
 			FileConfig: &file.Config{
@@ -110,8 +110,7 @@ func createTestHeaders(tc testCase) storeinputs.Headers {
 	return headers
 }
 
-func setupHeavyProverInputsTestStore(t *testing.T) (*HeavyProverInputsStore, string) {
-	baseDir := t.TempDir()
+func setupHeavyProverInputsTestStore(t *testing.T) (store *HeavyProverInputsStore, baseDir string) {
 	cfg := &Config{
 		MultiConfig: multi.Config{
 			FileConfig: &file.Config{DataDir: baseDir},

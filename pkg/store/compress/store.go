@@ -17,13 +17,13 @@ type compressStore struct {
 }
 
 func New(cfg Config) (store.Store, error) {
-	store, err := multi.New(cfg.MultiConfig)
+	multiStore, err := multi.New(cfg.MultiConfig)
 	if err != nil {
 		return nil, err
 	}
 
 	return &compressStore{
-		store:    store,
+		store:    multiStore,
 		encoding: cfg.ContentEncoding,
 	}, nil
 }
@@ -34,8 +34,9 @@ func (c *compressStore) Store(ctx context.Context, key string, reader io.Reader,
 	}
 	headers.ContentEncoding = c.encoding
 
-	var compressedReader io.Reader = reader
-	if c.encoding == store.ContentEncodingGzip {
+	var compressedReader = reader
+	switch c.encoding {
+	case store.ContentEncodingGzip:
 		pr, pw := io.Pipe()
 		gw := gzip.NewWriter(pw)
 
@@ -46,7 +47,8 @@ func (c *compressStore) Store(ctx context.Context, key string, reader io.Reader,
 		}()
 
 		compressedReader = pr
-	} else if c.encoding == store.ContentEncodingZlib {
+
+	case store.ContentEncodingZlib:
 		pr, pw := io.Pipe()
 		zw := zlib.NewWriter(pw)
 
@@ -55,8 +57,10 @@ func (c *compressStore) Store(ctx context.Context, key string, reader io.Reader,
 			zw.Close()
 			pw.CloseWithError(err)
 		}()
+
 		compressedReader = pr
-	} else if c.encoding == store.ContentEncodingFlate {
+
+	case store.ContentEncodingFlate:
 		pr, pw := io.Pipe()
 		fw, err := flate.NewWriter(pw, flate.BestCompression)
 		if err != nil {
@@ -70,30 +74,30 @@ func (c *compressStore) Store(ctx context.Context, key string, reader io.Reader,
 		}()
 
 		compressedReader = pr
-	} else if c.encoding == store.ContentEncodingPlain {
+
+	case store.ContentEncodingPlain:
 		compressedReader = reader
 	}
-	// key = strings.TrimSuffix(strings.TrimSuffix(key, ".gzip"), ".zlib")
-	// key = strings.TrimSuffix(strings.TrimSuffix(key, ".flate"), ".plain")
 	return c.store.Store(ctx, key, compressedReader, headers)
 }
 
 func (c *compressStore) Load(ctx context.Context, key string, headers *store.Headers) (io.Reader, error) {
-	// key = strings.TrimSuffix(strings.TrimSuffix(key, ".gzip"), ".zlib")
-	// key = strings.TrimSuffix(strings.TrimSuffix(key, ".flate"), ".plain")
 	reader, err := c.store.Load(ctx, key, headers)
 	if err != nil {
 		return nil, err
 	}
 
-	if headers != nil && headers.ContentEncoding == store.ContentEncodingGzip {
-		return gzip.NewReader(reader)
-	} else if headers != nil && headers.ContentEncoding == store.ContentEncodingZlib {
-		return zlib.NewReader(reader)
-	} else if headers != nil && headers.ContentEncoding == store.ContentEncodingFlate {
-		return flate.NewReader(reader), nil
-	} else if headers != nil && headers.ContentEncoding == store.ContentEncodingPlain {
-		return reader, nil
+	if headers != nil {
+		switch headers.ContentEncoding {
+		case store.ContentEncodingGzip:
+			return gzip.NewReader(reader)
+		case store.ContentEncodingZlib:
+			return zlib.NewReader(reader)
+		case store.ContentEncodingFlate:
+			return flate.NewReader(reader), nil
+		case store.ContentEncodingPlain:
+			return reader, nil
+		}
 	}
 
 	return reader, nil

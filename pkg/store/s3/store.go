@@ -21,7 +21,7 @@ type s3Store struct {
 	cfg    Config
 }
 
-func New(cfg Config) (store.Store, error) {
+func New(cfg *Config) (store.Store, error) {
 	awsCfg, err := config.LoadDefaultConfig(context.Background(),
 		config.WithRegion(cfg.Region),
 		config.WithCredentialsProvider(credentials.NewStaticCredentialsProvider(
@@ -37,7 +37,7 @@ func New(cfg Config) (store.Store, error) {
 	client := s3.NewFromConfig(awsCfg)
 	return &s3Store{
 		client: client,
-		cfg:    cfg,
+		cfg:    *cfg,
 	}, nil
 }
 
@@ -106,7 +106,7 @@ func (s *s3Store) Store(ctx context.Context, key string, reader io.Reader, heade
 	return nil
 }
 
-func (s *s3Store) Load(ctx context.Context, key string, headers *store.Headers) (io.Reader, error) {
+func (s *s3Store) Load(ctx context.Context, key string, _ *store.Headers) (io.Reader, error) {
 	output, err := s.client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: &s.cfg.Bucket,
 		Key:    &key,
