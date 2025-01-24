@@ -69,21 +69,24 @@ func NewProverInputsCommand(rootCtx *RootContext) *cobra.Command {
 				return fmt.Errorf("invalid storage type: %s (must be 'file' or 's3')", ctx.storage)
 			}
 
-			// Validate s3 bucket when storage is s3
-			if ctx.storage == "s3" && ctx.s3Bucket == "" {
-				return fmt.Errorf("s3-bucket must be specified when using s3 storage")
+			// Set default keyPrefix based on storage type
+			if ctx.storage == "file" && ctx.keyPrefix == "" {
+				ctx.keyPrefix = "./data"
 			}
 
-			if ctx.storage == "s3" && ctx.keyPrefix == "" {
-				return fmt.Errorf("key-prefix must be specified when using s3 storage")
-			}
-
-			if ctx.storage == "s3" && ctx.accessKey == "" {
-				return fmt.Errorf("access-key must be specified when using s3 storage")
-			}
-
-			if ctx.storage == "s3" && ctx.secretKey == "" {
-				return fmt.Errorf("secret-key must be specified when using s3 storage")
+			if ctx.storage == "s3" {
+				if ctx.s3Bucket == "" {
+					return fmt.Errorf("s3-bucket must be specified when using s3 storage")
+				}
+				if ctx.keyPrefix == "" {
+					return fmt.Errorf("key-prefix must be specified when using s3 storage")
+				}
+				if ctx.accessKey == "" {
+					return fmt.Errorf("access-key must be specified when using s3 storage")
+				}
+				if ctx.secretKey == "" {
+					return fmt.Errorf("secret-key must be specified when using s3 storage")
+				}
 			}
 
 			return nil
@@ -100,7 +103,7 @@ func NewProverInputsCommand(rootCtx *RootContext) *cobra.Command {
 	cmd.PersistentFlags().StringVarP(&compression, "compression", "z", "none", fmt.Sprintf("Compression for storing prover inputs (one of %q)", []string{"none", "flate", "zlib"}))
 	cmd.PersistentFlags().StringVar(&ctx.storage, "storage", "file", "Storage type (file or s3)")
 	cmd.PersistentFlags().StringVar(&ctx.s3Bucket, "s3-bucket", "", "S3 bucket name for storing prover inputs")
-	cmd.PersistentFlags().StringVar(&ctx.keyPrefix, "key-prefix", "./data", "Key prefix for storing prover inputs")
+	cmd.PersistentFlags().StringVar(&ctx.keyPrefix, "key-prefix", "", "Key prefix for storing prover inputs")
 	cmd.PersistentFlags().StringVar(&ctx.accessKey, "access-key", "", "Access key for storing prover inputs")
 	cmd.PersistentFlags().StringVar(&ctx.secretKey, "secret-key", "", "Secret key for storing prover inputs")
 
