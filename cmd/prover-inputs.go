@@ -100,7 +100,7 @@ func NewProverInputsCommand(rootCtx *RootContext) *cobra.Command {
 	cmd.PersistentFlags().StringVarP(&compression, "compression", "z", "none", fmt.Sprintf("Compression for storing prover inputs (one of %q)", []string{"none", "flate", "zlib"}))
 	cmd.PersistentFlags().StringVar(&ctx.storage, "storage", "file", "Storage type (file or s3)")
 	cmd.PersistentFlags().StringVar(&ctx.s3Bucket, "s3-bucket", "", "S3 bucket name for storing prover inputs")
-	cmd.PersistentFlags().StringVar(&ctx.keyPrefix, "key-prefix", "", "Key prefix for storing prover inputs")
+	cmd.PersistentFlags().StringVar(&ctx.keyPrefix, "key-prefix", "./data", "Key prefix for storing prover inputs")
 	cmd.PersistentFlags().StringVar(&ctx.accessKey, "access-key", "", "Access key for storing prover inputs")
 	cmd.PersistentFlags().StringVar(&ctx.secretKey, "secret-key", "", "Secret key for storing prover inputs")
 

@@ -89,19 +89,24 @@ func (s *Service) Start(ctx context.Context) error {
 }
 
 func (s *Service) Generate(ctx context.Context, blockNumber *big.Int, headers filestore.Headers) error {
-	if s.chainID == nil {
-		return fmt.Errorf("chain ID missing")
-	}
-	_, err := s.preflight(ctx, blockNumber)
+	data, err := s.preflight(ctx, blockNumber)
 	if err != nil {
 		return err
 	}
 
-	if err := s.prepare(ctx, blockNumber, headers); err != nil {
+	if s.chainID == nil {
+		return fmt.Errorf("chain ID missing")
+	}
+	_, err = s.preflight(ctx, data.Block.Number.ToInt())
+	if err != nil {
 		return err
 	}
 
-	if err := s.execute(ctx, blockNumber, headers); err != nil {
+	if err := s.prepare(ctx, data.Block.Number.ToInt(), headers); err != nil {
+		return err
+	}
+
+	if err := s.execute(ctx, data.Block.Number.ToInt(), headers); err != nil {
 		return err
 	}
 
@@ -146,7 +151,6 @@ func (s *Service) prepare(ctx context.Context, blockNumber *big.Int, headers fil
 	if err != nil {
 		return fmt.Errorf("failed to configure heavy prover inputs store: %v", err)
 	}
-
 	data, err := store.LoadHeavyProverInputs(ctx, s.chainID.Uint64(), blockNumber.Uint64())
 	if err != nil {
 		return fmt.Errorf("failed to load preflight data: %v", err)

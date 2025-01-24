@@ -190,7 +190,6 @@ func (s *ProverInputsStore) LoadProverInputs(ctx context.Context, chainID, block
 }
 
 func (s *HeavyProverInputsStore) preflightPath(chainID, blockNumber uint64) string {
-	fmt.Println("preflightPath", s.baseDir, chainID, blockNumber)
 	return filepath.Join(s.baseDir, fmt.Sprintf("%d", chainID), "preflight", fmt.Sprintf("%d.json", blockNumber))
 }
 
