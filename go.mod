@@ -8,7 +8,7 @@ require (
 	github.com/Azure/go-autorest/autorest v0.11.29
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc
-	github.com/ethereum/go-ethereum v1.14.12
+	github.com/ethereum/go-ethereum v1.14.13
 	github.com/gorilla/websocket v1.5.0
 	github.com/holiman/uint256 v1.3.2
 	github.com/spf13/cobra v1.8.1
