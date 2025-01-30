@@ -42,9 +42,13 @@ func (m *multiStore) Store(ctx context.Context, key string, reader io.Reader, he
 }
 
 func (m *multiStore) Load(ctx context.Context, key string, headers *store.Headers) (io.Reader, error) {
-	// Try stores in order until we find the data
+	// Try stores in order until we find the data or encounter an error
 	for _, s := range m.stores {
-		if reader, err := s.Load(ctx, key, headers); err == nil {
+		reader, err := s.Load(ctx, key, headers)
+		if err != nil {
+			return nil, fmt.Errorf("failed to load from store: %w", err)
+		}
+		if reader != nil {
 			return reader, nil
 		}
 	}

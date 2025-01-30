@@ -5,7 +5,7 @@ import (
 	"math/big"
 
 	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/rpc/jsonrpc"
-	filestore "github.com/kkrt-labs/kakarot-controller/pkg/store"
+	store "github.com/kkrt-labs/kakarot-controller/pkg/store"
 	"github.com/kkrt-labs/kakarot-controller/src/blocks"
 	"github.com/kkrt-labs/kakarot-controller/src/config"
 	"github.com/spf13/cobra"
@@ -15,8 +15,8 @@ type ProverInputsContext struct {
 	RootContext
 	svc         *blocks.Service
 	blockNumber *big.Int
-	format      filestore.ContentType
-	compression filestore.ContentEncoding
+	format      store.ContentType
+	compression store.ContentEncoding
 	storage     string
 	s3Bucket    string
 	keyPrefix   string
@@ -54,12 +54,12 @@ func NewProverInputsCommand(rootCtx *RootContext) *cobra.Command {
 				return fmt.Errorf("invalid block number: %v", err)
 			}
 
-			ctx.format, err = filestore.ParseFormat(format)
+			ctx.format, err = store.ParseFormat(format)
 			if err != nil {
 				return fmt.Errorf("invalid format: %v", err)
 			}
 
-			ctx.compression, err = filestore.ParseCompression(compression)
+			ctx.compression, err = store.ParseCompression(compression)
 			if err != nil {
 				return fmt.Errorf("invalid compression: %v", err)
 			}
@@ -128,7 +128,7 @@ func NewGenerateCommand(ctx *ProverInputsContext) *cobra.Command {
 		Short: "Generate prover inputs",
 		Long:  "Generate prover inputs by running preflight, prepare and execute in a single run",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			headers := filestore.Headers{
+			headers := store.Headers{
 				ContentType:     ctx.format,
 				ContentEncoding: ctx.compression,
 				KeyValue:        map[string]string{"storage": ctx.storage, "s3-bucket": ctx.s3Bucket, "key-prefix": ctx.keyPrefix, "access-key": ctx.accessKey, "secret-key": ctx.secretKey},
@@ -155,7 +155,7 @@ func NewPrepareCommand(ctx *ProverInputsContext) *cobra.Command {
 		Short: "Prepare prover inputs, basing on data collected during preflight",
 		Long:  "Prepare prover inputs, basing on data collected during preflight. It processes and validates an EVM block over in memory state and chain prefilled with data collected during preflight.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			headers := filestore.Headers{
+			headers := store.Headers{
 				ContentType:     ctx.format,
 				ContentEncoding: ctx.compression,
 				KeyValue:        map[string]string{"storage": ctx.storage, "s3-bucket": ctx.s3Bucket, "key-prefix": ctx.keyPrefix, "access-key": ctx.accessKey, "secret-key": ctx.secretKey},
@@ -171,7 +171,7 @@ func NewExecuteCommand(ctx *ProverInputsContext) *cobra.Command {
 		Short: "Run an EVM execution, basing on prover inputs generated during prepare",
 		Long:  "Run an EVM execution, basing on prover inputs generated during prepare. It processes and validates an EVM block over in memory state and chain prefilled with prover inputs.",
 		RunE: func(cmd *cobra.Command, _ []string) error {
-			headers := filestore.Headers{
+			headers := store.Headers{
 				ContentType:     ctx.format,
 				ContentEncoding: ctx.compression,
 				KeyValue:        map[string]string{"storage": ctx.storage, "s3-bucket": ctx.s3Bucket, "key-prefix": ctx.keyPrefix, "access-key": ctx.accessKey, "secret-key": ctx.secretKey},

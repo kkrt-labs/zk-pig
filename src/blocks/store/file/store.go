@@ -13,6 +13,7 @@ import (
 	"io"
 	"path/filepath"
 
+	"github.com/kkrt-labs/kakarot-controller/pkg/aws"
 	storeinputs "github.com/kkrt-labs/kakarot-controller/pkg/store"
 	"github.com/kkrt-labs/kakarot-controller/pkg/store/compress"
 	"github.com/kkrt-labs/kakarot-controller/pkg/store/file"
@@ -95,7 +96,11 @@ func (s *ProverInputsStore) StoreProverInputs(ctx context.Context, data *blockin
 			return fmt.Errorf("failed to encode JSON: %w", err)
 		}
 	default:
-		return fmt.Errorf("unsupported content type: %s", s.format)
+		ct, err := headers.GetContentType()
+		if err != nil {
+			return fmt.Errorf("failed to get content type: %w", err)
+		}
+		return fmt.Errorf("unsupported content type: %s", ct)
 	}
 
 	cfg := &Config{
@@ -111,10 +116,14 @@ func (s *ProverInputsStore) StoreProverInputs(ctx context.Context, data *blockin
 		keyPrefix := headers.KeyValue["key-prefix"] + data.ChainConfig.ChainID.String() + "/" + data.Block.Number.String()
 		cfg.MultiConfig.S3Config = &s3.Config{
 			Bucket:    headers.KeyValue["s3-bucket"],
-			Region:    headers.KeyValue["region"],
 			KeyPrefix: keyPrefix,
-			AccessKey: headers.KeyValue["access-key"],
-			SecretKey: headers.KeyValue["secret-key"],
+			ProviderConfig: &aws.ProviderConfig{
+				Region: headers.KeyValue["region"],
+				Credentials: &aws.CredentialsConfig{
+					AccessKey: headers.KeyValue["access-key"],
+					SecretKey: headers.KeyValue["secret-key"],
+				},
+			},
 		}
 	}
 
@@ -139,11 +148,15 @@ func (s *ProverInputsStore) LoadProverInputs(ctx context.Context, chainID, block
 	storageType := headers.KeyValue["storage"]
 	if storageType == "s3" {
 		cfg.MultiConfig.S3Config = &s3.Config{
-			Bucket:    headers.KeyValue["s3-bucket"],
-			Region:    headers.KeyValue["region"],
+			Bucket: headers.KeyValue["s3-bucket"],
+			ProviderConfig: &aws.ProviderConfig{
+				Region: headers.KeyValue["region"],
+				Credentials: &aws.CredentialsConfig{
+					AccessKey: headers.KeyValue["access-key"],
+					SecretKey: headers.KeyValue["secret-key"],
+				},
+			},
 			KeyPrefix: headers.KeyValue["key-prefix"],
-			AccessKey: headers.KeyValue["access-key"],
-			SecretKey: headers.KeyValue["secret-key"],
 		}
 	} else {
 		cfg.MultiConfig.FileConfig = &file.Config{
@@ -183,7 +196,11 @@ func (s *ProverInputsStore) LoadProverInputs(ctx context.Context, chainID, block
 		}
 		data = protoinputs.FromProto(protoMsg)
 	default:
-		return nil, fmt.Errorf("unsupported content type: %s", headers.ContentType)
+		ct, err := headers.GetContentType()
+		if err != nil {
+			return nil, fmt.Errorf("failed to get content type: %w", err)
+		}
+		return nil, fmt.Errorf("unsupported content type: %s", ct)
 	}
 
 	return data, nil
@@ -203,7 +220,7 @@ func (s *ProverInputsStore) proverPath(chainID, blockNumber uint64, headers stor
 
 	filename := fmt.Sprintf("%d.%s", blockNumber, contentType)
 	if contentEncoding, err := headers.GetContentEncoding(); err == nil && contentEncoding != storeinputs.ContentEncodingPlain {
-		filename = filename + "." + string(contentEncoding)
+		filename = filename + "." + contentEncoding.String()
 	}
 
 	return filepath.Join(s.baseDir, keyPrefix, fmt.Sprintf("%d", chainID), filename)

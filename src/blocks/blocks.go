@@ -11,7 +11,7 @@ import (
 	ethjsonrpc "github.com/kkrt-labs/kakarot-controller/pkg/ethereum/rpc/jsonrpc"
 	"github.com/kkrt-labs/kakarot-controller/pkg/jsonrpc"
 	jsonrpcmrgd "github.com/kkrt-labs/kakarot-controller/pkg/jsonrpc/merged"
-	filestore "github.com/kkrt-labs/kakarot-controller/pkg/store"
+	store "github.com/kkrt-labs/kakarot-controller/pkg/store"
 	"github.com/kkrt-labs/kakarot-controller/pkg/store/file"
 	"github.com/kkrt-labs/kakarot-controller/pkg/store/multi"
 	"github.com/kkrt-labs/kakarot-controller/pkg/svc"
@@ -88,7 +88,7 @@ func (s *Service) Start(ctx context.Context) error {
 	return s.err
 }
 
-func (s *Service) Generate(ctx context.Context, blockNumber *big.Int, headers filestore.Headers) error {
+func (s *Service) Generate(ctx context.Context, blockNumber *big.Int, headers store.Headers) error {
 	data, err := s.preflight(ctx, blockNumber)
 	if err != nil {
 		return err
@@ -139,14 +139,14 @@ func (s *Service) preflight(ctx context.Context, blockNumber *big.Int) (*blockin
 	return data, nil
 }
 
-func (s *Service) Prepare(ctx context.Context, blockNumber *big.Int, headers filestore.Headers) error {
+func (s *Service) Prepare(ctx context.Context, blockNumber *big.Int, headers store.Headers) error {
 	if s.chainID == nil {
 		return fmt.Errorf("chain ID missing")
 	}
 	return s.prepare(ctx, blockNumber, headers)
 }
 
-func (s *Service) prepare(ctx context.Context, blockNumber *big.Int, headers filestore.Headers) error {
+func (s *Service) prepare(ctx context.Context, blockNumber *big.Int, headers store.Headers) error {
 	store, err := s.configureHeavyProverInputsStore(s.cfg)
 	if err != nil {
 		return fmt.Errorf("failed to configure heavy prover inputs store: %v", err)
@@ -172,7 +172,7 @@ func (s *Service) prepare(ctx context.Context, blockNumber *big.Int, headers fil
 	return nil
 }
 
-func (s *Service) Execute(ctx context.Context, blockNumber *big.Int, headers filestore.Headers) error {
+func (s *Service) Execute(ctx context.Context, blockNumber *big.Int, headers store.Headers) error {
 	if s.chainID == nil {
 		return fmt.Errorf("chain ID missing")
 	}
@@ -180,7 +180,7 @@ func (s *Service) Execute(ctx context.Context, blockNumber *big.Int, headers fil
 	return s.execute(ctx, blockNumber, headers)
 }
 
-func (s *Service) execute(ctx context.Context, blockNumber *big.Int, headers filestore.Headers) error {
+func (s *Service) execute(ctx context.Context, blockNumber *big.Int, headers store.Headers) error {
 	store, err := s.configureProverInputsStore(s.cfg, headers)
 	if err != nil {
 		return fmt.Errorf("failed to configure prover inputs store: %v", err)
@@ -223,8 +223,8 @@ func (s *Service) configureHeavyProverInputsStore(cfg *Config) (blockstore.Heavy
 				DataDir: cfg.BaseDir,
 			},
 		},
-		ContentType:     filestore.ContentTypeJSON,
-		ContentEncoding: filestore.ContentEncodingPlain,
+		ContentType:     store.ContentTypeJSON,
+		ContentEncoding: store.ContentEncodingPlain,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create heavy prover inputs store: %v", err)
@@ -233,19 +233,32 @@ func (s *Service) configureHeavyProverInputsStore(cfg *Config) (blockstore.Heavy
 	return store, nil
 }
 
-func (s *Service) configureProverInputsStore(cfg *Config, headers filestore.Headers) (blockstore.ProverInputsStore, error) {
-	store, err := fileblockstore.New(&fileblockstore.Config{
+func (s *Service) configureProverInputsStore(cfg *Config, headers store.Headers) (blockstore.ProverInputsStore, error) {
+	storageType := headers.KeyValue["storage"]
+	if storageType == "file" || storageType == "" {
+		store, err := fileblockstore.New(&fileblockstore.Config{
+			MultiConfig: multi.Config{
+				FileConfig: &file.Config{
+					DataDir: cfg.BaseDir,
+				},
+			},
+			ContentType:     headers.ContentType,
+			ContentEncoding: headers.ContentEncoding,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create prover inputs store: %v", err)
+		}
+
+		return store, nil
+	}
+
+	return fileblockstore.New(&fileblockstore.Config{
 		MultiConfig: multi.Config{
 			FileConfig: &file.Config{
 				DataDir: cfg.BaseDir,
 			},
 		},
-		ContentType:     headers.ContentType,
-		ContentEncoding: headers.ContentEncoding,
+		ContentType:     store.ContentTypeJSON,
+		ContentEncoding: store.ContentEncodingPlain,
 	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create prover inputs store: %v", err)
-	}
-
-	return store, nil
 }

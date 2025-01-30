@@ -11,24 +11,24 @@ import (
 	"github.com/kkrt-labs/kakarot-controller/pkg/store/multi"
 )
 
-type compressStore struct {
+type CompressStore struct {
 	store    store.Store
 	encoding store.ContentEncoding
 }
 
-func New(cfg Config) (store.Store, error) {
+func New(cfg Config) (*CompressStore, error) {
 	multiStore, err := multi.New(cfg.MultiConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	return &compressStore{
+	return &CompressStore{
 		store:    multiStore,
 		encoding: cfg.ContentEncoding,
 	}, nil
 }
 
-func (c *compressStore) Store(ctx context.Context, key string, reader io.Reader, headers *store.Headers) error {
+func (c *CompressStore) Store(ctx context.Context, key string, reader io.Reader, headers *store.Headers) error {
 	if headers == nil {
 		headers = &store.Headers{}
 	}
@@ -81,7 +81,7 @@ func (c *compressStore) Store(ctx context.Context, key string, reader io.Reader,
 	return c.store.Store(ctx, key, compressedReader, headers)
 }
 
-func (c *compressStore) Load(ctx context.Context, key string, headers *store.Headers) (io.Reader, error) {
+func (c *CompressStore) Load(ctx context.Context, key string, headers *store.Headers) (io.Reader, error) {
 	reader, err := c.store.Load(ctx, key, headers)
 	if err != nil {
 		return nil, err
