@@ -98,9 +98,9 @@ func createTestHeaders(tc testCase) storeinputs.Headers {
 
 	if tc.storage == "s3" {
 		headers.KeyValue["s3-bucket"] = tc.s3Config.Bucket
-		headers.KeyValue["region"] = tc.s3Config.Region
-		headers.KeyValue["access-key"] = tc.s3Config.AccessKey
-		headers.KeyValue["secret-key"] = tc.s3Config.SecretKey
+		headers.KeyValue["region"] = tc.s3Config.ProviderConfig.Region
+		headers.KeyValue["access-key"] = tc.s3Config.ProviderConfig.Credentials.AccessKey
+		headers.KeyValue["secret-key"] = tc.s3Config.ProviderConfig.Credentials.SecretKey
 	}
 
 	return headers

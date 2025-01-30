@@ -1,10 +1,9 @@
 package s3
 
+import aws "github.com/kkrt-labs/kakarot-controller/pkg/aws"
+
 type Config struct {
-	Bucket    string
-	Region    string
-	Endpoint  string
-	KeyPrefix string
-	AccessKey string
-	SecretKey string
+	ProviderConfig *aws.ProviderConfig
+	Bucket         string
+	KeyPrefix      string
 }
