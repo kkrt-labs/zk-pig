@@ -13,24 +13,24 @@ import (
 	"github.com/kkrt-labs/kakarot-controller/pkg/store/multi"
 )
 
-type CompressStore struct {
+type Store struct {
 	store    store.Store
 	encoding store.ContentEncoding
 }
 
-func New(cfg Config) (*CompressStore, error) {
+func New(cfg Config) (*Store, error) {
 	multiStore, err := multi.New(cfg.MultiConfig)
 	if err != nil {
 		return nil, err
 	}
 
-	return &CompressStore{
+	return &Store{
 		store:    multiStore,
 		encoding: cfg.ContentEncoding,
 	}, nil
 }
 
-func (c *CompressStore) Store(ctx context.Context, key string, reader io.Reader, headers *store.Headers) error {
+func (c *Store) Store(ctx context.Context, key string, reader io.Reader, headers *store.Headers) error {
 	if headers == nil {
 		headers = &store.Headers{}
 	}
@@ -85,7 +85,7 @@ func (c *CompressStore) Store(ctx context.Context, key string, reader io.Reader,
 	return c.store.Store(ctx, key, compressedReader, headers)
 }
 
-func (c *CompressStore) Load(ctx context.Context, key string, headers *store.Headers) (io.Reader, error) {
+func (c *Store) Load(ctx context.Context, key string, headers *store.Headers) (io.Reader, error) {
 	filename := c.path(key, headers)
 	reader, err := c.store.Load(ctx, filename, headers)
 	if err != nil {
@@ -108,7 +108,7 @@ func (c *CompressStore) Load(ctx context.Context, key string, headers *store.Hea
 	return reader, nil
 }
 
-func (c *CompressStore) path(key string, headers *store.Headers) string {
+func (c *Store) path(key string, headers *store.Headers) string {
 	var filename string
 	contentType, err := headers.GetContentType()
 	if err != nil {

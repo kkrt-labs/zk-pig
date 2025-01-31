@@ -10,15 +10,15 @@ import (
 	"github.com/kkrt-labs/kakarot-controller/pkg/store"
 )
 
-type FileStore struct {
+type Store struct {
 	cfg Config
 }
 
 func New(cfg Config) store.Store {
-	return &FileStore{cfg: cfg}
+	return &Store{cfg: cfg}
 }
 
-func (f *FileStore) Store(_ context.Context, key string, reader io.Reader, _ *store.Headers) error {
+func (f *Store) Store(_ context.Context, key string, reader io.Reader, _ *store.Headers) error {
 	baseDir := f.cfg.DataDir
 	dir := filepath.Dir(filepath.Join(baseDir, key))
 	if err := os.MkdirAll(dir, 0o755); err != nil {
@@ -39,7 +39,7 @@ func (f *FileStore) Store(_ context.Context, key string, reader io.Reader, _ *st
 	return nil
 }
 
-func (f *FileStore) Load(_ context.Context, key string, _ *store.Headers) (io.Reader, error) {
+func (f *Store) Load(_ context.Context, key string, _ *store.Headers) (io.Reader, error) {
 	filePath := filepath.Join(f.cfg.DataDir, key)
 	return os.Open(filePath)
 }

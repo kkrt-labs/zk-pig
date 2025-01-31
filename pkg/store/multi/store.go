@@ -10,7 +10,7 @@ import (
 	"github.com/kkrt-labs/kakarot-controller/pkg/store/s3"
 )
 
-type multiStore struct {
+type Store struct {
 	stores []store.Store
 }
 
@@ -29,10 +29,10 @@ func New(cfg Config) (store.Store, error) {
 		stores = append(stores, s3Store)
 	}
 
-	return &multiStore{stores: stores}, nil
+	return &Store{stores: stores}, nil
 }
 
-func (m *multiStore) Store(ctx context.Context, key string, reader io.Reader, headers *store.Headers) error {
+func (m *Store) Store(ctx context.Context, key string, reader io.Reader, headers *store.Headers) error {
 	for _, s := range m.stores {
 		if err := s.Store(ctx, key, reader, headers); err != nil {
 			return err
@@ -41,7 +41,7 @@ func (m *multiStore) Store(ctx context.Context, key string, reader io.Reader, he
 	return nil
 }
 
-func (m *multiStore) Load(ctx context.Context, key string, headers *store.Headers) (io.Reader, error) {
+func (m *Store) Load(ctx context.Context, key string, headers *store.Headers) (io.Reader, error) {
 	// Try stores in order until we find the data or encounter an error
 	for _, s := range m.stores {
 		reader, err := s.Load(ctx, key, headers)
