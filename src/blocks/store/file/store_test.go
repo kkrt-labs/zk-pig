@@ -14,8 +14,9 @@ import (
 	gethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/rpc"
 	storeinputs "github.com/kkrt-labs/kakarot-controller/pkg/store"
-	"github.com/kkrt-labs/kakarot-controller/pkg/store/file"
-	"github.com/kkrt-labs/kakarot-controller/pkg/store/multi"
+	compressstore "github.com/kkrt-labs/kakarot-controller/pkg/store/compress"
+	filestore "github.com/kkrt-labs/kakarot-controller/pkg/store/file"
+	multistore "github.com/kkrt-labs/kakarot-controller/pkg/store/multi"
 	"github.com/kkrt-labs/kakarot-controller/pkg/store/s3"
 	blockinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs"
 )
@@ -74,17 +75,19 @@ var testCases = []testCase{
 func setupProverInputsTestStore(t *testing.T, tc testCase) (store *ProverInputsStore, baseDir string) {
 	baseDir = t.TempDir()
 	cfg := &Config{
-		MultiConfig: multi.Config{
-			FileConfig: &file.Config{
+		MultiConfig: multistore.Config{
+			FileConfig: &filestore.Config{
 				DataDir: baseDir,
 			},
 			S3Config: tc.s3Config,
 		},
-		ContentType:     tc.contentType,
-		ContentEncoding: tc.contentEncoding,
 	}
+	compressStore, err := compressstore.New(compressstore.Config{
+		MultiConfig:     cfg.MultiConfig,
+		ContentEncoding: tc.contentEncoding,
+	})
+	store = NewFromStore(compressStore, tc.contentType)
 
-	store, err := New(cfg)
 	assert.NoError(t, err)
 	return store, baseDir
 }
@@ -109,8 +112,8 @@ func createTestHeaders(tc testCase) storeinputs.Headers {
 func setupHeavyProverInputsTestStore(t *testing.T) (store *HeavyProverInputsStore, baseDir string) {
 	baseDir = t.TempDir()
 	cfg := &Config{
-		MultiConfig: multi.Config{
-			FileConfig: &file.Config{DataDir: baseDir},
+		MultiConfig: multistore.Config{
+			FileConfig: &filestore.Config{DataDir: baseDir},
 		},
 	}
 

@@ -30,10 +30,6 @@ func New(cfg *Config) (store.Store, error) {
 }
 
 func (s *s3Store) Store(ctx context.Context, key string, reader io.Reader, headers *store.Headers) error {
-	if headers != nil && headers.ContentEncoding != store.ContentEncodingPlain {
-		return fmt.Errorf("compression is not handled here; use the compress store")
-	}
-
 	content, err := io.ReadAll(reader)
 	if err != nil {
 		return fmt.Errorf("failed to read content: %w", err)
@@ -69,10 +65,5 @@ func (s *s3Store) Load(ctx context.Context, key string, _ *store.Headers) (io.Re
 		return nil, err
 	}
 
-	if output.ContentEncoding != nil {
-		return nil, fmt.Errorf("decompression is not handled here; use the appropriate store")
-	}
-
-	// If no content encoding in S3 metadata, return raw body
 	return output.Body, nil
 }

@@ -13,21 +13,17 @@ import (
 	"io"
 	"path/filepath"
 
-	"github.com/kkrt-labs/kakarot-controller/pkg/aws"
 	storeinputs "github.com/kkrt-labs/kakarot-controller/pkg/store"
-	"github.com/kkrt-labs/kakarot-controller/pkg/store/compress"
 	"github.com/kkrt-labs/kakarot-controller/pkg/store/file"
 	"github.com/kkrt-labs/kakarot-controller/pkg/store/multi"
-	"github.com/kkrt-labs/kakarot-controller/pkg/store/s3"
 	blockinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs"
 	protoinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs/proto"
 	"google.golang.org/protobuf/proto"
 )
 
 type ProverInputsStore struct {
-	store   storeinputs.Store
-	format  storeinputs.ContentType
-	baseDir string
+	store  storeinputs.Store
+	format storeinputs.ContentType
 }
 
 func NewFromStore(store storeinputs.Store, format storeinputs.ContentType) *ProverInputsStore {
@@ -103,77 +99,13 @@ func (s *ProverInputsStore) StoreProverInputs(ctx context.Context, data *blockin
 		return fmt.Errorf("unsupported content type: %s", ct)
 	}
 
-	cfg := &Config{
-		MultiConfig: multi.Config{},
-	}
-
-	storageType := headers.KeyValue["storage"]
-	if storageType == "file" || storageType == "" {
-		cfg.MultiConfig.FileConfig = &file.Config{DataDir: s.baseDir}
-	}
-
-	if storageType == "s3" || storageType == "" {
-		keyPrefix := headers.KeyValue["key-prefix"] + data.ChainConfig.ChainID.String() + "/" + data.Block.Number.String()
-		cfg.MultiConfig.S3Config = &s3.Config{
-			Bucket:    headers.KeyValue["s3-bucket"],
-			KeyPrefix: keyPrefix,
-			ProviderConfig: &aws.ProviderConfig{
-				Region: headers.KeyValue["region"],
-				Credentials: &aws.CredentialsConfig{
-					AccessKey: headers.KeyValue["access-key"],
-					SecretKey: headers.KeyValue["secret-key"],
-				},
-			},
-		}
-	}
-
-	compressStore, err := compress.New(compress.Config{
-		ContentEncoding: headers.ContentEncoding,
-		MultiConfig:     cfg.MultiConfig,
-	})
-	if err != nil {
-		return fmt.Errorf("failed to create compress store: %w", err)
-	}
-
-	path := s.proverPath(data.ChainConfig.ChainID.Uint64(), data.Block.Number.ToInt().Uint64(), headers)
-	return compressStore.Store(ctx, path, bytes.NewReader(buf.Bytes()), &headers)
+	path := s.proverPath(data.ChainConfig.ChainID.Uint64(), data.Block.Number.ToInt().Uint64())
+	return s.store.Store(ctx, path, bytes.NewReader(buf.Bytes()), &headers)
 }
 
 func (s *ProverInputsStore) LoadProverInputs(ctx context.Context, chainID, blockNumber uint64, headers storeinputs.Headers) (*blockinputs.ProverInputs, error) {
-	// Initialize config based on storage type
-	cfg := &Config{
-		MultiConfig: multi.Config{},
-	}
-
-	storageType := headers.KeyValue["storage"]
-	if storageType == "s3" {
-		cfg.MultiConfig.S3Config = &s3.Config{
-			Bucket: headers.KeyValue["s3-bucket"],
-			ProviderConfig: &aws.ProviderConfig{
-				Region: headers.KeyValue["region"],
-				Credentials: &aws.CredentialsConfig{
-					AccessKey: headers.KeyValue["access-key"],
-					SecretKey: headers.KeyValue["secret-key"],
-				},
-			},
-			KeyPrefix: headers.KeyValue["key-prefix"],
-		}
-	} else {
-		cfg.MultiConfig.FileConfig = &file.Config{
-			DataDir: s.baseDir,
-		}
-	}
-
-	compressStore, err := compress.New(compress.Config{
-		ContentEncoding: headers.ContentEncoding,
-		MultiConfig:     cfg.MultiConfig,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create compress store: %w", err)
-	}
-
-	path := s.proverPath(chainID, blockNumber, headers)
-	reader, err := compressStore.Load(ctx, path, &headers)
+	path := s.proverPath(chainID, blockNumber)
+	reader, err := s.store.Load(ctx, path, &headers)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load data from store: %w", err)
 	}
@@ -207,23 +139,11 @@ func (s *ProverInputsStore) LoadProverInputs(ctx context.Context, chainID, block
 }
 
 func (s *HeavyProverInputsStore) preflightPath(chainID, blockNumber uint64) string {
-	return filepath.Join(s.baseDir, fmt.Sprintf("%d", chainID), "preflight", fmt.Sprintf("%d.json", blockNumber))
+	return filepath.Join(fmt.Sprintf("%d", chainID), "preflight", fmt.Sprintf("%d.json", blockNumber))
 }
 
-func (s *ProverInputsStore) proverPath(chainID, blockNumber uint64, headers storeinputs.Headers) string {
-	contentType, err := headers.GetContentType()
-	if err != nil {
-		return ""
-	}
-
-	keyPrefix := headers.KeyValue["key-prefix"]
-
-	filename := fmt.Sprintf("%d.%s", blockNumber, contentType)
-	if contentEncoding, err := headers.GetContentEncoding(); err == nil && contentEncoding != storeinputs.ContentEncodingPlain {
-		filename = filename + "." + contentEncoding.String()
-	}
-
-	return filepath.Join(s.baseDir, keyPrefix, fmt.Sprintf("%d", chainID), filename)
+func (s *ProverInputsStore) proverPath(chainID, blockNumber uint64) string {
+	return filepath.Join(fmt.Sprintf("%d", chainID), fmt.Sprintf("%d", blockNumber))
 }
 
 // NewHeavyProverInputsStore creates a new HeavyProverInputsStore instance

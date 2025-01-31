@@ -19,11 +19,14 @@ func New(cfg Config) store.Store {
 }
 
 func (f *FileStore) Store(_ context.Context, key string, reader io.Reader, _ *store.Headers) error {
-	if err := os.MkdirAll(filepath.Dir(key), 0o755); err != nil {
+	baseDir := f.cfg.DataDir
+	dir := filepath.Dir(filepath.Join(baseDir, key))
+	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return fmt.Errorf("failed to create directory: %w", err)
 	}
 
-	file, err := os.Create(key)
+	filePath := filepath.Join(baseDir, key)
+	file, err := os.Create(filePath)
 	if err != nil {
 		return fmt.Errorf("failed to create file: %w", err)
 	}
@@ -37,5 +40,6 @@ func (f *FileStore) Store(_ context.Context, key string, reader io.Reader, _ *st
 }
 
 func (f *FileStore) Load(_ context.Context, key string, _ *store.Headers) (io.Reader, error) {
-	return os.Open(key)
+	filePath := filepath.Join(f.cfg.DataDir, key)
+	return os.Open(filePath)
 }

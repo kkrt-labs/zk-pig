@@ -5,7 +5,9 @@ import (
 	"compress/gzip"
 	"compress/zlib"
 	"context"
+	"fmt"
 	"io"
+	"path/filepath"
 
 	"github.com/kkrt-labs/kakarot-controller/pkg/store"
 	"github.com/kkrt-labs/kakarot-controller/pkg/store/multi"
@@ -78,11 +80,14 @@ func (c *CompressStore) Store(ctx context.Context, key string, reader io.Reader,
 	case store.ContentEncodingPlain:
 		compressedReader = reader
 	}
+
+	key = c.path(key, headers)
 	return c.store.Store(ctx, key, compressedReader, headers)
 }
 
 func (c *CompressStore) Load(ctx context.Context, key string, headers *store.Headers) (io.Reader, error) {
-	reader, err := c.store.Load(ctx, key, headers)
+	filename := c.path(key, headers)
+	reader, err := c.store.Load(ctx, filename, headers)
 	if err != nil {
 		return nil, err
 	}
@@ -101,4 +106,27 @@ func (c *CompressStore) Load(ctx context.Context, key string, headers *store.Hea
 	}
 
 	return reader, nil
+}
+
+func (c *CompressStore) path(key string, headers *store.Headers) string {
+	var filename string
+	contentType, err := headers.GetContentType()
+	if err != nil {
+		return ""
+	}
+
+	contentEncoding, err := headers.GetContentEncoding()
+	if err != nil {
+		return ""
+	}
+
+	keyPrefix := headers.KeyValue["key-prefix"]
+
+	if contentEncoding == store.ContentEncodingPlain {
+		filename = fmt.Sprintf("%s.%s", key, contentType)
+	} else {
+		filename = fmt.Sprintf("%s.%s.%s", key, contentType, contentEncoding.String())
+	}
+
+	return filepath.Join(keyPrefix, filename)
 }
