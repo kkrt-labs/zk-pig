@@ -1,6 +1,7 @@
 package compress
 
 import (
+	"bytes"
 	"compress/flate"
 	"compress/gzip"
 	"compress/zlib"
@@ -36,46 +37,41 @@ func (c *Store) Store(ctx context.Context, key string, reader io.Reader, headers
 	}
 	headers.ContentEncoding = c.encoding
 
-	var compressedReader = reader
+	var compressedReader io.Reader
+
 	switch c.encoding {
 	case store.ContentEncodingGzip:
-		pr, pw := io.Pipe()
-		gw := gzip.NewWriter(pw)
-
-		go func() {
-			_, err := io.Copy(gw, reader)
+		var buf bytes.Buffer
+		gw := gzip.NewWriter(&buf)
+		if _, err := io.Copy(gw, reader); err != nil {
 			gw.Close()
-			pw.CloseWithError(err)
-		}()
-
-		compressedReader = pr
+			return fmt.Errorf("failed to compress with gzip: %w", err)
+		}
+		gw.Close()
+		compressedReader = &buf
 
 	case store.ContentEncodingZlib:
-		pr, pw := io.Pipe()
-		zw := zlib.NewWriter(pw)
-
-		go func() {
-			_, err := io.Copy(zw, reader)
+		var buf bytes.Buffer
+		zw := zlib.NewWriter(&buf)
+		if _, err := io.Copy(zw, reader); err != nil {
 			zw.Close()
-			pw.CloseWithError(err)
-		}()
-
-		compressedReader = pr
+			return fmt.Errorf("failed to compress with zlib: %w", err)
+		}
+		zw.Close()
+		compressedReader = &buf
 
 	case store.ContentEncodingFlate:
-		pr, pw := io.Pipe()
-		fw, err := flate.NewWriter(pw, flate.BestCompression)
+		var buf bytes.Buffer
+		fw, err := flate.NewWriter(&buf, flate.BestCompression)
 		if err != nil {
-			return err
+			return fmt.Errorf("failed to create flate writer: %w", err)
 		}
-
-		go func() {
-			_, err := io.Copy(fw, reader)
+		if _, err := io.Copy(fw, reader); err != nil {
 			fw.Close()
-			pw.CloseWithError(err)
-		}()
-
-		compressedReader = pr
+			return fmt.Errorf("failed to compress with flate: %w", err)
+		}
+		fw.Close()
+		compressedReader = &buf
 
 	case store.ContentEncodingPlain:
 		compressedReader = reader

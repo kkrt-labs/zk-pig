@@ -20,7 +20,6 @@ import (
 	"github.com/kkrt-labs/kakarot-controller/pkg/svc"
 	blockinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs"
 	blockstore "github.com/kkrt-labs/kakarot-controller/src/blocks/store"
-	blockfilestore "github.com/kkrt-labs/kakarot-controller/src/blocks/store/file"
 )
 
 // Service is a service that enables the generation of prover inpunts for EVM compatible blocks.
@@ -221,7 +220,7 @@ func (s *Service) Stop(ctx context.Context) error {
 }
 
 func (s *Service) configureHeavyProverInputsStore(cfg *Config) (blockstore.HeavyProverInputsStore, error) {
-	inputsStore, err := blockfilestore.NewHeavyProverInputsStore(&blockfilestore.Config{
+	inputsStore, err := blockstore.NewHeavyProverInputsStore(&blockstore.Config{
 		MultiConfig: multistore.Config{
 			FileConfig: &file.Config{
 				DataDir: cfg.BaseDir,
@@ -269,5 +268,5 @@ func (s *Service) configureProverInputsStore(cfg *Config, headers store.Headers)
 		return nil, fmt.Errorf("failed to create compress store: %v", err)
 	}
 
-	return blockfilestore.NewFromStore(compressStore, headers.ContentType), nil
+	return blockstore.NewFromStore(compressStore, headers.ContentType), nil
 }

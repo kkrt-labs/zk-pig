@@ -1,4 +1,4 @@
-package fileblockstore
+package blockstore
 
 // Implement test cases for the FileBlockStore struct.
 
@@ -72,7 +72,7 @@ var testCases = []testCase{
 	// },
 }
 
-func setupProverInputsTestStore(t *testing.T, tc testCase) (store *ProverInputsStore, baseDir string) {
+func setupProverInputsTestStore(t *testing.T, tc testCase) (store *proverInputsStore, baseDir string) {
 	baseDir = t.TempDir()
 	cfg := &Config{
 		MultiConfig: multistore.Config{
@@ -109,7 +109,7 @@ func createTestHeaders(tc testCase) storeinputs.Headers {
 	return headers
 }
 
-func setupHeavyProverInputsTestStore(t *testing.T) (store *HeavyProverInputsStore, baseDir string) {
+func setupHeavyProverInputsTestStore(t *testing.T) (store *heavyProverInputsStore, baseDir string) {
 	baseDir = t.TempDir()
 	cfg := &Config{
 		MultiConfig: multistore.Config{
