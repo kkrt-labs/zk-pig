@@ -43,12 +43,12 @@ type proverInputsStore struct {
 	format store.ContentType
 }
 
-func NewFromStore(inputstore store.Store, format store.ContentType) *proverInputsStore {
+func NewFromStore(inputstore store.Store, format store.ContentType) ProverInputsStore {
 	return &proverInputsStore{store: inputstore, format: format}
 }
 
 // NewHeavyProverInputsStore creates a new HeavyProverInputsStore instance
-func NewHeavyProverInputsStore(cfg *Config) (*heavyProverInputsStore, error) {
+func NewHeavyProverInputsStore(cfg *Config) (HeavyProverInputsStore, error) {
 	inputstore := filestore.New(filestore.Config{
 		DataDir: cfg.MultiConfig.FileConfig.DataDir,
 	})
@@ -70,7 +70,7 @@ type Config struct {
 	ContentEncoding store.ContentEncoding
 }
 
-func New(cfg *Config) (*proverInputsStore, error) {
+func New(cfg *Config) (ProverInputsStore, error) {
 	inputstore, err := multistore.New(cfg.MultiConfig)
 	if err != nil {
 		return nil, err
