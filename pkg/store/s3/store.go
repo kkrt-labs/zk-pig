@@ -49,6 +49,14 @@ func (s *s3Store) Store(ctx context.Context, key string, reader io.Reader, heade
 		input.ContentEncoding = &encoding
 	}
 
+	// Set metadata from headers
+	if headers != nil && headers.KeyValue != nil {
+		input.Metadata = make(map[string]string)
+		for k, v := range headers.KeyValue {
+			input.Metadata[k] = v
+		}
+	}
+
 	_, err = s.client.PutObject(ctx, input)
 	if err != nil {
 		return fmt.Errorf("failed to put object in S3: %w", err)

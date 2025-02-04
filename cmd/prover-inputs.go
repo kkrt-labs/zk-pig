@@ -54,12 +54,12 @@ func NewProverInputsCommand(rootCtx *RootContext) *cobra.Command {
 				return fmt.Errorf("invalid block number: %v", err)
 			}
 
-			ctx.format, err = store.ParseFormat(format)
+			ctx.format, err = store.ParseContentType(format)
 			if err != nil {
 				return fmt.Errorf("invalid format: %v", err)
 			}
 
-			ctx.compression, err = store.ParseCompression(compression)
+			ctx.compression, err = store.ParseContentEncoding(compression)
 			if err != nil {
 				return fmt.Errorf("invalid compression: %v", err)
 			}

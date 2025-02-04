@@ -81,7 +81,7 @@ func (h *Headers) GetContentEncoding() (ContentEncoding, error) {
 	return -1, fmt.Errorf("invalid compression: %s", h.ContentEncoding)
 }
 
-func ParseFormat(format string) (ContentType, error) {
+func ParseContentType(format string) (ContentType, error) {
 	switch format {
 	case "json":
 		return ContentTypeJSON, nil
@@ -91,7 +91,7 @@ func ParseFormat(format string) (ContentType, error) {
 	return -1, fmt.Errorf("invalid format: %s", format)
 }
 
-func ParseCompression(compression string) (ContentEncoding, error) {
+func ParseContentEncoding(compression string) (ContentEncoding, error) {
 	switch compression {
 	case "gzip":
 		return ContentEncodingGzip, nil

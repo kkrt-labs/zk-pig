@@ -14,7 +14,7 @@ type Store struct {
 	stores []store.Store
 }
 
-func New(cfg Config) (store.Store, error) {
+func NewFromConfig(cfg Config) (store.Store, error) {
 	var stores []store.Store
 
 	if cfg.FileConfig != nil {
@@ -30,6 +30,10 @@ func New(cfg Config) (store.Store, error) {
 	}
 
 	return &Store{stores: stores}, nil
+}
+
+func New(stores []store.Store) store.Store {
+	return &Store{stores: stores}
 }
 
 func (m *Store) Store(ctx context.Context, key string, reader io.Reader, headers *store.Headers) error {

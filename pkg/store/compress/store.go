@@ -20,7 +20,7 @@ type Store struct {
 }
 
 func New(cfg Config) (*Store, error) {
-	multiStore, err := multi.New(cfg.MultiConfig)
+	multiStore, err := multi.NewFromConfig(cfg.MultiConfig)
 	if err != nil {
 		return nil, err
 	}

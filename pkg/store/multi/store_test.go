@@ -12,7 +12,7 @@ import (
 )
 
 func TestMultiStore(t *testing.T) {
-	multiStore, err := New(Config{
+	multiStore, err := NewFromConfig(Config{
 		FileConfig: &filestore.Config{
 			DataDir: t.TempDir(),
 		},
