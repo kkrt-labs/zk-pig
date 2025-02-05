@@ -12,7 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/triedb/hashdb"
 	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum"
 	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/evm"
-	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/state"
 	"github.com/kkrt-labs/kakarot-controller/pkg/log"
 	"github.com/kkrt-labs/kakarot-controller/pkg/tag"
 	"go.uber.org/zap"
@@ -84,7 +83,7 @@ func (e *executor) prepareContext(ctx context.Context, inputs *ProverInputs) (*e
 	// --- Create necessary database and chain instances ---
 	db := rawdb.NewMemoryDatabase()
 	trieDB := triedb.NewDatabase(db, &triedb.Config{HashDB: &hashdb.Config{}})
-	stateDB := state.NewModifiedTrieDatabase(trieDB, nil) // We use a modified trie database to track trie modifications
+	stateDB := gethstate.NewDatabase(trieDB, nil) // We use a modified trie database to track trie modifications
 
 	hc, err := ethereum.NewChain(inputs.ChainConfig, stateDB)
 	if err != nil {

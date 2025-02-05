@@ -1,12 +1,8 @@
 package trie
 
 import (
-	"fmt"
-
 	gethcommon "github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/crypto"
-	"github.com/ethereum/go-ethereum/ethdb"
 )
 
 // StorageTrieKey returns the key used to store a slot in storage trie.
@@ -27,28 +23,4 @@ func StorageTrieOwner(addr gethcommon.Address) gethcommon.Hash {
 // AccountTrieOwner returns the owner of the account trie.
 func AccountTrieOwner() gethcommon.Hash {
 	return gethcommon.Hash{}
-}
-
-// ProofsToDB stores a list of proofs in a database.
-func FromBytesProof(proof [][]byte, db ethdb.KeyValueWriter) error {
-	for _, node := range proof {
-		hash := crypto.Keccak256(node)
-		if err := db.Put(hash, node); err != nil {
-			return fmt.Errorf("failed to store proof node %q: %w", node, err)
-		}
-	}
-	return nil
-}
-
-// ProofsToDB stores a list of proofs in a database.
-func FromHexProof(proof []string, db ethdb.KeyValueWriter) error {
-	byteProofs := make([][]byte, len(proof))
-	for i, node := range proof {
-		byteProof, err := hexutil.Decode(node)
-		if err != nil {
-			return fmt.Errorf("failed to decode proof node %q: %w", node, err)
-		}
-		byteProofs[i] = byteProof
-	}
-	return FromBytesProof(byteProofs, db)
 }

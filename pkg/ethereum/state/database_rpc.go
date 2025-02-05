@@ -8,9 +8,11 @@ import (
 	gethcommon "github.com/ethereum/go-ethereum/common"
 	gethstate "github.com/ethereum/go-ethereum/core/state"
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/ethereum/go-ethereum/ethdb"
+	"github.com/ethereum/go-ethereum/trie"
+	"github.com/ethereum/go-ethereum/trie/trienode"
 	"github.com/holiman/uint256"
 	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/rpc"
-	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/trie"
 )
 
 // RPCDatabase is a gethstate.Database that reads the state from a remote RPC node.
@@ -67,7 +69,7 @@ func (db *RPCDatabase) OpenTrie(root gethcommon.Hash) (gethstate.Trie, error) {
 	}
 	// We return a no-op trie to avoid some errors on block execution.
 	// But it should be treated as suched and not used for any state access.
-	return trie.NewNoOpTrie(false), nil
+	return &NoOpTrie{}, nil
 }
 
 // OpenStorageTrie implements the gethstate.Database interface.
@@ -78,7 +80,7 @@ func (db *RPCDatabase) OpenStorageTrie(stateRoot gethcommon.Hash, address gethco
 
 	// We return a no-op trie to avoid some errors on block execution.
 	// But it should be treated as suched and not used for any state access.
-	return trie.NewNoOpTrie(false), nil
+	return &NoOpTrie{}, nil
 }
 
 // ContractCode implements the gethstate.Database interface.
@@ -164,3 +166,29 @@ func (r *rpcReader) Copy() gethstate.Reader {
 		root:        r.root,
 	}
 }
+
+// NoOpTrie is a gethstate.Trie that does nothing.
+type NoOpTrie struct{}
+
+func (t *NoOpTrie) GetKey([]byte) []byte { return nil }
+func (t *NoOpTrie) GetAccount(_ gethcommon.Address) (*gethtypes.StateAccount, error) {
+	return nil, nil
+}
+func (t *NoOpTrie) GetStorage(_ gethcommon.Address, _ []byte) ([]byte, error) { return nil, nil }
+func (t *NoOpTrie) UpdateAccount(_ gethcommon.Address, _ *gethtypes.StateAccount, _ int) error {
+	return nil
+}
+func (t *NoOpTrie) UpdateStorage(_ gethcommon.Address, _, _ []byte) error { return nil }
+func (t *NoOpTrie) DeleteAccount(_ gethcommon.Address) error              { return nil }
+func (t *NoOpTrie) DeleteStorage(_ gethcommon.Address, _ []byte) error    { return nil }
+func (t *NoOpTrie) UpdateContractCode(_ gethcommon.Address, _ gethcommon.Hash, _ []byte) error {
+	return nil
+}
+func (t *NoOpTrie) Hash() gethcommon.Hash { return gethcommon.Hash{} }
+func (t *NoOpTrie) Commit(_ bool) (gethcommon.Hash, *trienode.NodeSet) {
+	return gethcommon.Hash{}, nil
+}
+func (t *NoOpTrie) Witness() map[string]struct{}                     { return nil }
+func (t *NoOpTrie) NodeIterator(_ []byte) (trie.NodeIterator, error) { return nil, nil }
+func (t *NoOpTrie) Prove(_ []byte, _ ethdb.KeyValueWriter) error     { return nil }
+func (t *NoOpTrie) IsVerkle() bool                                   { return false }

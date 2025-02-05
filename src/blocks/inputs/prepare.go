@@ -95,7 +95,7 @@ func (p *preparer) prepareContext(ctx context.Context, inputs *HeavyProverInputs
 	trackers := state.NewAccessTrackerManager()
 	db := rawdb.NewMemoryDatabase()
 	trieDB := triedb.NewDatabase(db, &triedb.Config{HashDB: &hashdb.Config{}})
-	stateDB := state.NewAccessTrackerDatabase(state.NewModifiedTrieDatabase(trieDB, nil), trackers) // We use a modified trie database to track trie modifications
+	stateDB := state.NewAccessTrackerDatabase(gethstate.NewDatabase(trieDB, nil), trackers) // We use a modified trie database to track trie modifications
 
 	hc, err := ethereum.NewChain(inputs.ChainConfig, stateDB)
 	if err != nil {
