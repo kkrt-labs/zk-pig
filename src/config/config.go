@@ -17,22 +17,27 @@ type Config struct {
 		Format string `mapstructure:"format"`
 		Level  string `mapstructure:"level"`
 	} `mapstructure:"log"`
-	DataDir string   `mapstructure:"data-dir"`
-	Config  []string `mapstructure:"config"`
-	Store   struct {
+	DataDir struct {
+		Root      string `mapstructure:"root-dir"`
+		Preflight string `mapstructure:"preflight-dir"`
+		Inputs    string `mapstructure:"inputs-dir"`
+	} `mapstructure:"data-dir"`
+	Config            []string `mapstructure:"config"`
+	ProverInputsStore struct {
 		ContentType     string `mapstructure:"content-type"`
 		ContentEncoding string `mapstructure:"content-encoding"`
-		Location        string `mapstructure:"location"`
-	} `mapstructure:"store"`
-	AWS struct {
-		S3 struct {
-			Region    string `mapstructure:"region"`
-			AccessKey string `mapstructure:"access-key"`
-			SecretKey string `mapstructure:"secret-key"`
-			Bucket    string `mapstructure:"bucket"`
-			KeyPrefix string `mapstructure:"key-prefix"`
+		S3              struct {
+			AWSProvider struct {
+				Region      string `mapstructure:"region"`
+				Credentials struct {
+					AccessKey string `mapstructure:"access-key"`
+					SecretKey string `mapstructure:"secret-key"`
+				}
+				Bucket    string `mapstructure:"bucket"`
+				KeyPrefix string `mapstructure:"key-prefix"`
+			} `mapstructure:"aws-provider"`
 		} `mapstructure:"s3,omitempty"`
-	} `mapstructure:"aws,omitempty"`
+	} `mapstructure:"prover-inputs-store"`
 	Extra map[string]interface{} `mapstructure:"_extra,remain,omitempty"`
 }
 

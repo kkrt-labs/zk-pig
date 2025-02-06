@@ -36,7 +36,7 @@ func (s *s3Store) Store(ctx context.Context, key string, reader io.Reader, heade
 	}
 
 	contentLength := int64(len(content))
-	key = s.path(key)
+	key = s.path(key, headers)
 	input := &s3.PutObjectInput{
 		Bucket:        &s.cfg.Bucket,
 		Key:           &key,
@@ -52,10 +52,7 @@ func (s *s3Store) Store(ctx context.Context, key string, reader io.Reader, heade
 
 	// Set metadata from headers
 	if headers != nil && headers.KeyValue != nil {
-		input.Metadata = make(map[string]string)
-		for k, v := range headers.KeyValue {
-			input.Metadata[k] = v
-		}
+		input.Metadata = headers.KeyValue
 	}
 
 	_, err = s.client.PutObject(ctx, input)
@@ -65,8 +62,8 @@ func (s *s3Store) Store(ctx context.Context, key string, reader io.Reader, heade
 	return nil
 }
 
-func (s *s3Store) Load(ctx context.Context, key string, _ *store.Headers) (io.Reader, error) {
-	key = s.path(key)
+func (s *s3Store) Load(ctx context.Context, key string, headers *store.Headers) (io.Reader, error) {
+	key = s.path(key, headers)
 	output, err := s.client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: &s.cfg.Bucket,
 		Key:    &key,
@@ -78,6 +75,6 @@ func (s *s3Store) Load(ctx context.Context, key string, _ *store.Headers) (io.Re
 	return output.Body, nil
 }
 
-func (s *s3Store) path(key string) string {
-	return s.cfg.KeyPrefix + key
+func (s *s3Store) path(key string, headers *store.Headers) string {
+	return s.cfg.KeyPrefix + "/" + headers.KeyValue["chainID"] + "/" + key
 }

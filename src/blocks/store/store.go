@@ -79,7 +79,7 @@ func New(cfg *ProverInputsStoreConfig) (ProverInputsStore, error) {
 }
 
 func (s *heavyProverInputsStore) StoreHeavyProverInputs(ctx context.Context, inputs *blockinputs.HeavyProverInputs) error {
-	path := s.preflightPath(inputs.ChainConfig.ChainID.Uint64(), inputs.Block.Number.ToInt().Uint64())
+	path := s.preflightPath(inputs.Block.Number.ToInt().Uint64())
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(inputs); err != nil {
 		return fmt.Errorf("failed to encode JSON: %w", err)
@@ -88,16 +88,18 @@ func (s *heavyProverInputsStore) StoreHeavyProverInputs(ctx context.Context, inp
 	headers := store.Headers{
 		ContentType:     store.ContentTypeJSON,
 		ContentEncoding: store.ContentEncodingPlain,
+		KeyValue:        map[string]string{"chainID": fmt.Sprintf("%d", inputs.ChainConfig.ChainID.Uint64())},
 	}
 	return s.store.Store(ctx, path, reader, &headers)
 }
 
 func (s *heavyProverInputsStore) LoadHeavyProverInputs(ctx context.Context, chainID, blockNumber uint64) (*blockinputs.HeavyProverInputs, error) {
-	path := s.preflightPath(chainID, blockNumber)
+	path := s.preflightPath(blockNumber)
 	data := &blockinputs.HeavyProverInputs{}
 	headers := store.Headers{
 		ContentType:     store.ContentTypeJSON,
 		ContentEncoding: store.ContentEncodingPlain,
+		KeyValue:        map[string]string{"chainID": fmt.Sprintf("%d", chainID)},
 	}
 	reader, err := s.store.Load(ctx, path, &headers)
 	if err != nil {
@@ -131,17 +133,19 @@ func (s *proverInputsStore) StoreProverInputs(ctx context.Context, data *blockin
 		return fmt.Errorf("unsupported content type: %s", contentType)
 	}
 
-	path := s.proverPath(data.ChainConfig.ChainID.Uint64(), data.Block.Number.ToInt().Uint64())
+	path := s.proverPath(data.Block.Number.ToInt().Uint64())
 	headers := store.Headers{
 		ContentType: s.contentType,
+		KeyValue:    map[string]string{"chainID": fmt.Sprintf("%d", data.ChainConfig.ChainID.Uint64())},
 	}
 	return s.store.Store(ctx, path, bytes.NewReader(buf.Bytes()), &headers)
 }
 
 func (s *proverInputsStore) LoadProverInputs(ctx context.Context, chainID, blockNumber uint64) (*blockinputs.ProverInputs, error) {
-	path := s.proverPath(chainID, blockNumber)
+	path := s.proverPath(blockNumber)
 	headers := store.Headers{
 		ContentType: s.contentType,
+		KeyValue:    map[string]string{"chainID": fmt.Sprintf("%d", chainID)},
 	}
 	reader, err := s.store.Load(ctx, path, &headers)
 	if err != nil {
@@ -176,10 +180,10 @@ func (s *proverInputsStore) LoadProverInputs(ctx context.Context, chainID, block
 	return data, nil
 }
 
-func (s *heavyProverInputsStore) preflightPath(chainID, blockNumber uint64) string {
-	return filepath.Join(fmt.Sprintf("%d", chainID), "preflight", fmt.Sprintf("%d.json", blockNumber))
+func (s *heavyProverInputsStore) preflightPath(blockNumber uint64) string {
+	return filepath.Join(fmt.Sprintf("%d.json", blockNumber))
 }
 
-func (s *proverInputsStore) proverPath(chainID, blockNumber uint64) string {
-	return filepath.Join(fmt.Sprintf("%d", chainID), fmt.Sprintf("%d", blockNumber))
+func (s *proverInputsStore) proverPath(blockNumber uint64) string {
+	return filepath.Join(fmt.Sprintf("%d", blockNumber))
 }
