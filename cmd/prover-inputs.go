@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/rpc/jsonrpc"
+	"github.com/kkrt-labs/go-utils/ethereum/rpc/jsonrpc"
 	"github.com/kkrt-labs/kakarot-controller/src/blocks"
 	"github.com/kkrt-labs/kakarot-controller/src/config"
 	"github.com/spf13/cobra"

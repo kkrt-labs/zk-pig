@@ -12,13 +12,13 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/triedb"
 	"github.com/ethereum/go-ethereum/triedb/hashdb"
+	ethrpc "github.com/kkrt-labs/go-utils/ethereum/rpc"
+	"github.com/kkrt-labs/go-utils/log"
+	"github.com/kkrt-labs/go-utils/tag"
 	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum"
 	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/evm"
-	ethrpc "github.com/kkrt-labs/kakarot-controller/pkg/ethereum/rpc"
 	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/state"
 	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/trie"
-	"github.com/kkrt-labs/kakarot-controller/pkg/log"
-	"github.com/kkrt-labs/kakarot-controller/pkg/tag"
 	"go.uber.org/zap"
 )
 

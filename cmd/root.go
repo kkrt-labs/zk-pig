@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/kkrt-labs/kakarot-controller/pkg/log"
+	"github.com/kkrt-labs/go-utils/log"
 	"github.com/kkrt-labs/kakarot-controller/src/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

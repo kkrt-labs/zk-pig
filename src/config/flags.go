@@ -1,8 +1,8 @@
 package config
 
 import (
-	"github.com/kkrt-labs/kakarot-controller/pkg/common"
-	"github.com/kkrt-labs/kakarot-controller/pkg/spf13"
+	"github.com/kkrt-labs/go-utils/common"
+	"github.com/kkrt-labs/go-utils/spf13"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )

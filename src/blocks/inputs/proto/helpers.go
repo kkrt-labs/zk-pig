@@ -8,7 +8,7 @@ import (
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
-	ethrpc "github.com/kkrt-labs/kakarot-controller/pkg/ethereum/rpc"
+	ethrpc "github.com/kkrt-labs/go-utils/ethereum/rpc"
 	blockinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs"
 )
 

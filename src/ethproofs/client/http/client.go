@@ -6,8 +6,8 @@ import (
 	"net/http"
 
 	"github.com/Azure/go-autorest/autorest"
-	comhttp "github.com/kkrt-labs/kakarot-controller/pkg/net/http"
-	comurl "github.com/kkrt-labs/kakarot-controller/pkg/net/url"
+	comhttp "github.com/kkrt-labs/go-utils/net/http"
+	comurl "github.com/kkrt-labs/go-utils/net/url"
 )
 
 type Client struct {

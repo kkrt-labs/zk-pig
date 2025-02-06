@@ -9,7 +9,7 @@ import (
 	gethstate "github.com/ethereum/go-ethereum/core/state"
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/ethclient/gethclient"
-	rpcmock "github.com/kkrt-labs/kakarot-controller/pkg/ethereum/rpc/mock"
+	rpcmock "github.com/kkrt-labs/go-utils/ethereum/rpc/mock"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"

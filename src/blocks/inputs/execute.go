@@ -10,10 +10,10 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/triedb"
 	"github.com/ethereum/go-ethereum/triedb/hashdb"
+	"github.com/kkrt-labs/go-utils/log"
+	"github.com/kkrt-labs/go-utils/tag"
 	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum"
 	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/evm"
-	"github.com/kkrt-labs/kakarot-controller/pkg/log"
-	"github.com/kkrt-labs/kakarot-controller/pkg/tag"
 	"go.uber.org/zap"
 )
 

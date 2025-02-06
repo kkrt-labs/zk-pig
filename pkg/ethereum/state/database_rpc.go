@@ -12,7 +12,7 @@ import (
 	"github.com/ethereum/go-ethereum/trie"
 	"github.com/ethereum/go-ethereum/trie/trienode"
 	"github.com/holiman/uint256"
-	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/rpc"
+	"github.com/kkrt-labs/go-utils/ethereum/rpc"
 )
 
 // RPCDatabase is a gethstate.Database that reads the state from a remote RPC node.

@@ -7,7 +7,7 @@ import (
 	gethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/ethdb"
 	"github.com/ethereum/go-ethereum/rlp"
-	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/rpc"
+	"github.com/kkrt-labs/go-utils/ethereum/rpc"
 )
 
 // Database wraps an ethdb.Database and fetches missing headers from a remote RPC server.

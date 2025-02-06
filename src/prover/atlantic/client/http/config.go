@@ -1,7 +1,7 @@
 package http
 
 import (
-	comhttp "github.com/kkrt-labs/kakarot-controller/pkg/net/http"
+	comhttp "github.com/kkrt-labs/go-utils/net/http"
 )
 
 const (

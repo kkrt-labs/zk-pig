@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"math/big"
 
+	jsonrpcmrgd "github.com/kkrt-labs/go-utils/jsonrpc/merged"
 	aws "github.com/kkrt-labs/kakarot-controller/pkg/aws"
-	jsonrpcmrgd "github.com/kkrt-labs/kakarot-controller/pkg/jsonrpc/merged"
 	store "github.com/kkrt-labs/kakarot-controller/pkg/store"
 	filestore "github.com/kkrt-labs/kakarot-controller/pkg/store/file"
 	multistore "github.com/kkrt-labs/kakarot-controller/pkg/store/multi"

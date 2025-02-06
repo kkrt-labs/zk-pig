@@ -10,8 +10,8 @@ import (
 	"github.com/ethereum/go-ethereum/core/tracing"
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	gethvm "github.com/ethereum/go-ethereum/core/vm"
-	"github.com/kkrt-labs/kakarot-controller/pkg/log"
-	"github.com/kkrt-labs/kakarot-controller/pkg/tag"
+	"github.com/kkrt-labs/go-utils/log"
+	"github.com/kkrt-labs/go-utils/tag"
 	"go.uber.org/zap"
 )
 

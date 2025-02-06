@@ -5,7 +5,7 @@ import (
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-	ethrpc "github.com/kkrt-labs/kakarot-controller/pkg/ethereum/rpc"
+	ethrpc "github.com/kkrt-labs/go-utils/ethereum/rpc"
 	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/trie"
 )
 
