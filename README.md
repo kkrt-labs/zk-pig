@@ -1,96 +1,146 @@
-# Kakarot Controller
+# ZK-PIG
 
-The **Kakarot Controller** is a monorepo housing all the services necessary for managing and orchestrating Kakarot proving operations.
+**ZK-PIG** is a ZK-EVM Prover Input generator responsible for generating the data inputs necessary for proving Execution Layer (EL) blocks. Those prover inputs can later be consumed by proving infrastructures to generate EL block proofs.
+
+From an architecture perspective, ZK-PIG connects to an Ethereum compatible EL full or archive node via JSON-RPC to fetch the necessary data.
+
+> **Note about Prover Inputs:** ZK proving engines operate in isolated & stateless environments without a direct access to a full blockchain node. The **Prover Input** refer to the minimal EVM data required by such a ZK-EVM proving engine to effectively prove an EL block. For more information on prover inputs, you can refer to this [article](https://ethresear.ch/t/zk-evm-prover-input-standardization/21626).
 
 ## Installation
 
-The `kkrtctl` application is distributed with Homebrew. 
+### Homebrew
 
-Given the application is private, you need to
-- have access to the private repository
-- configure a [GitHub personal access token](https://github.com/settings/tokens/new) with scope `repo`
+`zkpig` is distributed with Homebrew.
 
-If installing for the first time you'll need to add the `kkrtlabs/kkrt` tap
+If installing for the first time you'll need to add the `kkrt-labs/kkrt` tap
 
 ```sh
-brew tap kkrtlabs/kkrt
+brew tap kkrt-labs/kkrt
 ```
 
-Then run 
+Then to install `zkpig`, run 
 
 ```sh
-export HOMEBREW_GITHUB_API_TOKEN=<access token>
-brew install kkrtcl
+brew install zkpig
 ```
 
-Test installation
+You can test the installation by running
 
 ```sh
-kkrtctl version
+zkpig version
 ```
+
+## Usage
+
+### Prerequisites
+
+- You have an Ethereum Execution Layer compatible node accessible via JSON-RPC (e.g., Geth, Erigon, Infura, etc.).
+
+    > **⚠️ Warning ⚠️:** If generating prover inputs for an old block, you must use an Ethereum archive node, that effectively exposes `eth_getProof` JSON-RPC for the block in question. Otherwise, ZK-PIG will fail at generating the prover inputs due to missing data.
+
+    > **Note:** ZK-PIG is compatible with both HTTP and WebSocket JSON-RPC endpoints.
+
+### Generate Prover Inputs
+
+First, you can set the `CHAIN_RPC_URL` environment variable to the URL of the Ethereum node to collect the data from.
+
+```sh
+export CHAIN_RPC_URL=<rpc-url>
+```
+
+To generate prover inputs for a given block, you can use the following command:
+
+```sh
+zkpig generate --block-number <block-number>
+```
+
+> **Note:** The command takes around 1 minute to complete, mainly due to the time it takes to fetch the necessary data from the Ethereum node (around 2,000 requests/block).
+
+On successful completion, the prover inputs are stored in the `/data` directory.
+
+To generate prover inputs for the `latest` block, you can use the following command:
+
+```sh
+zkpig generate --block-number latest
+```
+
+For more information on the commands, you can use the following command:
+
+```sh
+zkpig generate --help
+```
+
+### Commands Overview 
+
+To get all available commands, and flags, you can use the following command:
+
+```sh
+zkpig help
+```
+
+### Logging
+
+To configure logging you can set
+- `--log-level` to configure verbosity (`debug`, `info`, `warn`, `error`)
+- `--log-format` to switch between `json` and `text`. For example:
+
+```sh
+zkpig generate \
+  --block-number 1234 \
+  --chain-rpc-url http://127.0.0.1:8545 \
+  --data-dir ./data \
+  --store-content-type json \
+  --log-level debug \
+  --log-format text
+```
+
+## Architecture
+
+For a more detailed architecturedocumentation, you can refer to the [Documentation](https://kkrt-labs/zkpig/docs/prover-inputs-generation).
 
 ## Contributing
 
 Interested in contributing? Check out our [Contributing Guidelines](CONTRIBUTING.md) to get started! 
 
+## Other commands
 
-## Local Usage
+### `zkpig preflight`
 
-The `kkrtctl` CLI now supports multiple commands related to generating EVM prover inputs. Below are the key commands and how to use them locally with minimal setup.
-
-### Prerequisites
-
-1. You have an Ethereum node accessible via JSON-RPC (e.g., Geth, Erigon, Infura, etc.).
-1. You have set up your environment variables (if needed):
-    - `RPC_URL` for the default Ethereum node URL (e.g., http://127.0.0.1:8545)
-    - `DATA_DIR` for where locally generated block data will be stored (e.g., ./data)
-
-### Commands Overview 
-1. `kkrtctl prover-inputs generate`
-> Description: Automatically performs all three major phases:
-> - Preflight: fetches necessary pre-state data.
-> - Prepare: converts that data into final ProverInputs.
-> - Execute: validates the prepared inputs by re-running the block execution
+> Description: Only fetches and locally stores the the necessary data (e.g. pre-state, block, transactions, state proofs, etc.) but does not run block validation. This is useful if you want to collect the data for a block and run block validation separately. It is also useful for debugging purposes.
 
 #### Usage
+
 ```sh
-kkrtctl prover-inputs generate \
+zkpig preflight \
   --block-number 1234 \
   --chain-rpc-url http://127.0.0.1:8545 \
   --data-dir ./data
   --store-content-type json
 ```
 
-2. `kkrtctl prover-inputs preflight`
-> Description: Only fetches and stores the heavy pre-state (e.g., proofs, code). This is useful if you want to run the first step of proving separately.
+### `zkpig prepare`
+
+> Description: Converts the data collected during preflight data into the minimal, final prover input.
+> Can be ran offline without a chain-rpc-url. In which case it needs to be provided with a chain-id.
 
 #### Usage
+
 ```sh
-kkrtctl prover-inputs preflight \
+kkrtctl prepare \
   --block-number 1234 \
-  --chain-rpc-url http://127.0.0.1:8545 \
-  --data-dir ./data
-```
-
-3. `kkrtctl prover-inputs prepare`
-> Description: Converts the “heavy” preflight data into the minimal, final ProverInputs.
-> Requires a valid --chain-id, since it uses chain metadata for final block validation.
-
-#### Usage
-```sh
-kkrtctl prover-inputs prepare \
   --chain-id 1 \
-  --block-number 1234 \
   --chain-rpc-url http://127.0.0.1:8545 \
   --data-dir ./data \
   --store-content-type json
 ```
 
-4. `kkrtctl prover-inputs execute`
-> Description: Re-executes the block with the final ProverInputs to verify correctness.
-> Also requires --chain-id.
+### `zkpig execute`
+
+> Description: Re-executes the block over the previously generated prover inputs.
+> Can be ran offline without a chain-rpc-url. In which case it needs to be provided with a chain-id.
 
 #### Usage
+
 ```sh
 kkrtctl prover-inputs execute \
   --chain-id 1 \
@@ -100,44 +150,11 @@ kkrtctl prover-inputs execute \
   --store-content-type json
 ```
 
-### Logging
-Use `--log-level` to configure verbosity (`debug`, `info`, `warn`, `error`) and `--log-format` to switch between json and text. For example:
+### Commands List
 
-```sh
-kkrtctl prover-inputs generate \
-  --block-number 1234 \
-  --chain-rpc-url http://127.0.0.1:8545 \
-  --data-dir ./data \
-  --store-content-type json \
-  --log-level debug \
-  --log-format text
-```
-
-### Environment Variables Fallback
-- `--chain-rpc-url` falls back to `RPC_URL` if not explicitly set.
-- `--data-dir` falls back to `DATA_DIR`.
-- `--log-level` falls back to `LOG_LEVEL`.
-- `--log-format` falls back to `LOG_FORMAT`.
-
-
-### Commands
-
-1. `kkrtctl version` - Print the version number
-1. `kkrtctl prover-inputs generate --block-number <block-number> --chain-rpc-url <rpc-url> --data-dir <data-dir>` - Generate prover inputs for a specific block
-1. `kkrtctl prover-inputs preflight --block-number <block-number> --chain-rpc-url <rpc-url> --data-dir <data-dir>` - Preflight the prover inputs generation
-1. `kkrtctl prover-inputs prepare --block-number <block-number> --chain-rpc-url <rpc-url> --data-dir <data-dir>` - Prepare the prover inputs generation
-1. `kkrtctl prover-inputs execute --block-number <block-number> --chain-rpc-url <rpc-url> --data-dir <data-dir>` - Execute the prover inputs generation
-
-### Flags
-
-| Flag | Description | Default | Environment Variable |
-|------|-------------|---------|---------------------|
-| `--block-number` | The block number to generate prover inputs for | Required | - |
-| `--chain-rpc-url` | URL of the Ethereum JSON-RPC endpoint | - | `RPC_URL` |
-| `--data-dir` | Directory to store generated block data | - | `DATA_DIR` |
-| `--store-content-type` | Output format for prover inputs (`json` or `protobuf`) | `json` | - |
-| `--chain-id` | Chain ID for block validation (required for prepare/execute) | Required | - |
-| `--store-content-encoding` | Compression for storing prover inputs (one of `none`, `flate`, `zlib`, `gzip`) | `none` | - |
-| `--store-location` | Storage type (file or s3) | `file` | - |
-| `--log-level` | Logging verbosity (`debug`, `info`, `warn`, `error`) | `info` | `LOG_LEVEL` |
-| `--log-format` | Logging format (`json` or `text`) | `text` | `LOG_FORMAT` |
+1. `zkpig version` - Print the version
+1. `zkpig help` - Print the help message
+1. `zkpig generate --block-number <block-number> --chain-rpc-url <rpc-url> --data-dir <data-dir>` - Generate prover input for a specific block.
+1. `zkpig preflight --block-number <block-number> --chain-rpc-url <rpc-url> --data-dir <data-dir>` - Collect necessary data to generate prover inputs from a remote JSON-RPC Ethereum Execution Layer node
+1. `zkpig prepare --block-number <block-number> --chain-rpc-url <rpc-url> --data-dir <data-dir>` - Prepare prover inputs by basing on data previously collected during preflight.
+1. `zkpig execute --block-number <block-number> --chain-rpc-url <rpc-url> --data-dir <data-dir>` - Execute block by basing on prover inputs previously generated during prepare.
