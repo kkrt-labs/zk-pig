@@ -17,7 +17,7 @@ import (
 	compressstore "github.com/kkrt-labs/kakarot-controller/pkg/store/compress"
 	filestore "github.com/kkrt-labs/kakarot-controller/pkg/store/file"
 	multistore "github.com/kkrt-labs/kakarot-controller/pkg/store/multi"
-	"github.com/kkrt-labs/kakarot-controller/pkg/store/s3"
+	s3store "github.com/kkrt-labs/kakarot-controller/pkg/store/s3"
 	blockinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs"
 )
 
@@ -27,7 +27,7 @@ type testCase struct {
 	contentType     storeinputs.ContentType
 	contentEncoding storeinputs.ContentEncoding
 	storage         string
-	s3Config        *s3.Config
+	s3Config        *s3store.Config
 }
 
 var testCases = []testCase{
@@ -75,7 +75,7 @@ var testCases = []testCase{
 func setupProverInputsTestStore(t *testing.T, tc testCase) (store ProverInputsStore, baseDir string) {
 	baseDir = t.TempDir()
 	cfg := &ProverInputsStoreConfig{
-		MultiConfig: multistore.Config{
+		MultiStoreConfig: multistore.Config{
 			FileConfig: &filestore.Config{
 				DataDir: baseDir,
 			},
@@ -83,8 +83,8 @@ func setupProverInputsTestStore(t *testing.T, tc testCase) (store ProverInputsSt
 		},
 	}
 	compressStore, err := compressstore.New(compressstore.Config{
-		MultiConfig:     cfg.MultiConfig,
-		ContentEncoding: tc.contentEncoding,
+		MultiStoreConfig: cfg.MultiStoreConfig,
+		ContentEncoding:  tc.contentEncoding,
 	})
 	store = NewFromStore(compressStore, tc.contentType)
 

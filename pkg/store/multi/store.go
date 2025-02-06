@@ -1,13 +1,13 @@
-package multi
+package multistore
 
 import (
 	"context"
 	"fmt"
 	"io"
 
-	"github.com/kkrt-labs/kakarot-controller/pkg/store"
-	"github.com/kkrt-labs/kakarot-controller/pkg/store/file"
-	"github.com/kkrt-labs/kakarot-controller/pkg/store/s3"
+	store "github.com/kkrt-labs/kakarot-controller/pkg/store"
+	filestore "github.com/kkrt-labs/kakarot-controller/pkg/store/file"
+	s3store "github.com/kkrt-labs/kakarot-controller/pkg/store/s3"
 )
 
 type Store struct {
@@ -18,11 +18,11 @@ func NewFromConfig(cfg Config) (store.Store, error) {
 	var stores []store.Store
 
 	if cfg.FileConfig != nil {
-		stores = append(stores, file.New(*cfg.FileConfig))
+		stores = append(stores, filestore.New(*cfg.FileConfig))
 	}
 
 	if cfg.S3Config != nil {
-		s3Store, err := s3.New(cfg.S3Config)
+		s3Store, err := s3store.New(cfg.S3Config)
 		if err != nil {
 			return nil, err
 		}

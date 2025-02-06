@@ -1,4 +1,4 @@
-package s3
+package s3store
 
 import aws "github.com/kkrt-labs/kakarot-controller/pkg/aws"
 

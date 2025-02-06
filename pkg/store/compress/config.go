@@ -1,11 +1,11 @@
 package compress
 
 import (
-	"github.com/kkrt-labs/kakarot-controller/pkg/store"
-	"github.com/kkrt-labs/kakarot-controller/pkg/store/multi"
+	store "github.com/kkrt-labs/kakarot-controller/pkg/store"
+	multistore "github.com/kkrt-labs/kakarot-controller/pkg/store/multi"
 )
 
 type Config struct {
-	ContentEncoding store.ContentEncoding
-	MultiConfig     multi.Config
+	ContentEncoding  store.ContentEncoding
+	MultiStoreConfig multistore.Config
 }

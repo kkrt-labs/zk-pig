@@ -65,13 +65,13 @@ type HeavyProverInputsStoreConfig struct {
 }
 
 type ProverInputsStoreConfig struct {
-	MultiConfig     multistore.Config
-	ContentType     store.ContentType
-	ContentEncoding store.ContentEncoding
+	MultiStoreConfig multistore.Config
+	ContentType      store.ContentType
+	ContentEncoding  store.ContentEncoding
 }
 
 func New(cfg *ProverInputsStoreConfig) (ProverInputsStore, error) {
-	inputstore, err := multistore.NewFromConfig(cfg.MultiConfig)
+	inputstore, err := multistore.NewFromConfig(cfg.MultiStoreConfig)
 	if err != nil {
 		return nil, err
 	}

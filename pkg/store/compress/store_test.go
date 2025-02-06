@@ -15,7 +15,7 @@ import (
 
 func setupTestStore(t *testing.T, encoding store.ContentEncoding) *Store {
 	compressStore, err := New(Config{
-		MultiConfig: multistore.Config{
+		MultiStoreConfig: multistore.Config{
 			FileConfig: &filestore.Config{
 				DataDir: t.TempDir(),
 			},

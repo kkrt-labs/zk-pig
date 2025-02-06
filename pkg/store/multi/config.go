@@ -1,11 +1,11 @@
-package multi
+package multistore
 
 import (
-	"github.com/kkrt-labs/kakarot-controller/pkg/store/file"
-	"github.com/kkrt-labs/kakarot-controller/pkg/store/s3"
+	filestore "github.com/kkrt-labs/kakarot-controller/pkg/store/file"
+	s3store "github.com/kkrt-labs/kakarot-controller/pkg/store/s3"
 )
 
 type Config struct {
-	FileConfig *file.Config
-	S3Config   *s3.Config
+	FileConfig *filestore.Config
+	S3Config   *s3store.Config
 }

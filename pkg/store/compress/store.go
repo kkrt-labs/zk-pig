@@ -10,8 +10,8 @@ import (
 	"io"
 	"path/filepath"
 
-	"github.com/kkrt-labs/kakarot-controller/pkg/store"
-	"github.com/kkrt-labs/kakarot-controller/pkg/store/multi"
+	store "github.com/kkrt-labs/kakarot-controller/pkg/store"
+	multistore "github.com/kkrt-labs/kakarot-controller/pkg/store/multi"
 )
 
 type Store struct {
@@ -20,7 +20,7 @@ type Store struct {
 }
 
 func New(cfg Config) (*Store, error) {
-	multiStore, err := multi.NewFromConfig(cfg.MultiConfig)
+	multiStore, err := multistore.NewFromConfig(cfg.MultiStoreConfig)
 	if err != nil {
 		return nil, err
 	}

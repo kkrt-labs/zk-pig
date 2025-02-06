@@ -73,15 +73,15 @@ func FromGlobalConfig(gcfg *config.Config) (*Service, error) {
 		}
 	}
 
-	var multiConfig multistore.Config
+	var multiStoreConfig multistore.Config
 
 	switch gcfg.Store.Location {
 	case "file", "":
-		multiConfig.FileConfig = &filestore.Config{
+		multiStoreConfig.FileConfig = &filestore.Config{
 			DataDir: cfg.BaseDir,
 		}
 	case "s3":
-		multiConfig.S3Config = &s3store.Config{
+		multiStoreConfig.S3Config = &s3store.Config{
 			Bucket:    gcfg.AWS.S3.Bucket,
 			KeyPrefix: gcfg.AWS.S3.KeyPrefix + "/",
 			ProviderConfig: &aws.ProviderConfig{
@@ -97,8 +97,8 @@ func FromGlobalConfig(gcfg *config.Config) (*Service, error) {
 	}
 
 	compressStore, err := compressstore.New(compressstore.Config{
-		MultiConfig:     multiConfig,
-		ContentEncoding: contentEncoding,
+		MultiStoreConfig: multiStoreConfig,
+		ContentEncoding:  contentEncoding,
 	})
 	if err != nil {
 		return nil, fmt.Errorf("failed to create compress store: %v", err)
