@@ -44,9 +44,9 @@ func New(cfg *Config) (*Service, error) {
 		}
 		s.remote = remote
 
-		remote = jsonrpc.WithLog()(remote)                    // Logs a first time before the Retry
-		remote = jsonrpc.WithTimeout(5 * time.Second)(remote) // Sets a timeout on outgoing requests
-		remote = jsonrpc.WithTags("")(remote)                 // Add tags are updated according to retry
+		remote = jsonrpc.WithLog()(remote)                           // Logs a first time before the Retry
+		remote = jsonrpc.WithTimeout(500 * time.Millisecond)(remote) // Sets a timeout on outgoing requests
+		remote = jsonrpc.WithTags("")(remote)                        // Add tags are updated according to retry
 		remote = jsonrpc.WithRetry()(remote)
 		remote = jsonrpc.WithTags("jsonrpc")(remote)
 		remote = jsonrpc.WithVersion("2.0")(remote)
