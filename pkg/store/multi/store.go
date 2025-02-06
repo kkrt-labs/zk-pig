@@ -32,7 +32,7 @@ func NewFromConfig(cfg Config) (store.Store, error) {
 	return &Store{stores: stores}, nil
 }
 
-func New(stores []store.Store) store.Store {
+func New(stores ...store.Store) store.Store {
 	return &Store{stores: stores}
 }
 

@@ -7,7 +7,6 @@ import (
 	aws "github.com/kkrt-labs/kakarot-controller/pkg/aws"
 	jsonrpcmrgd "github.com/kkrt-labs/kakarot-controller/pkg/jsonrpc/merged"
 	store "github.com/kkrt-labs/kakarot-controller/pkg/store"
-	compressstore "github.com/kkrt-labs/kakarot-controller/pkg/store/compress"
 	filestore "github.com/kkrt-labs/kakarot-controller/pkg/store/file"
 	multistore "github.com/kkrt-labs/kakarot-controller/pkg/store/multi"
 	s3store "github.com/kkrt-labs/kakarot-controller/pkg/store/s3"
@@ -27,10 +26,10 @@ type StoreConfig struct {
 
 // Config is the configuration for the RPCPreflight.
 type Config struct {
-	Chain                  ChainConfig
-	BaseDir                string `json:"blocks-dir"` // Base directory for storing block data
-	HeavyProverInputsStore blockstore.HeavyProverInputsStore
-	ProverInputsStore      blockstore.ProverInputsStore
+	Chain                        ChainConfig
+	BaseDir                      string `json:"blocks-dir"` // Base directory for storing block data
+	HeavyProverInputsStoreConfig blockstore.HeavyProverInputsStoreConfig
+	ProverInputsStoreConfig      blockstore.ProverInputsStoreConfig
 }
 
 func (cfg *Config) SetDefault() *Config {
@@ -96,24 +95,17 @@ func FromGlobalConfig(gcfg *config.Config) (*Service, error) {
 		return nil, fmt.Errorf("unsupported storage type: %s", gcfg.Store.Location)
 	}
 
-	compressStore, err := compressstore.New(compressstore.Config{
-		MultiStoreConfig: multiStoreConfig,
-		ContentEncoding:  contentEncoding,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create compress store: %v", err)
-	}
-
-	cfg.HeavyProverInputsStore, err = blockstore.NewHeavyProverInputsStore(&blockstore.HeavyProverInputsStoreConfig{
+	cfg.HeavyProverInputsStoreConfig = blockstore.HeavyProverInputsStoreConfig{
 		FileConfig: &filestore.Config{
 			DataDir: cfg.BaseDir,
 		},
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create heavy prover inputs store: %v", err)
 	}
 
-	cfg.ProverInputsStore = blockstore.NewFromStore(compressStore, contentType)
+	cfg.ProverInputsStoreConfig = blockstore.ProverInputsStoreConfig{
+		MultiStoreConfig: multiStoreConfig,
+		ContentEncoding:  contentEncoding,
+		ContentType:      contentType,
+	}
 
 	return New(cfg)
 }

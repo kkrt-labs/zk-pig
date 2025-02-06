@@ -11,6 +11,7 @@ import (
 	ethjsonrpc "github.com/kkrt-labs/kakarot-controller/pkg/ethereum/rpc/jsonrpc"
 	"github.com/kkrt-labs/kakarot-controller/pkg/jsonrpc"
 	jsonrpcmrgd "github.com/kkrt-labs/kakarot-controller/pkg/jsonrpc/merged"
+	compressstore "github.com/kkrt-labs/kakarot-controller/pkg/store/compress"
 	"github.com/kkrt-labs/kakarot-controller/pkg/svc"
 	blockinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs"
 	blockstore "github.com/kkrt-labs/kakarot-controller/src/blocks/store"
@@ -33,9 +34,7 @@ func New(cfg *Config) (*Service, error) {
 	cfg = cfg.SetDefault()
 
 	s := &Service{
-		cfg:                    cfg,
-		heavyProverInputsStore: cfg.HeavyProverInputsStore,
-		proverInputsStore:      cfg.ProverInputsStore,
+		cfg: cfg,
 	}
 
 	if cfg.Chain.RPC != nil {
@@ -55,6 +54,24 @@ func New(cfg *Config) (*Service, error) {
 
 		s.ethrpc = ethjsonrpc.NewFromClient(remote)
 	}
+
+	heavyProverInputsStore, err := blockstore.NewHeavyProverInputsStore(&cfg.HeavyProverInputsStoreConfig)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create heavy prover inputs store: %v", err)
+	}
+
+	compressStore, err := compressstore.New(compressstore.Config{
+		MultiStoreConfig: cfg.ProverInputsStoreConfig.MultiStoreConfig,
+		ContentEncoding:  cfg.ProverInputsStoreConfig.ContentEncoding,
+	})
+
+	proverInputsStore := blockstore.NewFromStore(compressStore, cfg.ProverInputsStoreConfig.ContentType)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create prover inputs store: %v", err)
+	}
+
+	s.heavyProverInputsStore = heavyProverInputsStore
+	s.proverInputsStore = proverInputsStore
 
 	return s, nil
 }

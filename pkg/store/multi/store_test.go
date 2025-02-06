@@ -7,7 +7,7 @@ import (
 	"testing"
 
 	store "github.com/kkrt-labs/kakarot-controller/pkg/store"
-	"github.com/kkrt-labs/kakarot-controller/pkg/store/multi/mocks"
+	"github.com/kkrt-labs/kakarot-controller/pkg/store/mocks"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/mock/gomock"
 )
@@ -38,7 +38,7 @@ func TestMultiStoreMock(t *testing.T) {
 	mockStore2 := mocks.NewMockStore(ctrl)
 
 	// Create a multiStore with the mock stores
-	multiStore := New([]store.Store{mockStore1, mockStore2})
+	multiStore := New(mockStore1, mockStore2)
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
