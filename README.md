@@ -58,7 +58,7 @@ kkrtctl prover-inputs generate \
   --block-number 1234 \
   --chain-rpc-url http://127.0.0.1:8545 \
   --data-dir ./data
-  --format json
+  --store-content-type json
 ```
 
 2. `kkrtctl prover-inputs preflight`
@@ -83,7 +83,7 @@ kkrtctl prover-inputs prepare \
   --block-number 1234 \
   --chain-rpc-url http://127.0.0.1:8545 \
   --data-dir ./data \
-  --format json
+  --store-content-type json
 ```
 
 4. `kkrtctl prover-inputs execute`
@@ -97,7 +97,7 @@ kkrtctl prover-inputs execute \
   --block-number 1234 \
   --chain-rpc-url http://127.0.0.1:8545 \
   --data-dir ./data \
-  --format json
+  --store-content-type json
 ```
 
 ### Logging
@@ -108,7 +108,7 @@ kkrtctl prover-inputs generate \
   --block-number 1234 \
   --chain-rpc-url http://127.0.0.1:8545 \
   --data-dir ./data \
-  --format json \
+  --store-content-type json \
   --log-level debug \
   --log-format text
 ```
@@ -135,8 +135,9 @@ kkrtctl prover-inputs generate \
 | `--block-number` | The block number to generate prover inputs for | Required | - |
 | `--chain-rpc-url` | URL of the Ethereum JSON-RPC endpoint | - | `RPC_URL` |
 | `--data-dir` | Directory to store generated block data | - | `DATA_DIR` |
-| `--format` | Output format for prover inputs (`json` or `protobuf`) | `json` | - |
+| `--store-content-type` | Output format for prover inputs (`json` or `protobuf`) | `json` | - |
 | `--chain-id` | Chain ID for block validation (required for prepare/execute) | Required | - |
-| `--compression` | Compression for storing prover inputs (one of `none`, `flate`, `zlib`, `gzip`) | `none` | - |
+| `--store-content-encoding` | Compression for storing prover inputs (one of `none`, `flate`, `zlib`, `gzip`) | `none` | - |
+| `--store-location` | Storage type (file or s3) | `file` | - |
 | `--log-level` | Logging verbosity (`debug`, `info`, `warn`, `error`) | `info` | `LOG_LEVEL` |
 | `--log-format` | Logging format (`json` or `text`) | `text` | `LOG_FORMAT` |
