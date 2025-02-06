@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"path/filepath"
 
 	store "github.com/kkrt-labs/kakarot-controller/pkg/store"
 	filestore "github.com/kkrt-labs/kakarot-controller/pkg/store/file"
@@ -181,9 +180,9 @@ func (s *proverInputsStore) LoadProverInputs(ctx context.Context, chainID, block
 }
 
 func (s *heavyProverInputsStore) preflightPath(blockNumber uint64) string {
-	return filepath.Join(fmt.Sprintf("%d.json", blockNumber))
+	return fmt.Sprintf("%d.json", blockNumber)
 }
 
 func (s *proverInputsStore) proverPath(blockNumber uint64) string {
-	return filepath.Join(fmt.Sprintf("%d", blockNumber))
+	return fmt.Sprintf("%d", blockNumber)
 }
