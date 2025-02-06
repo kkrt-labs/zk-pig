@@ -7,16 +7,10 @@ import (
 	"sync"
 	"time"
 
-	aws "github.com/kkrt-labs/kakarot-controller/pkg/aws"
 	ethrpc "github.com/kkrt-labs/kakarot-controller/pkg/ethereum/rpc"
 	ethjsonrpc "github.com/kkrt-labs/kakarot-controller/pkg/ethereum/rpc/jsonrpc"
 	"github.com/kkrt-labs/kakarot-controller/pkg/jsonrpc"
 	jsonrpcmrgd "github.com/kkrt-labs/kakarot-controller/pkg/jsonrpc/merged"
-	store "github.com/kkrt-labs/kakarot-controller/pkg/store"
-	compressstore "github.com/kkrt-labs/kakarot-controller/pkg/store/compress"
-	"github.com/kkrt-labs/kakarot-controller/pkg/store/file"
-	multistore "github.com/kkrt-labs/kakarot-controller/pkg/store/multi"
-	s3store "github.com/kkrt-labs/kakarot-controller/pkg/store/s3"
 	"github.com/kkrt-labs/kakarot-controller/pkg/svc"
 	blockinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs"
 	blockstore "github.com/kkrt-labs/kakarot-controller/src/blocks/store"
@@ -24,12 +18,14 @@ import (
 
 // Service is a service that enables the generation of prover inpunts for EVM compatible blocks.
 type Service struct {
-	cfg      *Config
-	initOnce sync.Once
-	remote   jsonrpc.Client
-	ethrpc   ethrpc.Client
-	chainID  *big.Int
-	err      error
+	cfg                    *Config
+	heavyProverInputsStore blockstore.HeavyProverInputsStore
+	proverInputsStore      blockstore.ProverInputsStore
+	initOnce               sync.Once
+	remote                 jsonrpc.Client
+	ethrpc                 ethrpc.Client
+	chainID                *big.Int
+	err                    error
 }
 
 // New creates a new Service.
@@ -37,7 +33,9 @@ func New(cfg *Config) (*Service, error) {
 	cfg = cfg.SetDefault()
 
 	s := &Service{
-		cfg: cfg,
+		cfg:                    cfg,
+		heavyProverInputsStore: cfg.HeavyProverInputsStore,
+		proverInputsStore:      cfg.ProverInputsStore,
 	}
 
 	if cfg.Chain.RPC != nil {
@@ -47,9 +45,9 @@ func New(cfg *Config) (*Service, error) {
 		}
 		s.remote = remote
 
-		remote = jsonrpc.WithLog()(remote)                           // Logs a first time before the Retry
-		remote = jsonrpc.WithTimeout(500 * time.Millisecond)(remote) // Sets a timeout on outgoing requests
-		remote = jsonrpc.WithTags("")(remote)                        // Add tags are updated according to retry
+		remote = jsonrpc.WithLog()(remote)                    // Logs a first time before the Retry
+		remote = jsonrpc.WithTimeout(5 * time.Second)(remote) // Sets a timeout on outgoing requests
+		remote = jsonrpc.WithTags("")(remote)                 // Add tags are updated according to retry
 		remote = jsonrpc.WithRetry()(remote)
 		remote = jsonrpc.WithTags("jsonrpc")(remote)
 		remote = jsonrpc.WithVersion("2.0")(remote)
@@ -90,7 +88,7 @@ func (s *Service) Start(ctx context.Context) error {
 	return s.err
 }
 
-func (s *Service) Generate(ctx context.Context, blockNumber *big.Int, headers store.Headers) error {
+func (s *Service) Generate(ctx context.Context, blockNumber *big.Int) error {
 	data, err := s.preflight(ctx, blockNumber)
 	if err != nil {
 		return err
@@ -104,11 +102,11 @@ func (s *Service) Generate(ctx context.Context, blockNumber *big.Int, headers st
 		return err
 	}
 
-	if err := s.prepare(ctx, data.Block.Number.ToInt(), headers); err != nil {
+	if err := s.prepare(ctx, data.Block.Number.ToInt()); err != nil {
 		return err
 	}
 
-	if err := s.execute(ctx, data.Block.Number.ToInt(), headers); err != nil {
+	if err := s.execute(ctx, data.Block.Number.ToInt()); err != nil {
 		return err
 	}
 
@@ -129,31 +127,22 @@ func (s *Service) preflight(ctx context.Context, blockNumber *big.Int) (*blockin
 		return nil, fmt.Errorf("failed to execute preflight: %v", err)
 	}
 
-	heavyProverInputsStore, err := s.configureHeavyProverInputsStore(s.cfg)
-	if err != nil {
-		return nil, fmt.Errorf("failed to configure heavy prover inputs store: %v", err)
-	}
-
-	if err = heavyProverInputsStore.StoreHeavyProverInputs(ctx, data); err != nil {
+	if err = s.heavyProverInputsStore.StoreHeavyProverInputs(ctx, data); err != nil {
 		return nil, fmt.Errorf("failed to store preflight data: %v", err)
 	}
 
 	return data, nil
 }
 
-func (s *Service) Prepare(ctx context.Context, blockNumber *big.Int, headers store.Headers) error {
+func (s *Service) Prepare(ctx context.Context, blockNumber *big.Int) error {
 	if s.chainID == nil {
 		return fmt.Errorf("chain ID missing")
 	}
-	return s.prepare(ctx, blockNumber, headers)
+	return s.prepare(ctx, blockNumber)
 }
 
-func (s *Service) prepare(ctx context.Context, blockNumber *big.Int, headers store.Headers) error {
-	inputstore, err := s.configureHeavyProverInputsStore(s.cfg)
-	if err != nil {
-		return fmt.Errorf("failed to configure heavy prover inputs store: %v", err)
-	}
-	data, err := inputstore.LoadHeavyProverInputs(ctx, s.chainID.Uint64(), blockNumber.Uint64())
+func (s *Service) prepare(ctx context.Context, blockNumber *big.Int) error {
+	data, err := s.heavyProverInputsStore.LoadHeavyProverInputs(ctx, s.chainID.Uint64(), blockNumber.Uint64())
 	if err != nil {
 		return fmt.Errorf("failed to load preflight data: %v", err)
 	}
@@ -163,11 +152,7 @@ func (s *Service) prepare(ctx context.Context, blockNumber *big.Int, headers sto
 		return fmt.Errorf("failed to prepare provable inputs: %v", err)
 	}
 
-	proverInputsStore, err := s.configureProverInputsStore(s.cfg, headers)
-	if err != nil {
-		return fmt.Errorf("failed to configure prover inputs store: %v", err)
-	}
-	err = proverInputsStore.StoreProverInputs(ctx, inputs, headers)
+	err = s.proverInputsStore.StoreProverInputs(ctx, inputs)
 	if err != nil {
 		return fmt.Errorf("failed to store provable inputs: %v", err)
 	}
@@ -175,21 +160,16 @@ func (s *Service) prepare(ctx context.Context, blockNumber *big.Int, headers sto
 	return nil
 }
 
-func (s *Service) Execute(ctx context.Context, blockNumber *big.Int, headers store.Headers) error {
+func (s *Service) Execute(ctx context.Context, blockNumber *big.Int) error {
 	if s.chainID == nil {
 		return fmt.Errorf("chain ID missing")
 	}
 
-	return s.execute(ctx, blockNumber, headers)
+	return s.execute(ctx, blockNumber)
 }
 
-func (s *Service) execute(ctx context.Context, blockNumber *big.Int, headers store.Headers) error {
-	inputstore, err := s.configureProverInputsStore(s.cfg, headers)
-	if err != nil {
-		return fmt.Errorf("failed to configure prover inputs store: %v", err)
-	}
-
-	inputs, err := inputstore.LoadProverInputs(ctx, s.chainID.Uint64(), blockNumber.Uint64(), headers)
+func (s *Service) execute(ctx context.Context, blockNumber *big.Int) error {
+	inputs, err := s.proverInputsStore.LoadProverInputs(ctx, s.chainID.Uint64(), blockNumber.Uint64())
 	if err != nil {
 		return fmt.Errorf("failed to load provable inputs: %v", err)
 	}
@@ -217,56 +197,4 @@ func (s *Service) Stop(ctx context.Context) error {
 	}
 
 	return nil
-}
-
-func (s *Service) configureHeavyProverInputsStore(cfg *Config) (blockstore.HeavyProverInputsStore, error) {
-	inputsStore, err := blockstore.NewHeavyProverInputsStore(&blockstore.Config{
-		MultiConfig: multistore.Config{
-			FileConfig: &file.Config{
-				DataDir: cfg.BaseDir,
-			},
-		},
-		ContentType:     store.ContentTypeJSON,
-		ContentEncoding: store.ContentEncodingPlain,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create heavy prover inputs store: %v", err)
-	}
-
-	return inputsStore, nil
-}
-
-func (s *Service) configureProverInputsStore(cfg *Config, headers store.Headers) (blockstore.ProverInputsStore, error) {
-	var multiConfig multistore.Config
-
-	switch headers.KeyValue["storage"] {
-	case "file", "":
-		multiConfig.FileConfig = &file.Config{
-			DataDir: cfg.BaseDir,
-		}
-	case "s3":
-		multiConfig.S3Config = &s3store.Config{
-			Bucket:    headers.KeyValue["s3-bucket"],
-			KeyPrefix: headers.KeyValue["key-prefix"] + cfg.Chain.ID.String() + "/" + headers.KeyValue["block-number"],
-			ProviderConfig: &aws.ProviderConfig{
-				Region: headers.KeyValue["region"],
-				Credentials: &aws.CredentialsConfig{
-					AccessKey: headers.KeyValue["access-key"],
-					SecretKey: headers.KeyValue["secret-key"],
-				},
-			},
-		}
-	default:
-		return nil, fmt.Errorf("unsupported storage type: %s", headers.KeyValue["storage"])
-	}
-
-	compressStore, err := compressstore.New(compressstore.Config{
-		MultiConfig:     multiConfig,
-		ContentEncoding: headers.ContentEncoding,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create compress store: %v", err)
-	}
-
-	return blockstore.NewFromStore(compressStore, headers.ContentType), nil
 }

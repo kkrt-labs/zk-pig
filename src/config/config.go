@@ -17,9 +17,23 @@ type Config struct {
 		Format string `mapstructure:"format"`
 		Level  string `mapstructure:"level"`
 	} `mapstructure:"log"`
-	DataDir string                 `mapstructure:"data-dir"`
-	Config  []string               `mapstructure:"config"`
-	Extra   map[string]interface{} `mapstructure:"_extra,remain,omitempty"`
+	DataDir string   `mapstructure:"data-dir"`
+	Config  []string `mapstructure:"config"`
+	Store   struct {
+		ContentType     string `mapstructure:"content-type"`
+		ContentEncoding string `mapstructure:"content-encoding"`
+		Location        string `mapstructure:"location"`
+	} `mapstructure:"store"`
+	AWS struct {
+		S3 struct {
+			Region    string `mapstructure:"region"`
+			AccessKey string `mapstructure:"access-key"`
+			SecretKey string `mapstructure:"secret-key"`
+			Bucket    string `mapstructure:"bucket"`
+			KeyPrefix string `mapstructure:"key-prefix"`
+		} `mapstructure:"s3,omitempty"`
+	} `mapstructure:"aws,omitempty"`
+	Extra map[string]interface{} `mapstructure:"_extra,remain,omitempty"`
 }
 
 func (config *Config) Load(v *viper.Viper) error {

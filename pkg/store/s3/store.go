@@ -36,6 +36,7 @@ func (s *s3Store) Store(ctx context.Context, key string, reader io.Reader, heade
 	}
 
 	contentLength := int64(len(content))
+	key = s.path(key)
 	input := &s3.PutObjectInput{
 		Bucket:        &s.cfg.Bucket,
 		Key:           &key,
@@ -65,6 +66,7 @@ func (s *s3Store) Store(ctx context.Context, key string, reader io.Reader, heade
 }
 
 func (s *s3Store) Load(ctx context.Context, key string, _ *store.Headers) (io.Reader, error) {
+	key = s.path(key)
 	output, err := s.client.GetObject(ctx, &s3.GetObjectInput{
 		Bucket: &s.cfg.Bucket,
 		Key:    &key,
@@ -74,4 +76,8 @@ func (s *s3Store) Load(ctx context.Context, key string, _ *store.Headers) (io.Re
 	}
 
 	return output.Body, nil
+}
+
+func (s *s3Store) path(key string) string {
+	return s.cfg.KeyPrefix + key
 }

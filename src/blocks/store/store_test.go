@@ -74,7 +74,7 @@ var testCases = []testCase{
 
 func setupProverInputsTestStore(t *testing.T, tc testCase) (store ProverInputsStore, baseDir string) {
 	baseDir = t.TempDir()
-	cfg := &Config{
+	cfg := &ProverInputsStoreConfig{
 		MultiConfig: multistore.Config{
 			FileConfig: &filestore.Config{
 				DataDir: baseDir,
@@ -92,29 +92,10 @@ func setupProverInputsTestStore(t *testing.T, tc testCase) (store ProverInputsSt
 	return store, baseDir
 }
 
-func createTestHeaders(tc testCase) storeinputs.Headers {
-	headers := storeinputs.Headers{
-		ContentType:     tc.contentType,
-		ContentEncoding: tc.contentEncoding,
-		KeyValue:        map[string]string{"storage": tc.storage, "key-prefix": "test"},
-	}
-
-	if tc.storage == "s3" {
-		headers.KeyValue["s3-bucket"] = tc.s3Config.Bucket
-		headers.KeyValue["region"] = tc.s3Config.ProviderConfig.Region
-		headers.KeyValue["access-key"] = tc.s3Config.ProviderConfig.Credentials.AccessKey
-		headers.KeyValue["secret-key"] = tc.s3Config.ProviderConfig.Credentials.SecretKey
-	}
-
-	return headers
-}
-
 func setupHeavyProverInputsTestStore(t *testing.T) (store HeavyProverInputsStore, baseDir string) {
 	baseDir = t.TempDir()
-	cfg := &Config{
-		MultiConfig: multistore.Config{
-			FileConfig: &filestore.Config{DataDir: baseDir},
-		},
+	cfg := &HeavyProverInputsStoreConfig{
+		FileConfig: &filestore.Config{DataDir: baseDir},
 	}
 
 	store, err := NewHeavyProverInputsStore(cfg)
@@ -126,7 +107,6 @@ func TestBlockStore(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			heavyProverInputsStore, _ := setupHeavyProverInputsTestStore(t)
-			headers := createTestHeaders(tc)
 
 			// Test HeavyProverInputs
 			heavyProverInputs := &blockinputs.HeavyProverInputs{
@@ -170,15 +150,15 @@ func TestBlockStore(t *testing.T) {
 			}
 
 			// Test storing and loading ProverInputs
-			err = proverInputsStore.StoreProverInputs(context.Background(), proverInputs, headers)
+			err = proverInputsStore.StoreProverInputs(context.Background(), proverInputs)
 			assert.NoError(t, err)
 
-			loadedProverInputs, err := proverInputsStore.LoadProverInputs(context.Background(), 2, 15, headers)
+			loadedProverInputs, err := proverInputsStore.LoadProverInputs(context.Background(), 2, 15)
 			assert.NoError(t, err)
 			assert.Equal(t, proverInputs.ChainConfig.ChainID, loadedProverInputs.ChainConfig.ChainID)
 
 			// Test non-existent ProverInputs
-			_, err = proverInputsStore.LoadProverInputs(context.Background(), 2, 25, headers)
+			_, err = proverInputsStore.LoadProverInputs(context.Background(), 2, 25)
 			assert.Error(t, err)
 		})
 	}

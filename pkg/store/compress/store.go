@@ -82,6 +82,10 @@ func (c *Store) Store(ctx context.Context, key string, reader io.Reader, headers
 }
 
 func (c *Store) Load(ctx context.Context, key string, headers *store.Headers) (io.Reader, error) {
+	if headers == nil {
+		headers = &store.Headers{}
+	}
+	headers.ContentEncoding = c.encoding
 	filename := c.path(key, headers)
 	reader, err := c.store.Load(ctx, filename, headers)
 	if err != nil {
