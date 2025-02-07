@@ -9,7 +9,7 @@ checksum:
 builds:
   - id: darwin-amd64
     main: ./
-    binary: kkrtctl
+    binary: zkpig
     goos:
       - darwin
     goarch:
@@ -23,7 +23,7 @@ builds:
       - -s -w -X github.com/kkrt-labs/kakarot-controller/src.Version={{.Version}}
   - id: darwin-arm64
     main: ./
-    binary: kkrtctl
+    binary: zkpig
     goarch:
       - arm64
     goos:
@@ -37,7 +37,7 @@ builds:
       - -s -w -X github.com/kkrt-labs/kakarot-controller/src.Version={{.Version}}
   - id: linux-amd64
     main: ./
-    binary: kkrtctl
+    binary: zkpig
     env:
       - CC=x86_64-linux-gnu-gcc
       - CXX=x86_64-linux-gnu-g++
@@ -52,7 +52,7 @@ builds:
       - -extldflags "-lc -lrt -lpthread --static"
   - id: linux-arm64
     main: ./
-    binary: kkrtctl
+    binary: zkpig
     goarch:
       - arm64
     goos:
@@ -76,8 +76,8 @@ release:
   mode: keep-existing # this keeps release notes drafted by release-drafter
 # Publish to Homebrew
 brews:
-  - name: kkrtctl
-    description: "kkrtctl is CLI to operate proving of EVM blocks"
+  - name: zkpig
+    description: "zkpig enables to generate ZK-EVM prover inputs for proving EVM blocks"
     repository:
       owner: kkrt-labs
       name: homebrew-kkrt

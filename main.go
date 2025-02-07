@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	command := cmd.NewKKRTCtlCommand()
+	command := cmd.NewZkPigCommand()
 	if err := command.Execute(); err != nil {
 		os.Exit(1)
 	}

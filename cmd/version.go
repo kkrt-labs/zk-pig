@@ -12,7 +12,7 @@ func VersionCommand(_ *RootContext) *cobra.Command {
 		Use:   "version",
 		Short: "Print the version number",
 		Run: func(_ *cobra.Command, _ []string) {
-			fmt.Printf("kkrtctl version %s\n", src.Version)
+			fmt.Printf("%s\n", src.Version)
 		},
 	}
 	return cmd

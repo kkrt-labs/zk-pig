@@ -18,16 +18,16 @@ type RootContext struct {
 	Viper  *viper.Viper
 }
 
-// NewKKRTCtlCommand creates and returns the root command
-func NewKKRTCtlCommand() *cobra.Command {
+// NewZkPigCommand creates and returns the root command
+func NewZkPigCommand() *cobra.Command {
 	ctx := &RootContext{
 		Viper:  viper.New(),
 		Config: new(config.Config),
 	}
 
 	rootCmd := &cobra.Command{
-		Use:   "kkrtctl",
-		Short: "kkrtctl is a CLI tool for managing prover inputs and more.",
+		Use:   "zkpig",
+		Short: "zkpig is a CLI tool for generating and validating ZK-EVM prover inputs.",
 		PersistentPreRunE: func(rootCmd *cobra.Command, _ []string) error {
 			if err := ctx.Config.Load(ctx.Viper); err != nil {
 				return fmt.Errorf("failed to load configuration: %w", err)
@@ -61,7 +61,10 @@ func NewKKRTCtlCommand() *cobra.Command {
 
 	// Add subcommands
 	rootCmd.AddCommand(VersionCommand(ctx))
-	rootCmd.AddCommand(NewProverInputsCommand(ctx))
+	rootCmd.AddCommand(NewGenerateCommand(ctx))
+	rootCmd.AddCommand(NewPreflightCommand(ctx))
+	rootCmd.AddCommand(NewPrepareCommand(ctx))
+	rootCmd.AddCommand(NewExecuteCommand(ctx))
 
 	return rootCmd
 }
