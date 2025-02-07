@@ -8,27 +8,13 @@ import (
 	"io"
 
 	store "github.com/kkrt-labs/go-utils/store"
-	filestore "github.com/kkrt-labs/go-utils/store/file"
 	multistore "github.com/kkrt-labs/go-utils/store/multi"
 	input "github.com/kkrt-labs/zk-pig/src/prover-input"
 	protoinput "github.com/kkrt-labs/zk-pig/src/prover-input/proto"
 	"google.golang.org/protobuf/proto"
 )
 
-type BlockStore interface {
-	ProverInputtore
-	HeavyProverInputtore
-}
-
-type HeavyProverInputtore interface {
-	// StoreHeavyProverInput stores the heavy prover inputs for a block.
-	StoreHeavyProverInput(ctx context.Context, inputs *input.HeavyProverInput) error
-
-	// LoadHeavyProverInput loads tthe heavy prover inputs for a block.
-	LoadHeavyProverInput(ctx context.Context, chainID, blockNumber uint64) (*input.HeavyProverInput, error)
-}
-
-type ProverInputtore interface {
+type ProverInputStore interface {
 	// StoreProverInput stores the prover inputs for a block.
 	StoreProverInput(ctx context.Context, inputs *input.ProverInput) error
 
@@ -37,39 +23,18 @@ type ProverInputtore interface {
 	LoadProverInput(ctx context.Context, chainID, blockNumber uint64) (*input.ProverInput, error)
 }
 
-type ProverInputStore struct {
-	store       store.Store
-	contentType store.ContentType
-}
-
-func NewFromStore(inputstore store.Store, contentType store.ContentType) ProverInputtore {
-	return &ProverInputStore{store: inputstore, contentType: contentType}
-}
-
-// NewHeavyProverInputtore creates a new HeavyProverInputtore instance
-func NewHeavyProverInputtore(cfg *HeavyProverInputtoreConfig) (HeavyProverInputtore, error) {
-	inputstore := filestore.New(*cfg.FileConfig)
-
-	return &heavyProverInputtore{
-		store: inputstore,
-	}, nil
-}
-
-type heavyProverInputtore struct {
-	store store.Store
-}
-
-type HeavyProverInputtoreConfig struct {
-	FileConfig *filestore.Config
-}
-
-type ProverInputtoreConfig struct {
+type ProverInputStoreConfig struct {
 	MultiStoreConfig multistore.Config
 	ContentType      store.ContentType
 	ContentEncoding  store.ContentEncoding
 }
 
-func New(cfg *ProverInputtoreConfig) (ProverInputtore, error) {
+type proverInputStore struct {
+	store       store.Store
+	contentType store.ContentType
+}
+
+func New(cfg *ProverInputStoreConfig) (ProverInputStore, error) {
 	inputstore, err := multistore.NewFromConfig(cfg.MultiStoreConfig)
 	if err != nil {
 		return nil, err
@@ -77,40 +42,11 @@ func New(cfg *ProverInputtoreConfig) (ProverInputtore, error) {
 	return NewFromStore(inputstore, cfg.ContentType), nil
 }
 
-func (s *heavyProverInputtore) StoreHeavyProverInput(ctx context.Context, inputs *input.HeavyProverInput) error {
-	path := s.preflightPath(inputs.Block.Number.ToInt().Uint64())
-	var buf bytes.Buffer
-	if err := json.NewEncoder(&buf).Encode(inputs); err != nil {
-		return fmt.Errorf("failed to encode JSON: %w", err)
-	}
-	reader := bytes.NewReader(buf.Bytes())
-	headers := store.Headers{
-		ContentType:     store.ContentTypeJSON,
-		ContentEncoding: store.ContentEncodingPlain,
-		KeyValue:        map[string]string{"chainID": fmt.Sprintf("%d", inputs.ChainConfig.ChainID.Uint64())},
-	}
-	return s.store.Store(ctx, path, reader, &headers)
+func NewFromStore(inputstore store.Store, contentType store.ContentType) ProverInputStore {
+	return &proverInputStore{store: inputstore, contentType: contentType}
 }
 
-func (s *heavyProverInputtore) LoadHeavyProverInput(ctx context.Context, chainID, blockNumber uint64) (*input.HeavyProverInput, error) {
-	path := s.preflightPath(blockNumber)
-	data := &input.HeavyProverInput{}
-	headers := store.Headers{
-		ContentType:     store.ContentTypeJSON,
-		ContentEncoding: store.ContentEncodingPlain,
-		KeyValue:        map[string]string{"chainID": fmt.Sprintf("%d", chainID)},
-	}
-	reader, err := s.store.Load(ctx, path, &headers)
-	if err != nil {
-		return nil, err
-	}
-	if err := json.NewDecoder(reader).Decode(data); err != nil {
-		return nil, err
-	}
-	return data, nil
-}
-
-func (s *ProverInputStore) StoreProverInput(ctx context.Context, data *input.ProverInput) error {
+func (s *proverInputStore) StoreProverInput(ctx context.Context, data *input.ProverInput) error {
 	var buf bytes.Buffer
 	switch s.contentType {
 	case store.ContentTypeProtobuf:
@@ -140,7 +76,7 @@ func (s *ProverInputStore) StoreProverInput(ctx context.Context, data *input.Pro
 	return s.store.Store(ctx, path, bytes.NewReader(buf.Bytes()), &headers)
 }
 
-func (s *ProverInputStore) LoadProverInput(ctx context.Context, chainID, blockNumber uint64) (*input.ProverInput, error) {
+func (s *proverInputStore) LoadProverInput(ctx context.Context, chainID, blockNumber uint64) (*input.ProverInput, error) {
 	path := s.proverPath(blockNumber)
 	headers := store.Headers{
 		ContentType: s.contentType,
@@ -179,10 +115,6 @@ func (s *ProverInputStore) LoadProverInput(ctx context.Context, chainID, blockNu
 	return data, nil
 }
 
-func (s *heavyProverInputtore) preflightPath(blockNumber uint64) string {
-	return fmt.Sprintf("%d.json", blockNumber)
-}
-
-func (s *ProverInputStore) proverPath(blockNumber uint64) string {
+func (s *proverInputStore) proverPath(blockNumber uint64) string {
 	return fmt.Sprintf("%d", blockNumber)
 }

@@ -21,8 +21,8 @@ import (
 // Service is a service that enables the generation of prover inpunts for EVM compatible blocks.
 type Service struct {
 	cfg                  *Config
-	heavyProverInputtore inputstore.HeavyProverInputtore
-	ProverInputStore     inputstore.ProverInputtore
+	heavyProverInputtore inputstore.HeavyProverInputStore
+	ProverInputStore     inputstore.ProverInputStore
 	initOnce             sync.Once
 	remote               jsonrpc.Client
 	ethrpc               ethrpc.Client
@@ -56,7 +56,7 @@ func New(cfg *Config) (*Service, error) {
 		s.ethrpc = ethjsonrpc.NewFromClient(remote)
 	}
 
-	heavyProverInputtore, err := inputstore.NewHeavyProverInputtore(&cfg.HeavyProverInputtoreConfig)
+	heavyProverInputtore, err := inputstore.NewHeavyProverInputStore(&cfg.HeavyProverInputtoreConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create heavy prover inputs store: %v", err)
 	}

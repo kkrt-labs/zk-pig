@@ -28,8 +28,8 @@ type StoreConfig struct {
 type Config struct {
 	Chain                      ChainConfig
 	BaseDir                    string `json:"blocks-dir"` // Base directory for storing block data
-	HeavyProverInputtoreConfig inputstore.HeavyProverInputtoreConfig
-	ProverInputtoreConfig      inputstore.ProverInputtoreConfig
+	HeavyProverInputtoreConfig inputstore.HeavyProverInputStoreConfig
+	ProverInputtoreConfig      inputstore.ProverInputStoreConfig
 }
 
 func (cfg *Config) SetDefault() *Config {
@@ -77,12 +77,12 @@ func FromGlobalConfig(gcfg *config.Config) (*Service, error) {
 	multiStoreConfig := configureMultiStore(gcfg, cfg.BaseDir)
 
 	// Set heavy prover inputs store configuration
-	cfg.HeavyProverInputtoreConfig = inputstore.HeavyProverInputtoreConfig{
+	cfg.HeavyProverInputtoreConfig = inputstore.HeavyProverInputStoreConfig{
 		FileConfig: &filestore.Config{DataDir: gcfg.DataDir.Root + "/" + ChainID(gcfg) + "/" + gcfg.DataDir.Preflight},
 	}
 
 	// Set prover inputs store configuration
-	cfg.ProverInputtoreConfig = inputstore.ProverInputtoreConfig{
+	cfg.ProverInputtoreConfig = inputstore.ProverInputStoreConfig{
 		MultiStoreConfig: multiStoreConfig,
 		ContentEncoding:  contentEncoding,
 		ContentType:      contentType,

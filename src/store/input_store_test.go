@@ -1,7 +1,5 @@
 package store
 
-// Implement test cases for the FileBlockStore struct.
-
 import (
 	"context"
 	"math/big"
@@ -71,9 +69,9 @@ var testCases = []testCase{
 	// },
 }
 
-func setupProverInputTestStore(t *testing.T, tc testCase) (store ProverInputtore, baseDir string) {
+func setupProverInputTestStore(t *testing.T, tc testCase) (store ProverInputStore, baseDir string) {
 	baseDir = t.TempDir()
-	cfg := &ProverInputtoreConfig{
+	cfg := &ProverInputStoreConfig{
 		MultiStoreConfig: multistore.Config{
 			FileConfig: &filestore.Config{
 				DataDir: baseDir,
@@ -91,46 +89,9 @@ func setupProverInputTestStore(t *testing.T, tc testCase) (store ProverInputtore
 	return store, baseDir
 }
 
-func setupHeavyProverInputTestStore(t *testing.T) (store HeavyProverInputtore, baseDir string) {
-	baseDir = t.TempDir()
-	cfg := &HeavyProverInputtoreConfig{
-		FileConfig: &filestore.Config{DataDir: baseDir},
-	}
-
-	store, err := NewHeavyProverInputtore(cfg)
-	assert.NoError(t, err)
-	return store, baseDir
-}
-
-func TestBlockStore(t *testing.T) {
+func TestProverInputStore(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			heavyProverInputtore, _ := setupHeavyProverInputTestStore(t)
-
-			// Test HeavyProverInput
-			heavyProverInput := &input.HeavyProverInput{
-				ChainConfig: &params.ChainConfig{
-					ChainID: big.NewInt(1),
-				},
-				Block: &rpc.Block{
-					Header: rpc.Header{
-						Number: (*hexutil.Big)(hexutil.MustDecodeBig("0xa")),
-					},
-				},
-			}
-
-			// Test storing and loading HeavyProverInput
-			err := heavyProverInputtore.StoreHeavyProverInput(context.Background(), heavyProverInput)
-			assert.NoError(t, err)
-
-			loaded, err := heavyProverInputtore.LoadHeavyProverInput(context.Background(), 1, 10)
-			assert.NoError(t, err)
-			assert.Equal(t, heavyProverInput.ChainConfig.ChainID, loaded.ChainConfig.ChainID)
-
-			// Test non-existent HeavyProverInput
-			_, err = heavyProverInputtore.LoadHeavyProverInput(context.Background(), 1, 20)
-			assert.Error(t, err)
-
 			// Test ProverInput
 			ProverInputStore, _ := setupProverInputTestStore(t, tc)
 
@@ -149,7 +110,7 @@ func TestBlockStore(t *testing.T) {
 			}
 
 			// Test storing and loading ProverInput
-			err = ProverInputStore.StoreProverInput(context.Background(), ProverInput)
+			err := ProverInputStore.StoreProverInput(context.Background(), ProverInput)
 			assert.NoError(t, err)
 
 			loadedProverInput, err := ProverInputStore.LoadProverInput(context.Background(), 2, 15)
