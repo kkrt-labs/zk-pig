@@ -1,0 +1,180 @@
+syntax = "proto3";
+
+package proto;
+
+option go_package = "github.com/kkrt-labs/zk-pig/src/prover-input/proto";
+
+// ProverInput contains the minimal data needed for block execution and proof validation
+message ProverInput {
+  Block block = 1;
+  repeated AncestorHeader ancestors = 2;
+  ChainConfig chain_config = 3;
+  repeated bytes codes = 4;
+  repeated bytes pre_state = 5;
+  map<string, AccessList> access_list = 6;  // address -> storage slots
+}
+
+message Block {
+  uint64 number = 1;
+  bytes parent_hash = 2;
+  uint64 nonce = 3;
+  bytes mix_hash = 4;
+  bytes uncle_hash = 5;
+  bytes logs_bloom = 6;
+  bytes root = 7;
+  bytes miner = 8;
+  uint64 difficulty = 9;
+  bytes extra = 10;
+  uint64 gas_limit = 11;
+  uint64 gas_used = 12;
+  bytes tx_hash = 13;
+  bytes receipt_hash = 14;
+  uint64 time = 15;
+  bytes tx_root = 16;
+  bytes receipts_root = 17;
+  optional bytes base_fee = 18;
+  optional bytes withdrawals_root = 19;
+  optional uint64 blob_gas_used = 20;
+  optional uint64 excess_blob_gas = 21;  
+  optional bytes parent_beacon_root = 22;
+  optional bytes requests_root = 23;
+  bytes hash = 24;
+  repeated Transaction transactions = 25;
+  repeated bytes uncles = 26;
+  repeated Withdrawal withdrawals = 27;
+}
+
+message Transaction {
+  oneof transaction_type {
+    LegacyTransaction legacy_transaction = 1;
+    AccessListTransaction access_list_transaction = 2;
+    DynamicFeeTransaction dynamic_fee_transaction = 3;
+    BlobTransaction blob_transaction = 4;
+  }
+}
+
+message Withdrawal {
+  uint64 index = 1;
+  uint64 validator_index = 2;
+  bytes address = 3;
+  uint64 amount = 4;
+}
+
+message AncestorHeader {
+  bytes parent_hash = 1;
+  bytes uncle_hash = 2;
+  bytes coinbase = 3;
+  bytes root = 4;
+  bytes tx_hash = 5;  
+  bytes receipt_hash = 6;
+  bytes bloom = 7;
+  uint64 difficulty = 8;
+  uint64 number = 9;
+  uint64 gas_limit = 10;
+  uint64 gas_used = 11;
+  uint64 time = 12;
+  bytes extra = 13;
+  bytes mix_digest = 14;
+  bytes nonce = 15;
+  optional bytes base_fee = 16;
+  optional bytes withdrawals_hash = 17;
+  optional uint64 blob_gas_used = 18;
+  optional uint64 excess_blob_gas = 19;
+  optional bytes parent_beacon_root = 20;
+  optional bytes requests_hash = 21;
+}
+
+message LegacyTransaction {
+  uint64 nonce = 1;
+  bytes gas_price = 2;
+  uint64 gas = 3;
+  bytes to = 4;
+  bytes value = 5;
+  bytes data = 6;
+  bytes v = 7;
+  bytes r = 8;
+  bytes s = 9;
+}
+
+message AccessListTransaction {
+  uint64 chain_id = 1;
+  uint64 nonce = 2;
+  bytes gas_price = 3;
+  uint64 gas = 4;
+  bytes to = 5;
+  bytes value = 6;
+  bytes data = 7;
+  repeated AccessTuple access_list = 8;
+  bytes v = 9;
+  bytes r = 10;
+  bytes s = 11;
+}
+
+message DynamicFeeTransaction {
+  uint64 chain_id = 1;
+  uint64 nonce = 2;
+  bytes gas_tip_cap = 3;
+  bytes gas_fee_cap = 4;
+  uint64 gas = 5;
+  bytes to = 6;
+  bytes value = 7;
+  bytes data = 8;
+  repeated AccessTuple access_list = 9;
+  bytes v = 10;
+  bytes r = 11;
+  bytes s = 12;
+}
+
+message BlobTransaction {
+  uint64 chain_id = 1;
+  uint64 nonce = 2;
+  bytes gas_tip_cap = 3;
+  bytes gas_fee_cap = 4;
+  uint64 gas = 5;
+  bytes to = 6;
+  bytes value = 7;
+  bytes data = 8;
+  repeated AccessTuple access_list = 9; 
+  bytes blob_fee_cap = 10;
+  repeated bytes blob_hashes = 11;
+  bytes v = 12;
+  bytes r = 13;
+  bytes s = 14;
+}
+
+message AccessTuple {
+  bytes address = 1;
+  repeated bytes storage_keys = 2;
+}
+
+message AccessList {
+  repeated bytes storage_slots = 1;
+}
+
+message ChainConfig {
+  uint64 chain_id = 1;
+  optional bytes homestead_block = 2;
+  optional bytes dao_fork_block = 3;
+  optional bool dao_fork_support = 4;
+  optional bytes eip150_block = 5;
+  optional bytes eip155_block = 6;
+  optional bytes eip158_block = 7;
+  optional bytes byzantium_block = 8;
+  optional bytes constantinople_block = 9;
+  optional bytes petersburg_block = 10;
+  optional bytes istanbul_block = 11;
+  optional bytes muir_glacier_block = 12;
+  optional bytes berlin_block = 13;
+  optional bytes london_block = 14;
+  optional bytes arrow_glacier_block = 15;
+  optional bytes gray_glacier_block = 16;
+  optional bytes merge_netsplit_block = 17;
+  optional uint64 shanghai_time = 18;
+  optional uint64 cancun_time = 19;
+  optional uint64 prague_time = 20;
+  optional uint64 verkle_time = 21;
+  optional bytes terminal_total_difficulty = 22;
+  optional bytes deposit_contract_address = 23;
+  optional bytes ethash = 24;
+  optional bytes clique = 25;
+}

@@ -86,7 +86,7 @@ lint: ## Run linter to fix issues
 	}
 
 generate-proto:
-	@protoc --go_out=. --go_opt=paths=source_relative src/blocks/inputs/proto/input.proto
+	@protoc --go_out=. --go_opt=paths=source_relative src/prover-input/proto/input.proto
 
 # Install mockgen command
 mockgen-install:
