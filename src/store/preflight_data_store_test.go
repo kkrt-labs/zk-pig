@@ -13,24 +13,24 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func setupHeavyProverInputTestStore(t *testing.T) (store HeavyProverInputStore, baseDir string) {
+func setupPreflightDataTestStore(t *testing.T) (store PreflightDataStore, baseDir string) {
 	baseDir = t.TempDir()
-	cfg := &HeavyProverInputStoreConfig{
+	cfg := &PreflightDataStoreConfig{
 		FileConfig: &filestore.Config{DataDir: baseDir},
 	}
 
-	store, err := NewHeavyProverInputStore(cfg)
+	store, err := NewPreflightDataStore(cfg)
 	assert.NoError(t, err)
 	return store, baseDir
 }
 
-func TestHeavyProverInputStore(t *testing.T) {
+func TestPreflightDataStore(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			heavyProverInputtore, _ := setupHeavyProverInputTestStore(t)
+			preflightDataStore, _ := setupPreflightDataTestStore(t)
 
-			// Test HeavyProverInput
-			heavyProverInput := &input.HeavyProverInput{
+			// Test PreflightData
+			preflightData := &input.PreflightData{
 				ChainConfig: &params.ChainConfig{
 					ChainID: big.NewInt(1),
 				},
@@ -41,16 +41,16 @@ func TestHeavyProverInputStore(t *testing.T) {
 				},
 			}
 
-			// Test storing and loading HeavyProverInput
-			err := heavyProverInputtore.StoreHeavyProverInput(context.Background(), heavyProverInput)
+			// Test storing and loading PreflightData
+			err := preflightDataStore.StorePreflightData(context.Background(), preflightData)
 			assert.NoError(t, err)
 
-			loaded, err := heavyProverInputtore.LoadHeavyProverInput(context.Background(), 1, 10)
+			loaded, err := preflightDataStore.LoadPreflightData(context.Background(), 1, 10)
 			assert.NoError(t, err)
-			assert.Equal(t, heavyProverInput.ChainConfig.ChainID, loaded.ChainConfig.ChainID)
+			assert.Equal(t, preflightData.ChainConfig.ChainID, loaded.ChainConfig.ChainID)
 
-			// Test non-existent HeavyProverInput
-			_, err = heavyProverInputtore.LoadHeavyProverInput(context.Background(), 1, 20)
+			// Test non-existent PreflightData
+			_, err = preflightDataStore.LoadPreflightData(context.Background(), 1, 20)
 			assert.Error(t, err)
 		})
 	}

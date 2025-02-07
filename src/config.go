@@ -26,10 +26,10 @@ type StoreConfig struct {
 
 // Config is the configuration for the RPCPreflight.
 type Config struct {
-	Chain                      ChainConfig
-	BaseDir                    string `json:"blocks-dir"` // Base directory for storing block data
-	HeavyProverInputtoreConfig inputstore.HeavyProverInputStoreConfig
-	ProverInputtoreConfig      inputstore.ProverInputStoreConfig
+	Chain                    ChainConfig
+	BaseDir                  string `json:"blocks-dir"` // Base directory for storing block data
+	PreflightDataStoreConfig inputstore.PreflightDataStoreConfig
+	ProverInputtoreConfig    inputstore.ProverInputStoreConfig
 }
 
 func (cfg *Config) SetDefault() *Config {
@@ -76,8 +76,8 @@ func FromGlobalConfig(gcfg *config.Config) (*Service, error) {
 	// Configure multi-store settings
 	multiStoreConfig := configureMultiStore(gcfg, cfg.BaseDir)
 
-	// Set heavy prover inputs store configuration
-	cfg.HeavyProverInputtoreConfig = inputstore.HeavyProverInputStoreConfig{
+	// Set preflight data store configuration
+	cfg.PreflightDataStoreConfig = inputstore.PreflightDataStoreConfig{
 		FileConfig: &filestore.Config{DataDir: gcfg.DataDir.Root + "/" + ChainID(gcfg) + "/" + gcfg.DataDir.Preflight},
 	}
 

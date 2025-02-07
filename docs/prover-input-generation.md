@@ -34,7 +34,7 @@ Alternative approaches, such as integrating prover input generation directly wit
 
 Generating Prover Inputs for a block involves three consecutive steps, each requiring an EVM block execution:
 
-1. **Preflight**: Executes the block online using a remote RPC backend, it collects intermediary preflight data `HeavyProverInput`.
+1. **Preflight**: Executes the block online using a remote RPC backend, it collects intermediary preflight data `PreflightData`.
 2. **Prepare**: Executes the block offline using a memory backend and optimizes the inputs into final `ProverInput`.
 3. **Execute**: Validates the generated `ProverInput` by executing the block offline with them.
 
@@ -67,7 +67,7 @@ At the end of the EVM execution, preflight fetches proofs for:
 
 > 💡 For more details you can refer to the [Pre-State Preparation Documentation](modified-mpt.md#pre-state-preparation-workflow)
 
-The intermediary `HeavyProverInput` contains:
+The intermediary `PreflightData` contains:
 
 - **Block**: The Ethereum block to be executed, including the block header and all transactions.
 - **Chain Configuration**: The chain identifier and fork configurations.
@@ -76,15 +76,15 @@ The intermediary `HeavyProverInput` contains:
 - **Pre-State Proofs**: The list of pre-state proofs for every accounts and storage accessed during block execution, obtained via `eth_getProof(account, accessedSlots, parent.Number)` after preflight block execution
 - **Post-State Proofs**: The list of post-state proofs for every destructed accounts and deleted storage during block execution, obtained via `eth_getProof(..., block.Number)` after preflight block execution
 
-The `HeavyProverInput` contain redundant and unnecessary data which is later optimized during [Prepare](#step-2-prepare).
+The `PreflightData` contain redundant and unnecessary data which is later optimized during [Prepare](#step-2-prepare).
 
 #### Step 2: Prepare
 
-This step optimizes `HeavyProverInput` into final `ProverInput` offline. It reduces the `Pre-State Proofs` and `Post-State Proofs` that contain redundant and unecessary data into `Pre-State` a minimal list of MPT nodes necessary for the EVM block execution. 
+This step optimizes `PreflightData` into final `ProverInput` offline. It reduces the `Pre-State Proofs` and `Post-State Proofs` that contain redundant and unecessary data into `Pre-State` a minimal list of MPT nodes necessary for the EVM block execution. 
 
 It:
 
-- Initializes a chain and state in memory using `HeavyProverInput` (codes, ancestors, and proofs).
+- Initializes a chain and state in memory using `PreflightData` (codes, ancestors, and proofs).
 - Executes the EVM by processing block AND validating final state.
 - Generates `ProverInput` based on the witness obtained from EVM execution.
 

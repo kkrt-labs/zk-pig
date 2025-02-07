@@ -20,14 +20,14 @@ import (
 
 // Service is a service that enables the generation of prover inpunts for EVM compatible blocks.
 type Service struct {
-	cfg                  *Config
-	heavyProverInputtore inputstore.HeavyProverInputStore
-	ProverInputStore     inputstore.ProverInputStore
-	initOnce             sync.Once
-	remote               jsonrpc.Client
-	ethrpc               ethrpc.Client
-	chainID              *big.Int
-	err                  error
+	cfg                *Config
+	preflightDataStore inputstore.PreflightDataStore
+	ProverInputStore   inputstore.ProverInputStore
+	initOnce           sync.Once
+	remote             jsonrpc.Client
+	ethrpc             ethrpc.Client
+	chainID            *big.Int
+	err                error
 }
 
 // New creates a new Service.
@@ -56,9 +56,9 @@ func New(cfg *Config) (*Service, error) {
 		s.ethrpc = ethjsonrpc.NewFromClient(remote)
 	}
 
-	heavyProverInputtore, err := inputstore.NewHeavyProverInputStore(&cfg.HeavyProverInputtoreConfig)
+	preflightDataStore, err := inputstore.NewPreflightDataStore(&cfg.PreflightDataStoreConfig)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create heavy prover inputs store: %v", err)
+		return nil, fmt.Errorf("failed to create preflight data store: %v", err)
 	}
 
 	compressStore, err := compressstore.New(compressstore.Config{
@@ -71,7 +71,7 @@ func New(cfg *Config) (*Service, error) {
 		return nil, fmt.Errorf("failed to create prover inputs store: %v", err)
 	}
 
-	s.heavyProverInputtore = heavyProverInputtore
+	s.preflightDataStore = preflightDataStore
 	s.ProverInputStore = ProverInputStore
 
 	return s, nil
@@ -139,13 +139,13 @@ func (s *Service) Preflight(ctx context.Context, blockNumber *big.Int) error {
 	return err
 }
 
-func (s *Service) preflight(ctx context.Context, blockNumber *big.Int) (*input.HeavyProverInput, error) {
+func (s *Service) preflight(ctx context.Context, blockNumber *big.Int) (*input.PreflightData, error) {
 	data, err := generator.NewPreflight(s.ethrpc).Preflight(ctx, blockNumber)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute preflight: %v", err)
 	}
 
-	if err = s.heavyProverInputtore.StoreHeavyProverInput(ctx, data); err != nil {
+	if err = s.preflightDataStore.StorePreflightData(ctx, data); err != nil {
 		return nil, fmt.Errorf("failed to store preflight data: %v", err)
 	}
 
@@ -160,7 +160,7 @@ func (s *Service) Prepare(ctx context.Context, blockNumber *big.Int) error {
 }
 
 func (s *Service) prepare(ctx context.Context, blockNumber *big.Int) error {
-	data, err := s.heavyProverInputtore.LoadHeavyProverInput(ctx, s.chainID.Uint64(), blockNumber.Uint64())
+	data, err := s.preflightDataStore.LoadPreflightData(ctx, s.chainID.Uint64(), blockNumber.Uint64())
 	if err != nil {
 		return fmt.Errorf("failed to load preflight data: %v", err)
 	}

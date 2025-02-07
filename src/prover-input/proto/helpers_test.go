@@ -21,7 +21,7 @@ func TestFromGoToProtoProverInput(t *testing.T) {
 	err = json.Unmarshal(testData, &data)
 	require.NoError(t, err)
 
-	// Convert HeavyProverInput to ProverInput
+	// Convert PreflightData to ProverInput
 	goInputs := &input.ProverInput{
 		Block:       data.ProverInput.Block,
 		Ancestors:   data.ProverInput.Ancestors,

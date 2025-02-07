@@ -31,7 +31,7 @@ import (
 // It outputs intermediary data that will be later used to prepare necessary pre-state data for the full block execution.
 type Preflight interface {
 	// Preflight executes a preflight block execution and returns the intermediate PreflightExecInputs data.
-	Preflight(ctx context.Context, blockNumber *big.Int) (*input.HeavyProverInput, error)
+	Preflight(ctx context.Context, blockNumber *big.Int) (*input.PreflightData, error)
 }
 
 // preflight is the implementation of the Preflight interface using an RPC remote to fetch the state datas.
@@ -46,8 +46,8 @@ func NewPreflight(remote ethrpc.Client) Preflight {
 	}
 }
 
-// Preflight executes a preflight block execution and returns the intermediate heavy input.
-func (pf *preflight) Preflight(ctx context.Context, blockNumber *big.Int) (*input.HeavyProverInput, error) {
+// Preflight executes a preflight block execution, that collect and returns the intermediary preflight data input.
+func (pf *preflight) Preflight(ctx context.Context, blockNumber *big.Int) (*input.PreflightData, error) {
 	ctx = tag.WithComponent(ctx, "preflight")
 	chainCfg, block, err := pf.init(ctx, blockNumber)
 	if err != nil {
@@ -102,7 +102,7 @@ type preflightContext struct {
 	parentHeader *gethtypes.Header
 }
 
-func (pf *preflight) preflight(ctx context.Context, chainCfg *params.ChainConfig, block *gethtypes.Block) (*input.HeavyProverInput, error) {
+func (pf *preflight) preflight(ctx context.Context, chainCfg *params.ChainConfig, block *gethtypes.Block) (*input.PreflightData, error) {
 	log.LoggerFromContext(ctx).Info("Process preflight...")
 
 	genCtx, err := pf.prepareContext(ctx, chainCfg)
@@ -128,7 +128,7 @@ func (pf *preflight) preflight(ctx context.Context, chainCfg *params.ChainConfig
 		return nil, err
 	}
 
-	data := &input.HeavyProverInput{
+	data := &input.PreflightData{
 		ChainConfig:     chainCfg,
 		Block:           new(ethrpc.Block).FromBlock(block, chainCfg),
 		PreStateProofs:  preStateProofs,

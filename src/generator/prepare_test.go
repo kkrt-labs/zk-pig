@@ -17,7 +17,7 @@ func TestPreparer(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			testDataInputs := loadTestDataInputs(t, testDataInputsPath(name))
 			p := NewPreparer().(*preparer)
-			result, err := p.Prepare(context.Background(), &testDataInputs.HeavyProverInput)
+			result, err := p.Prepare(context.Background(), &testDataInputs.PreflightData)
 			require.NoError(t, err)
 			require.NotNil(t, result)
 			equal := input.CompareProverInput(&testDataInputs.ProverInput, result)

@@ -11,32 +11,32 @@ import (
 	input "github.com/kkrt-labs/zk-pig/src/prover-input"
 )
 
-type HeavyProverInputStore interface {
-	// StoreHeavyProverInput stores the heavy prover inputs for a block.
-	StoreHeavyProverInput(ctx context.Context, inputs *input.HeavyProverInput) error
+type PreflightDataStore interface {
+	// StorePreflightData stores preflight data for a block.
+	StorePreflightData(ctx context.Context, inputs *input.PreflightData) error
 
-	// LoadHeavyProverInput loads tthe heavy prover inputs for a block.
-	LoadHeavyProverInput(ctx context.Context, chainID, blockNumber uint64) (*input.HeavyProverInput, error)
+	// LoadPreflightData loads preflight data inputs for a block.
+	LoadPreflightData(ctx context.Context, chainID, blockNumber uint64) (*input.PreflightData, error)
 }
 
-// NewHeavyProverInputStore creates a new HeavyProverInputStore instance
-func NewHeavyProverInputStore(cfg *HeavyProverInputStoreConfig) (HeavyProverInputStore, error) {
+// NewPreflightDataStore creates a new PreflightDataStore instance
+func NewPreflightDataStore(cfg *PreflightDataStoreConfig) (PreflightDataStore, error) {
 	inputstore := filestore.New(*cfg.FileConfig)
 
-	return &heavyProverInputtore{
+	return &preflightDataStore{
 		store: inputstore,
 	}, nil
 }
 
-type heavyProverInputtore struct {
+type preflightDataStore struct {
 	store store.Store
 }
 
-type HeavyProverInputStoreConfig struct {
+type PreflightDataStoreConfig struct {
 	FileConfig *filestore.Config
 }
 
-func (s *heavyProverInputtore) StoreHeavyProverInput(ctx context.Context, inputs *input.HeavyProverInput) error {
+func (s *preflightDataStore) StorePreflightData(ctx context.Context, inputs *input.PreflightData) error {
 	path := s.preflightPath(inputs.Block.Number.ToInt().Uint64())
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(inputs); err != nil {
@@ -51,9 +51,9 @@ func (s *heavyProverInputtore) StoreHeavyProverInput(ctx context.Context, inputs
 	return s.store.Store(ctx, path, reader, &headers)
 }
 
-func (s *heavyProverInputtore) LoadHeavyProverInput(ctx context.Context, chainID, blockNumber uint64) (*input.HeavyProverInput, error) {
+func (s *preflightDataStore) LoadPreflightData(ctx context.Context, chainID, blockNumber uint64) (*input.PreflightData, error) {
 	path := s.preflightPath(blockNumber)
-	data := &input.HeavyProverInput{}
+	data := &input.PreflightData{}
 	headers := store.Headers{
 		ContentType:     store.ContentTypeJSON,
 		ContentEncoding: store.ContentEncodingPlain,
@@ -69,6 +69,6 @@ func (s *heavyProverInputtore) LoadHeavyProverInput(ctx context.Context, chainID
 	return data, nil
 }
 
-func (s *heavyProverInputtore) preflightPath(blockNumber uint64) string {
+func (s *preflightDataStore) preflightPath(blockNumber uint64) string {
 	return fmt.Sprintf("%d.json", blockNumber)
 }

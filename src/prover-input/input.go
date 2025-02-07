@@ -20,10 +20,10 @@ type ProverInput struct {
 	AccessList  map[gethcommon.Address][]hexutil.Bytes `json:"accessList"`  // Access list of accounts and storage slots accessed during the block processing
 }
 
-// HeavyProverInput contains data expected by an EVM prover engine to execute & prove the block.
+// PreflightData contains data expected by an EVM prover engine to execute & prove the block.
 // It contains the partial state & chain data necessary for processing the block and validating the final state.
 // The format is convenient but sub-optimal as it contains duplicated data, it is an intermediate object necessary to generate the final ProverInput.
-type HeavyProverInput struct {
+type PreflightData struct {
 	Block           *ethrpc.Block        `json:"block"`           // Block to execute
 	Ancestors       []*gethtypes.Header  `json:"ancestors"`       // Ancestors of the block that are accessed during the block execution
 	ChainConfig     *params.ChainConfig  `json:"chainConfig"`     // Chain configuration
