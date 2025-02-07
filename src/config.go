@@ -26,10 +26,10 @@ type StoreConfig struct {
 
 // Config is the configuration for the RPCPreflight.
 type Config struct {
-	Chain                    ChainConfig
-	BaseDir                  string `json:"blocks-dir"` // Base directory for storing block data
-	PreflightDataStoreConfig inputstore.PreflightDataStoreConfig
-	ProverInputtoreConfig    inputstore.ProverInputStoreConfig
+	Chain              ChainConfig
+	BaseDir            string `json:"blocks-dir"` // Base directory for storing block data
+	PreflightDataStore inputstore.PreflightDataStoreConfig
+	ProverInputStore   inputstore.ProverInputStoreConfig
 }
 
 func (cfg *Config) SetDefault() *Config {
@@ -46,11 +46,11 @@ func (cfg *Config) SetDefault() *Config {
 
 func FromGlobalConfig(gcfg *config.Config) (*Service, error) {
 	// Parse content encoding and type with error handling
-	contentEncoding, err := store.ParseContentEncoding(gcfg.ProverInputtore.ContentEncoding)
+	contentEncoding, err := store.ParseContentEncoding(gcfg.ProverInputStore.ContentEncoding)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse content encoding: %v", err)
 	}
-	contentType, err := store.ParseContentType(gcfg.ProverInputtore.ContentType)
+	contentType, err := store.ParseContentType(gcfg.ProverInputStore.ContentType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse content type: %v", err)
 	}
@@ -77,12 +77,12 @@ func FromGlobalConfig(gcfg *config.Config) (*Service, error) {
 	multiStoreConfig := configureMultiStore(gcfg, cfg.BaseDir)
 
 	// Set preflight data store configuration
-	cfg.PreflightDataStoreConfig = inputstore.PreflightDataStoreConfig{
+	cfg.PreflightDataStore = inputstore.PreflightDataStoreConfig{
 		FileConfig: &filestore.Config{DataDir: gcfg.DataDir.Root + "/" + ChainID(gcfg) + "/" + gcfg.DataDir.Preflight},
 	}
 
 	// Set prover inputs store configuration
-	cfg.ProverInputtoreConfig = inputstore.ProverInputStoreConfig{
+	cfg.ProverInputStore = inputstore.ProverInputStoreConfig{
 		MultiStoreConfig: multiStoreConfig,
 		ContentEncoding:  contentEncoding,
 		ContentType:      contentType,
@@ -109,15 +109,15 @@ func configureMultiStore(gcfg *config.Config, baseDir string) multistore.Config 
 	}
 
 	// Configure S3 store
-	if gcfg.ProverInputtore.S3.AWSProvider.Bucket != "" {
+	if gcfg.ProverInputStore.S3.AWSProvider.Bucket != "" {
 		multiStoreConfig.S3Config = &s3store.Config{
-			Bucket:    gcfg.ProverInputtore.S3.AWSProvider.Bucket,
-			KeyPrefix: gcfg.ProverInputtore.S3.AWSProvider.KeyPrefix,
+			Bucket:    gcfg.ProverInputStore.S3.AWSProvider.Bucket,
+			KeyPrefix: gcfg.ProverInputStore.S3.AWSProvider.KeyPrefix,
 			ProviderConfig: &aws.ProviderConfig{
-				Region: gcfg.ProverInputtore.S3.AWSProvider.Region,
+				Region: gcfg.ProverInputStore.S3.AWSProvider.Region,
 				Credentials: &aws.CredentialsConfig{
-					AccessKey: gcfg.ProverInputtore.S3.AWSProvider.Credentials.AccessKey,
-					SecretKey: gcfg.ProverInputtore.S3.AWSProvider.Credentials.SecretKey,
+					AccessKey: gcfg.ProverInputStore.S3.AWSProvider.Credentials.AccessKey,
+					SecretKey: gcfg.ProverInputStore.S3.AWSProvider.Credentials.SecretKey,
 				},
 			},
 		}

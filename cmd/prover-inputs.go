@@ -145,21 +145,21 @@ func preRun(ctx *ProverInputContext, blockNumber *string) func(cmd *cobra.Comman
 
 // Helper function to validate S3 configuration
 func validateS3Config(ctx *ProverInputContext) error {
-	if ctx.Config.ProverInputtore.S3.AWSProvider.Bucket == "" || ctx.Config.ProverInputtore.S3.AWSProvider.KeyPrefix == "" || ctx.Config.ProverInputtore.S3.AWSProvider.Credentials.AccessKey == "" || ctx.Config.ProverInputtore.S3.AWSProvider.Credentials.SecretKey == "" || ctx.Config.ProverInputtore.S3.AWSProvider.Region == "" {
+	if ctx.Config.ProverInputStore.S3.AWSProvider.Bucket == "" || ctx.Config.ProverInputStore.S3.AWSProvider.KeyPrefix == "" || ctx.Config.ProverInputStore.S3.AWSProvider.Credentials.AccessKey == "" || ctx.Config.ProverInputStore.S3.AWSProvider.Credentials.SecretKey == "" || ctx.Config.ProverInputStore.S3.AWSProvider.Region == "" {
 		missingFields := []string{}
-		if ctx.Config.ProverInputtore.S3.AWSProvider.Bucket == "" {
+		if ctx.Config.ProverInputStore.S3.AWSProvider.Bucket == "" {
 			missingFields = append(missingFields, "s3-bucket")
 		}
-		if ctx.Config.ProverInputtore.S3.AWSProvider.KeyPrefix == "" {
+		if ctx.Config.ProverInputStore.S3.AWSProvider.KeyPrefix == "" {
 			missingFields = append(missingFields, "key-prefix")
 		}
-		if ctx.Config.ProverInputtore.S3.AWSProvider.Credentials.AccessKey == "" {
+		if ctx.Config.ProverInputStore.S3.AWSProvider.Credentials.AccessKey == "" {
 			missingFields = append(missingFields, "access-key")
 		}
-		if ctx.Config.ProverInputtore.S3.AWSProvider.Credentials.SecretKey == "" {
+		if ctx.Config.ProverInputStore.S3.AWSProvider.Credentials.SecretKey == "" {
 			missingFields = append(missingFields, "secret-key")
 		}
-		if ctx.Config.ProverInputtore.S3.AWSProvider.Region == "" {
+		if ctx.Config.ProverInputStore.S3.AWSProvider.Region == "" {
 			missingFields = append(missingFields, "region")
 		}
 		return fmt.Errorf("%s must be specified when using s3 storage", missingFields)

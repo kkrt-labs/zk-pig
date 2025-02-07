@@ -56,17 +56,17 @@ func New(cfg *Config) (*Service, error) {
 		s.ethrpc = ethjsonrpc.NewFromClient(remote)
 	}
 
-	preflightDataStore, err := inputstore.NewPreflightDataStore(&cfg.PreflightDataStoreConfig)
+	preflightDataStore, err := inputstore.NewPreflightDataStore(&cfg.PreflightDataStore)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create preflight data store: %v", err)
 	}
 
 	compressStore, err := compressstore.New(compressstore.Config{
-		MultiStoreConfig: cfg.ProverInputtoreConfig.MultiStoreConfig,
-		ContentEncoding:  cfg.ProverInputtoreConfig.ContentEncoding,
+		MultiStoreConfig: cfg.ProverInputStore.MultiStoreConfig,
+		ContentEncoding:  cfg.ProverInputStore.ContentEncoding,
 	})
 
-	ProverInputStore := inputstore.NewFromStore(compressStore, cfg.ProverInputtoreConfig.ContentType)
+	ProverInputStore := inputstore.NewFromStore(compressStore, cfg.ProverInputStore.ContentType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create prover inputs store: %v", err)
 	}
