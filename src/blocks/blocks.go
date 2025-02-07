@@ -11,8 +11,8 @@ import (
 	ethjsonrpc "github.com/kkrt-labs/go-utils/ethereum/rpc/jsonrpc"
 	"github.com/kkrt-labs/go-utils/jsonrpc"
 	jsonrpcmrgd "github.com/kkrt-labs/go-utils/jsonrpc/merged"
+	compressstore "github.com/kkrt-labs/go-utils/store/compress"
 	"github.com/kkrt-labs/go-utils/svc"
-	compressstore "github.com/kkrt-labs/kakarot-controller/pkg/store/compress"
 	blockinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs"
 	blockstore "github.com/kkrt-labs/kakarot-controller/src/blocks/store"
 )

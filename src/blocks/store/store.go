@@ -7,9 +7,9 @@ import (
 	"fmt"
 	"io"
 
-	store "github.com/kkrt-labs/kakarot-controller/pkg/store"
-	filestore "github.com/kkrt-labs/kakarot-controller/pkg/store/file"
-	multistore "github.com/kkrt-labs/kakarot-controller/pkg/store/multi"
+	store "github.com/kkrt-labs/go-utils/store"
+	filestore "github.com/kkrt-labs/go-utils/store/file"
+	multistore "github.com/kkrt-labs/go-utils/store/multi"
 	blockinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs"
 	protoinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs/proto"
 	"google.golang.org/protobuf/proto"

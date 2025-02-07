@@ -4,12 +4,12 @@ import (
 	"fmt"
 	"math/big"
 
+	aws "github.com/kkrt-labs/go-utils/aws"
 	jsonrpcmrgd "github.com/kkrt-labs/go-utils/jsonrpc/merged"
-	aws "github.com/kkrt-labs/kakarot-controller/pkg/aws"
-	store "github.com/kkrt-labs/kakarot-controller/pkg/store"
-	filestore "github.com/kkrt-labs/kakarot-controller/pkg/store/file"
-	multistore "github.com/kkrt-labs/kakarot-controller/pkg/store/multi"
-	s3store "github.com/kkrt-labs/kakarot-controller/pkg/store/s3"
+	store "github.com/kkrt-labs/go-utils/store"
+	filestore "github.com/kkrt-labs/go-utils/store/file"
+	multistore "github.com/kkrt-labs/go-utils/store/multi"
+	s3store "github.com/kkrt-labs/go-utils/store/s3"
 	blockstore "github.com/kkrt-labs/kakarot-controller/src/blocks/store"
 	"github.com/kkrt-labs/kakarot-controller/src/config"
 )
