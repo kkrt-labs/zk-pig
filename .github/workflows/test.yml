@@ -39,6 +39,13 @@ jobs:
         with:
           name: unit-test-coverage-report
           path: build/coverage/ut_cov.out
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          slug: kkrt-labs/zk-pig
+          files: build/coverage/ut_cov.out
+          flags: unittest
 
   tests-race:
     name: "Run unit tests with race detection enabled on ${{ matrix.os }}"
