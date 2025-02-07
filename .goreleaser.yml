@@ -82,7 +82,6 @@ brews:
       owner: kkrt-labs
       name: homebrew-kkrt
       branch: main
-    download_strategy: GitHubPrivateRepositoryReleaseDownloadStrategy
-    custom_require: "lib/custom_download_strategy"
+    download_strategy: CurlDownloadStrategy
     directory: Formula
     homepage: "https://github.com/kkrt-labs/zk-pig"

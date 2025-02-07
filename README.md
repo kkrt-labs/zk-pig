@@ -4,7 +4,7 @@
 
 From an architecture perspective, ZK-PIG connects to an Ethereum compatible EL full or archive node via JSON-RPC to fetch the necessary data.
 
-> **Note about Prover Inputs:** ZK proving engines operate in isolated & stateless environments without a direct access to a full blockchain node. The **Prover Input** refer to the minimal EVM data required by such a ZK-EVM proving engine to effectively prove an EL block. For more information on prover inputs, you can refer to this [article](https://ethresear.ch/t/zk-evm-prover-input-standardization/21626).
+> **Note about Prover Inputs:** ZK-EVM proving engines operate in isolated & stateless environments without a direct access to a full blockchain node. The **Prover Input** refer to the minimal EVM data required by such a ZK-EVM proving engine to effectively prove an EL block. For more information on prover inputs, you can refer to this [article](https://ethresear.ch/t/zk-evm-prover-input-standardization/21626).
 
 ## Installation
 
