@@ -17,11 +17,11 @@ import (
 	ethrpc "github.com/kkrt-labs/go-utils/ethereum/rpc"
 	"github.com/kkrt-labs/go-utils/log"
 	"github.com/kkrt-labs/go-utils/tag"
-	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum"
-	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/ethdb/rpcdb"
-	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/evm"
-	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/state"
-	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/trie"
+	"github.com/kkrt-labs/zk-pig/pkg/ethereum"
+	"github.com/kkrt-labs/zk-pig/pkg/ethereum/ethdb/rpcdb"
+	"github.com/kkrt-labs/zk-pig/pkg/ethereum/evm"
+	"github.com/kkrt-labs/zk-pig/pkg/ethereum/state"
+	"github.com/kkrt-labs/zk-pig/pkg/ethereum/trie"
 	"go.uber.org/zap"
 )
 

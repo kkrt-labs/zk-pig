@@ -5,8 +5,8 @@ import (
 	"math/big"
 
 	"github.com/kkrt-labs/go-utils/ethereum/rpc/jsonrpc"
-	"github.com/kkrt-labs/kakarot-controller/src/blocks"
-	"github.com/kkrt-labs/kakarot-controller/src/config"
+	"github.com/kkrt-labs/zk-pig/src/blocks"
+	"github.com/kkrt-labs/zk-pig/src/config"
 	"github.com/spf13/cobra"
 )
 

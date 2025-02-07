@@ -2,7 +2,7 @@ syntax = "proto3";
 
 package proto;
 
-option go_package = "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs/proto";
+option go_package = "github.com/kkrt-labs/zk-pig/src/blocks/inputs/proto";
 
 // ProverInputs contains the minimal data needed for block execution and proof validation
 message ProverInputs {

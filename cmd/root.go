@@ -4,7 +4,7 @@ import (
 	"fmt"
 
 	"github.com/kkrt-labs/go-utils/log"
-	"github.com/kkrt-labs/kakarot-controller/src/config"
+	"github.com/kkrt-labs/zk-pig/src/config"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/holiman/uint256"
 	ethrpc "github.com/kkrt-labs/go-utils/ethereum/rpc"
-	blockinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs"
+	blockinputs "github.com/kkrt-labs/zk-pig/src/blocks/inputs"
 )
 
 // ToProto converts Go ProverInputs to protobuf format

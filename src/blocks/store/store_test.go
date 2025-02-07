@@ -16,7 +16,7 @@ import (
 	filestore "github.com/kkrt-labs/go-utils/store/file"
 	multistore "github.com/kkrt-labs/go-utils/store/multi"
 	s3store "github.com/kkrt-labs/go-utils/store/s3"
-	blockinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs"
+	blockinputs "github.com/kkrt-labs/zk-pig/src/blocks/inputs"
 	"github.com/stretchr/testify/assert"
 )
 

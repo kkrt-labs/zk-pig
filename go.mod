@@ -1,4 +1,4 @@
-module github.com/kkrt-labs/kakarot-controller
+module github.com/kkrt-labs/zk-pig
 
 go 1.22.0
 

@@ -13,8 +13,8 @@ import (
 	jsonrpcmrgd "github.com/kkrt-labs/go-utils/jsonrpc/merged"
 	compressstore "github.com/kkrt-labs/go-utils/store/compress"
 	"github.com/kkrt-labs/go-utils/svc"
-	blockinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs"
-	blockstore "github.com/kkrt-labs/kakarot-controller/src/blocks/store"
+	blockinputs "github.com/kkrt-labs/zk-pig/src/blocks/inputs"
+	blockstore "github.com/kkrt-labs/zk-pig/src/blocks/store"
 )
 
 // Service is a service that enables the generation of prover inpunts for EVM compatible blocks.

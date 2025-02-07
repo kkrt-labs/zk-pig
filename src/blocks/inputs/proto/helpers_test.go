@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
-	blockinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs"
+	blockinputs "github.com/kkrt-labs/zk-pig/src/blocks/inputs"
 )
 
 func TestFromGoToProtoProverInputs(t *testing.T) {

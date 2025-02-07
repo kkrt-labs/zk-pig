@@ -46,7 +46,7 @@ linters-settings:
         # For example:
         COMPANY: KKRT Labs
         YEAR: "2024"
-        PROJECT: Kakarot Controller
+        PROJECT: ZK-PIG
         SPDX: Unlicense
     template: |-
       SPDX-License-Identifier: {{ SPDX }}

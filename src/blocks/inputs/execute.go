@@ -12,8 +12,8 @@ import (
 	"github.com/ethereum/go-ethereum/triedb/hashdb"
 	"github.com/kkrt-labs/go-utils/log"
 	"github.com/kkrt-labs/go-utils/tag"
-	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum"
-	"github.com/kkrt-labs/kakarot-controller/pkg/ethereum/evm"
+	"github.com/kkrt-labs/zk-pig/pkg/ethereum"
+	"github.com/kkrt-labs/zk-pig/pkg/ethereum/evm"
 	"go.uber.org/zap"
 )
 

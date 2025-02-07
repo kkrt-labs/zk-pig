@@ -10,8 +10,8 @@ import (
 	store "github.com/kkrt-labs/go-utils/store"
 	filestore "github.com/kkrt-labs/go-utils/store/file"
 	multistore "github.com/kkrt-labs/go-utils/store/multi"
-	blockinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs"
-	protoinputs "github.com/kkrt-labs/kakarot-controller/src/blocks/inputs/proto"
+	blockinputs "github.com/kkrt-labs/zk-pig/src/blocks/inputs"
+	protoinputs "github.com/kkrt-labs/zk-pig/src/blocks/inputs/proto"
 	"google.golang.org/protobuf/proto"
 )
 

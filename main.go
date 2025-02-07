@@ -3,7 +3,7 @@ package main
 import (
 	"os"
 
-	"github.com/kkrt-labs/kakarot-controller/cmd"
+	"github.com/kkrt-labs/zk-pig/cmd"
 )
 
 func main() {

@@ -2,7 +2,7 @@
 VERSION ?= $(shell git describe --tags)
 
 # Veriables used for building with goreleaser
-MODULE_NAME := github.com/kkrt-labs/kakarot-controller
+MODULE_NAME := github.com/kkrt-labs/zk-pig
 
 GOPATH ?= $(shell go env GOPATH)
 

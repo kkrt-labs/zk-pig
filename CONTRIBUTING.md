@@ -7,7 +7,7 @@
 Begin by cloning the repository to your local machine:
 
 ```bash
-git clone git@github.com:kkrt-labs/kakarot-controller.git
+git clone git@github.com:kkrt-labs/zk-pig.git
 ```
 
 ### Install Dependencies
@@ -89,7 +89,7 @@ This ensures consistency and enables automated tooling.
 
 ### Submit a Pull Request
 
-1. [Open a Pull Request](https://github.com/kkrt-labs/kakarot-controller/compare) from your branch targetting the `main` branch.
+1. [Open a Pull Request](https://github.com/kkrt-labs/zk-pig/compare) from your branch targetting the `main` branch.
   - Provide a clear title respecting [gitmoji](https://github.com/carloscuesta/gitmoji) message convention
   - Provide a detailed description of the change
   - Reference associated issues resolved by the Pull Request.

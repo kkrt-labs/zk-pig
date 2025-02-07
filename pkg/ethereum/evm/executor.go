@@ -13,7 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	gethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/kkrt-labs/go-utils/log"
-	"github.com/kkrt-labs/kakarot-controller/src"
+	"github.com/kkrt-labs/zk-pig/src"
 )
 
 // ExecParams are the parameters for an EVM execution.

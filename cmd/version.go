@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/kkrt-labs/kakarot-controller/src"
+	"github.com/kkrt-labs/zk-pig/src"
 	"github.com/spf13/cobra"
 )
 
