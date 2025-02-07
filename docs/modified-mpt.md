@@ -1,7 +1,7 @@
 
 # Modified Patricia Merkle Trie (MPT)
 
-This section describes the modified Merkle Patricia Trie (MPT) implementation necessary during [prepare](prover-inputs-generation.md#step-2-prepare) and [execute](prover-inputs-generation.md#step-3-prepare) of Prover Inputs generation.
+This section describes the modified Merkle Patricia Trie (MPT) implementation necessary during [prepare](prover-input-generation.md#step-2-prepare) and [execute](prover-input-generation.md#step-3-prepare) of Prover Inputs generation.
 
 ## Background on Merkle Patricia Trie
 
@@ -91,7 +91,7 @@ During deletion if a branch node is left with a single non-null child, then it i
 
 In the context, of EVM block proving, blocks are executed in a stateless environment with access only to a partial portion of the pre-state which only includes a subset of nodes.
 
-To generate the partial pre-state we use data fetched from a remote JSON-RPC node during [Preflight](prover-inputs-generation.md#step-1-preflight) using `eth_getProof` JSON-RPC calls. 
+To generate the partial pre-state we use data fetched from a remote JSON-RPC node during [Preflight](prover-input-generation.md#step-1-preflight) using `eth_getProof` JSON-RPC calls. 
 
 While preflight enables to retrieve all the MPT nodes on the path of every accessed accounts and storage, and re-constitute the partial pre-state necessary for the block processing, it may miss the MPT nodes resolved during [branch node reduction](#branch-node-reduction) following deletions. This creates a significant issue: the inability to compute the final state root after processing the block.
 
@@ -101,11 +101,11 @@ While preflight enables to retrieve all the MPT nodes on the path of every acces
 
 We use a modified MPT implementation with a single difference from the standard MPT implementation: when handling [branch node reduction on a deletion](#branch-node-reduction), if the remaining child cannot be resolved (because it is missing from Key-Value database), then, instead of raising an error (as per standard implementation), the branch node is reduced into a one-nibble short node (exactly as if the remaining child was not a short node as per standard implementation).
 
-This modified MPT is used during both [Prepare](prover-inputs-generation.md#step-2-prepare) and [Execute](prover-inputs-generation.md#step-3-execute).
+This modified MPT is used during both [Prepare](prover-input-generation.md#step-2-prepare) and [Execute](prover-input-generation.md#step-3-execute).
 
 ### Supplemental Technique: Hypothetise child short-nodes using post-state
 
-To further address this issue, we use a supplemental technique during the [Prepare](prover-inputs-generation.md#step-2-prepare) phase. 
+To further address this issue, we use a supplemental technique during the [Prepare](prover-input-generation.md#step-2-prepare) phase. 
 
 For every deletion resulting in a branch node reduction, we pre-inject some hypothetized short-nodes into the pre-state, ensuring that if the remaining child is a short-node, then it resolve's to one of the pre-injected hypothetized short nodes. Consequently, ensuring that, during branch node reduction, the remaining child node resolution will succeed.
 

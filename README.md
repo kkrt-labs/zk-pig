@@ -96,7 +96,7 @@ zkpig generate \
 
 ## Architecture
 
-For a more detailed architecturedocumentation, you can refer to the [Documentation](https://kkrt-labs/zkpig/docs/prover-inputs-generation).
+For a more detailed architecture documentation, you can refer to the [Documentation](https://kkrt-labs/zkpig/docs/prover-input-generation.md).
 
 ## Contributing
 

@@ -40,7 +40,7 @@ Generating Prover Inputs for a block involves three consecutive steps, each requ
 
 #### Diagram
 
-![Prover Inputs Generation Flow](./generator.png)
+![Prover Inputs Generation Flow](./zk-pig.png)
 
 #### Step 1: Preflight
 
