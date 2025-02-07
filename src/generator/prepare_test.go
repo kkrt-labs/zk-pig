@@ -1,4 +1,4 @@
-package blockinputs
+package generator
 
 import (
 	"context"
@@ -20,7 +20,7 @@ func TestPreparer(t *testing.T) {
 			result, err := p.Prepare(context.Background(), &testDataInputs.HeavyProverInput)
 			require.NoError(t, err)
 			require.NotNil(t, result)
-			equal := input.CompareProverInputs(&testDataInputs.ProverInput, result)
+			equal := input.CompareProverInput(&testDataInputs.ProverInput, result)
 			require.True(t, equal)
 		})
 	}

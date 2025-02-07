@@ -1,4 +1,4 @@
-package blocks
+package src
 
 import (
 	"context"
@@ -13,20 +13,21 @@ import (
 	jsonrpcmrgd "github.com/kkrt-labs/go-utils/jsonrpc/merged"
 	compressstore "github.com/kkrt-labs/go-utils/store/compress"
 	"github.com/kkrt-labs/go-utils/svc"
-	blockinputs "github.com/kkrt-labs/zk-pig/src/blocks/inputs"
-	blockstore "github.com/kkrt-labs/zk-pig/src/blocks/store"
+	"github.com/kkrt-labs/zk-pig/src/generator"
+	input "github.com/kkrt-labs/zk-pig/src/prover-input"
+	inputstore "github.com/kkrt-labs/zk-pig/src/store"
 )
 
 // Service is a service that enables the generation of prover inpunts for EVM compatible blocks.
 type Service struct {
-	cfg                    *Config
-	heavyProverInputsStore blockstore.HeavyProverInputsStore
-	proverInputsStore      blockstore.ProverInputsStore
-	initOnce               sync.Once
-	remote                 jsonrpc.Client
-	ethrpc                 ethrpc.Client
-	chainID                *big.Int
-	err                    error
+	cfg                  *Config
+	heavyProverInputtore inputstore.HeavyProverInputtore
+	ProverInputStore     inputstore.ProverInputtore
+	initOnce             sync.Once
+	remote               jsonrpc.Client
+	ethrpc               ethrpc.Client
+	chainID              *big.Int
+	err                  error
 }
 
 // New creates a new Service.
@@ -55,23 +56,23 @@ func New(cfg *Config) (*Service, error) {
 		s.ethrpc = ethjsonrpc.NewFromClient(remote)
 	}
 
-	heavyProverInputsStore, err := blockstore.NewHeavyProverInputsStore(&cfg.HeavyProverInputsStoreConfig)
+	heavyProverInputtore, err := inputstore.NewHeavyProverInputtore(&cfg.HeavyProverInputtoreConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create heavy prover inputs store: %v", err)
 	}
 
 	compressStore, err := compressstore.New(compressstore.Config{
-		MultiStoreConfig: cfg.ProverInputsStoreConfig.MultiStoreConfig,
-		ContentEncoding:  cfg.ProverInputsStoreConfig.ContentEncoding,
+		MultiStoreConfig: cfg.ProverInputtoreConfig.MultiStoreConfig,
+		ContentEncoding:  cfg.ProverInputtoreConfig.ContentEncoding,
 	})
 
-	proverInputsStore := blockstore.NewFromStore(compressStore, cfg.ProverInputsStoreConfig.ContentType)
+	ProverInputStore := inputstore.NewFromStore(compressStore, cfg.ProverInputtoreConfig.ContentType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create prover inputs store: %v", err)
 	}
 
-	s.heavyProverInputsStore = heavyProverInputsStore
-	s.proverInputsStore = proverInputsStore
+	s.heavyProverInputtore = heavyProverInputtore
+	s.ProverInputStore = ProverInputStore
 
 	return s, nil
 }
@@ -138,13 +139,13 @@ func (s *Service) Preflight(ctx context.Context, blockNumber *big.Int) error {
 	return err
 }
 
-func (s *Service) preflight(ctx context.Context, blockNumber *big.Int) (*blockinputs.HeavyProverInputs, error) {
-	data, err := blockinputs.NewPreflight(s.ethrpc).Preflight(ctx, blockNumber)
+func (s *Service) preflight(ctx context.Context, blockNumber *big.Int) (*input.HeavyProverInput, error) {
+	data, err := generator.NewPreflight(s.ethrpc).Preflight(ctx, blockNumber)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute preflight: %v", err)
 	}
 
-	if err = s.heavyProverInputsStore.StoreHeavyProverInputs(ctx, data); err != nil {
+	if err = s.heavyProverInputtore.StoreHeavyProverInput(ctx, data); err != nil {
 		return nil, fmt.Errorf("failed to store preflight data: %v", err)
 	}
 
@@ -159,17 +160,17 @@ func (s *Service) Prepare(ctx context.Context, blockNumber *big.Int) error {
 }
 
 func (s *Service) prepare(ctx context.Context, blockNumber *big.Int) error {
-	data, err := s.heavyProverInputsStore.LoadHeavyProverInputs(ctx, s.chainID.Uint64(), blockNumber.Uint64())
+	data, err := s.heavyProverInputtore.LoadHeavyProverInput(ctx, s.chainID.Uint64(), blockNumber.Uint64())
 	if err != nil {
 		return fmt.Errorf("failed to load preflight data: %v", err)
 	}
 
-	inputs, err := blockinputs.NewPreparer().Prepare(ctx, data)
+	inputs, err := generator.NewPreparer().Prepare(ctx, data)
 	if err != nil {
 		return fmt.Errorf("failed to prepare provable inputs: %v", err)
 	}
 
-	err = s.proverInputsStore.StoreProverInputs(ctx, inputs)
+	err = s.ProverInputStore.StoreProverInput(ctx, inputs)
 	if err != nil {
 		return fmt.Errorf("failed to store provable inputs: %v", err)
 	}
@@ -186,11 +187,11 @@ func (s *Service) Execute(ctx context.Context, blockNumber *big.Int) error {
 }
 
 func (s *Service) execute(ctx context.Context, blockNumber *big.Int) error {
-	inputs, err := s.proverInputsStore.LoadProverInputs(ctx, s.chainID.Uint64(), blockNumber.Uint64())
+	inputs, err := s.ProverInputStore.LoadProverInput(ctx, s.chainID.Uint64(), blockNumber.Uint64())
 	if err != nil {
 		return fmt.Errorf("failed to load provable inputs: %v", err)
 	}
-	_, err = blockinputs.NewExecutor().Execute(ctx, inputs)
+	_, err = generator.NewExecutor().Execute(ctx, inputs)
 	if err != nil {
 		return fmt.Errorf("failed to execute block on provable inputs: %v", err)
 	}

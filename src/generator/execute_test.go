@@ -1,4 +1,4 @@
-package blockinputs
+package generator
 
 import (
 	"context"

@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestFromGoToProtoProverInputs(t *testing.T) {
+func TestFromGoToProtoProverInput(t *testing.T) {
 	// Load test data
 	testData, err := os.ReadFile("../../generator/testdata/Ethereum_Mainnet_21465322.json")
 	require.NoError(t, err)
@@ -21,7 +21,7 @@ func TestFromGoToProtoProverInputs(t *testing.T) {
 	err = json.Unmarshal(testData, &data)
 	require.NoError(t, err)
 
-	// Convert HeavyProverInputs to ProverInput
+	// Convert HeavyProverInput to ProverInput
 	goInputs := &input.ProverInput{
 		Block:       data.ProverInput.Block,
 		Ancestors:   data.ProverInput.Ancestors,

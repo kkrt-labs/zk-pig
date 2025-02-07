@@ -22,8 +22,8 @@ type Config struct {
 		Preflight string `mapstructure:"preflight-dir"`
 		Inputs    string `mapstructure:"inputs-dir"`
 	} `mapstructure:"data-dir"`
-	Config            []string `mapstructure:"config"`
-	ProverInputsStore struct {
+	Config          []string `mapstructure:"config"`
+	ProverInputtore struct {
 		ContentType     string `mapstructure:"content-type"`
 		ContentEncoding string `mapstructure:"content-encoding"`
 		S3              struct {

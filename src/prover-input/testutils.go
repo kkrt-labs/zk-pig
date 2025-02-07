@@ -74,7 +74,7 @@ func NormalizeProverInput(input *ProverInput) *ProverInput {
 }
 
 // Helper function to compare two ProverInput
-func CompareProverInputs(a, b *ProverInput) bool {
+func CompareProverInput(a, b *ProverInput) bool {
 	if a == nil || b == nil {
 		return a == b
 	}

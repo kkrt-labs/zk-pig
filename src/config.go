@@ -1,4 +1,4 @@
-package blocks
+package src
 
 import (
 	"fmt"
@@ -10,8 +10,8 @@ import (
 	filestore "github.com/kkrt-labs/go-utils/store/file"
 	multistore "github.com/kkrt-labs/go-utils/store/multi"
 	s3store "github.com/kkrt-labs/go-utils/store/s3"
-	blockstore "github.com/kkrt-labs/zk-pig/src/blocks/store"
 	"github.com/kkrt-labs/zk-pig/src/config"
+	inputstore "github.com/kkrt-labs/zk-pig/src/store"
 )
 
 type ChainConfig struct {
@@ -26,10 +26,10 @@ type StoreConfig struct {
 
 // Config is the configuration for the RPCPreflight.
 type Config struct {
-	Chain                        ChainConfig
-	BaseDir                      string `json:"blocks-dir"` // Base directory for storing block data
-	HeavyProverInputsStoreConfig blockstore.HeavyProverInputsStoreConfig
-	ProverInputsStoreConfig      blockstore.ProverInputsStoreConfig
+	Chain                      ChainConfig
+	BaseDir                    string `json:"blocks-dir"` // Base directory for storing block data
+	HeavyProverInputtoreConfig inputstore.HeavyProverInputtoreConfig
+	ProverInputtoreConfig      inputstore.ProverInputtoreConfig
 }
 
 func (cfg *Config) SetDefault() *Config {
@@ -46,11 +46,11 @@ func (cfg *Config) SetDefault() *Config {
 
 func FromGlobalConfig(gcfg *config.Config) (*Service, error) {
 	// Parse content encoding and type with error handling
-	contentEncoding, err := store.ParseContentEncoding(gcfg.ProverInputsStore.ContentEncoding)
+	contentEncoding, err := store.ParseContentEncoding(gcfg.ProverInputtore.ContentEncoding)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse content encoding: %v", err)
 	}
-	contentType, err := store.ParseContentType(gcfg.ProverInputsStore.ContentType)
+	contentType, err := store.ParseContentType(gcfg.ProverInputtore.ContentType)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse content type: %v", err)
 	}
@@ -77,12 +77,12 @@ func FromGlobalConfig(gcfg *config.Config) (*Service, error) {
 	multiStoreConfig := configureMultiStore(gcfg, cfg.BaseDir)
 
 	// Set heavy prover inputs store configuration
-	cfg.HeavyProverInputsStoreConfig = blockstore.HeavyProverInputsStoreConfig{
+	cfg.HeavyProverInputtoreConfig = inputstore.HeavyProverInputtoreConfig{
 		FileConfig: &filestore.Config{DataDir: gcfg.DataDir.Root + "/" + ChainID(gcfg) + "/" + gcfg.DataDir.Preflight},
 	}
 
 	// Set prover inputs store configuration
-	cfg.ProverInputsStoreConfig = blockstore.ProverInputsStoreConfig{
+	cfg.ProverInputtoreConfig = inputstore.ProverInputtoreConfig{
 		MultiStoreConfig: multiStoreConfig,
 		ContentEncoding:  contentEncoding,
 		ContentType:      contentType,
@@ -109,15 +109,15 @@ func configureMultiStore(gcfg *config.Config, baseDir string) multistore.Config 
 	}
 
 	// Configure S3 store
-	if gcfg.ProverInputsStore.S3.AWSProvider.Bucket != "" {
+	if gcfg.ProverInputtore.S3.AWSProvider.Bucket != "" {
 		multiStoreConfig.S3Config = &s3store.Config{
-			Bucket:    gcfg.ProverInputsStore.S3.AWSProvider.Bucket,
-			KeyPrefix: gcfg.ProverInputsStore.S3.AWSProvider.KeyPrefix,
+			Bucket:    gcfg.ProverInputtore.S3.AWSProvider.Bucket,
+			KeyPrefix: gcfg.ProverInputtore.S3.AWSProvider.KeyPrefix,
 			ProviderConfig: &aws.ProviderConfig{
-				Region: gcfg.ProverInputsStore.S3.AWSProvider.Region,
+				Region: gcfg.ProverInputtore.S3.AWSProvider.Region,
 				Credentials: &aws.CredentialsConfig{
-					AccessKey: gcfg.ProverInputsStore.S3.AWSProvider.Credentials.AccessKey,
-					SecretKey: gcfg.ProverInputsStore.S3.AWSProvider.Credentials.SecretKey,
+					AccessKey: gcfg.ProverInputtore.S3.AWSProvider.Credentials.AccessKey,
+					SecretKey: gcfg.ProverInputtore.S3.AWSProvider.Credentials.SecretKey,
 				},
 			},
 		}

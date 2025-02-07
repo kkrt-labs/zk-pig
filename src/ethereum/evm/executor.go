@@ -13,7 +13,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	gethparams "github.com/ethereum/go-ethereum/params"
 	"github.com/kkrt-labs/go-utils/log"
-	"github.com/kkrt-labs/zk-pig/src"
 )
 
 // ExecParams are the parameters for an EVM execution.
@@ -136,7 +135,7 @@ func summarizeBadBlockError(chainCfg *gethparams.ChainConfig, block *types.Block
 			receipt.Status, receipt.TxHash.Hex(), receipt.Logs, receipt.Bloom, receipt.PostState)
 	}
 
-	version := src.Version
+	version := ""
 	vcs := ""
 	platform := fmt.Sprintf("%s %s %s %s", version, runtime.Version(), runtime.GOARCH, runtime.GOOS)
 	if vcs != "" {

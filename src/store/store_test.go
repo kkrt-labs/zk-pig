@@ -71,9 +71,9 @@ var testCases = []testCase{
 	// },
 }
 
-func setupProverInputTestStore(t *testing.T, tc testCase) (store ProverInputStore, baseDir string) {
+func setupProverInputTestStore(t *testing.T, tc testCase) (store ProverInputtore, baseDir string) {
 	baseDir = t.TempDir()
-	cfg := &ProverInputStoreConfig{
+	cfg := &ProverInputtoreConfig{
 		MultiStoreConfig: multistore.Config{
 			FileConfig: &filestore.Config{
 				DataDir: baseDir,
@@ -91,13 +91,13 @@ func setupProverInputTestStore(t *testing.T, tc testCase) (store ProverInputStor
 	return store, baseDir
 }
 
-func setupHeavyProverInputTestStore(t *testing.T) (store HeavyProverInputStore, baseDir string) {
+func setupHeavyProverInputTestStore(t *testing.T) (store HeavyProverInputtore, baseDir string) {
 	baseDir = t.TempDir()
-	cfg := &HeavyProverInputStoreConfig{
+	cfg := &HeavyProverInputtoreConfig{
 		FileConfig: &filestore.Config{DataDir: baseDir},
 	}
 
-	store, err := NewHeavyProverInputStore(cfg)
+	store, err := NewHeavyProverInputtore(cfg)
 	assert.NoError(t, err)
 	return store, baseDir
 }
@@ -105,7 +105,7 @@ func setupHeavyProverInputTestStore(t *testing.T) (store HeavyProverInputStore, 
 func TestBlockStore(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			heavyProverInputStore, _ := setupHeavyProverInputTestStore(t)
+			heavyProverInputtore, _ := setupHeavyProverInputTestStore(t)
 
 			// Test HeavyProverInput
 			heavyProverInput := &input.HeavyProverInput{
@@ -120,21 +120,21 @@ func TestBlockStore(t *testing.T) {
 			}
 
 			// Test storing and loading HeavyProverInput
-			err := heavyProverInputStore.StoreHeavyProverInput(context.Background(), heavyProverInput)
+			err := heavyProverInputtore.StoreHeavyProverInput(context.Background(), heavyProverInput)
 			assert.NoError(t, err)
 
-			loaded, err := heavyProverInputStore.LoadHeavyProverInput(context.Background(), 1, 10)
+			loaded, err := heavyProverInputtore.LoadHeavyProverInput(context.Background(), 1, 10)
 			assert.NoError(t, err)
 			assert.Equal(t, heavyProverInput.ChainConfig.ChainID, loaded.ChainConfig.ChainID)
 
 			// Test non-existent HeavyProverInput
-			_, err = heavyProverInputStore.LoadHeavyProverInput(context.Background(), 1, 20)
+			_, err = heavyProverInputtore.LoadHeavyProverInput(context.Background(), 1, 20)
 			assert.Error(t, err)
 
 			// Test ProverInput
-			proverInputsStore, _ := setupProverInputTestStore(t, tc)
+			ProverInputStore, _ := setupProverInputTestStore(t, tc)
 
-			proverInputs := &input.ProverInput{
+			ProverInput := &input.ProverInput{
 				ChainConfig: &params.ChainConfig{
 					ChainID: big.NewInt(2),
 				},
@@ -149,15 +149,15 @@ func TestBlockStore(t *testing.T) {
 			}
 
 			// Test storing and loading ProverInput
-			err = proverInputsStore.StoreProverInput(context.Background(), proverInputs)
+			err = ProverInputStore.StoreProverInput(context.Background(), ProverInput)
 			assert.NoError(t, err)
 
-			loadedProverInput, err := proverInputsStore.LoadProverInput(context.Background(), 2, 15)
+			loadedProverInput, err := ProverInputStore.LoadProverInput(context.Background(), 2, 15)
 			assert.NoError(t, err)
-			assert.Equal(t, proverInputs.ChainConfig.ChainID, loadedProverInput.ChainConfig.ChainID)
+			assert.Equal(t, ProverInput.ChainConfig.ChainID, loadedProverInput.ChainConfig.ChainID)
 
 			// Test non-existent ProverInput
-			_, err = proverInputsStore.LoadProverInput(context.Background(), 2, 25)
+			_, err = ProverInputStore.LoadProverInput(context.Background(), 2, 25)
 			assert.Error(t, err)
 		})
 	}

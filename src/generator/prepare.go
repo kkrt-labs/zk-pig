@@ -1,4 +1,4 @@
-package blockinputs
+package generator
 
 import (
 	"context"
@@ -86,7 +86,7 @@ func (p *preparer) prepare(ctx context.Context, inputs *input.HeavyProverInput) 
 		return nil, fmt.Errorf("validation execution failed: %v", err)
 	}
 
-	return p.prepareProverInputs(valCtx, execParams), nil
+	return p.prepareProverInput(valCtx, execParams), nil
 }
 
 func (p *preparer) prepareContext(ctx context.Context, inputs *input.HeavyProverInput) (*preparerContext, error) {
@@ -171,8 +171,8 @@ func (p *preparer) execute(ctx *preparerContext, execParams *evm.ExecParams) err
 	return nil
 }
 
-func (p *preparer) prepareProverInputs(ctx *preparerContext, execParams *evm.ExecParams) *input.ProverInput {
-	proverInputs := &input.ProverInput{
+func (p *preparer) prepareProverInput(ctx *preparerContext, execParams *evm.ExecParams) *input.ProverInput {
+	ProverInput := &input.ProverInput{
 		ChainConfig: execParams.Chain.Config(),
 		Block:       new(ethrpc.Block).FromBlock(execParams.Block, execParams.Chain.Config()),
 		Ancestors:   execParams.State.Witness().Headers,
@@ -180,24 +180,24 @@ func (p *preparer) prepareProverInputs(ctx *preparerContext, execParams *evm.Exe
 
 	witness := execParams.State.Witness()
 	for code := range witness.Codes {
-		proverInputs.Codes = append(proverInputs.Codes, []byte(code))
+		ProverInput.Codes = append(ProverInput.Codes, []byte(code))
 	}
 
 	for node := range witness.State {
 		blob := []byte(node)
-		proverInputs.PreState = append(proverInputs.PreState, blob)
+		ProverInput.PreState = append(ProverInput.PreState, blob)
 	}
 
-	proverInputs.AccessList = make(map[gethcommon.Address][]hexutil.Bytes)
-	tracker := ctx.trackers.GetAccessTracker(proverInputs.Ancestors[0].Root)
+	ProverInput.AccessList = make(map[gethcommon.Address][]hexutil.Bytes)
+	tracker := ctx.trackers.GetAccessTracker(ProverInput.Ancestors[0].Root)
 	for account := range tracker.Accounts {
 		if storage, ok := tracker.Storage[account]; ok {
-			proverInputs.AccessList[account] = []hexutil.Bytes{}
+			ProverInput.AccessList[account] = []hexutil.Bytes{}
 			for slot := range storage {
-				proverInputs.AccessList[account] = append(proverInputs.AccessList[account], slot.Bytes())
+				ProverInput.AccessList[account] = append(ProverInput.AccessList[account], slot.Bytes())
 			}
 		}
 	}
 
-	return proverInputs
+	return ProverInput
 }

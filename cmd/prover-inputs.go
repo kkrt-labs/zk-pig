@@ -5,21 +5,21 @@ import (
 	"math/big"
 
 	"github.com/kkrt-labs/go-utils/ethereum/rpc/jsonrpc"
-	"github.com/kkrt-labs/zk-pig/src/blocks"
+	"github.com/kkrt-labs/zk-pig/src"
 	"github.com/kkrt-labs/zk-pig/src/config"
 	"github.com/spf13/cobra"
 )
 
-type ProverInputsContext struct {
+type ProverInputContext struct {
 	RootContext
-	svc         *blocks.Service
+	svc         *src.Service
 	blockNumber *big.Int
 }
 
 // NewGenerateCommand creates and returns the generate command
 func NewGenerateCommand(rootCtx *RootContext) *cobra.Command {
 	var (
-		ctx         = &ProverInputsContext{RootContext: *rootCtx}
+		ctx         = &ProverInputContext{RootContext: *rootCtx}
 		blockNumber string
 	)
 
@@ -36,7 +36,7 @@ func NewGenerateCommand(rootCtx *RootContext) *cobra.Command {
 		},
 	}
 
-	config.AddProverInputsFlags(ctx.Viper, cmd.PersistentFlags())
+	config.AddProverInputFlags(ctx.Viper, cmd.PersistentFlags())
 	cmd.Flags().StringVarP(&blockNumber, "block-number", "b", "latest", "Block number")
 
 	return cmd
@@ -44,7 +44,7 @@ func NewGenerateCommand(rootCtx *RootContext) *cobra.Command {
 
 func NewPreflightCommand(rootCtx *RootContext) *cobra.Command {
 	var (
-		ctx         = &ProverInputsContext{RootContext: *rootCtx}
+		ctx         = &ProverInputContext{RootContext: *rootCtx}
 		blockNumber string
 	)
 
@@ -61,7 +61,7 @@ func NewPreflightCommand(rootCtx *RootContext) *cobra.Command {
 		},
 	}
 
-	config.AddProverInputsFlags(ctx.Viper, cmd.PersistentFlags())
+	config.AddProverInputFlags(ctx.Viper, cmd.PersistentFlags())
 	cmd.Flags().StringVarP(&blockNumber, "block-number", "b", "latest", "Block number")
 
 	return cmd
@@ -69,7 +69,7 @@ func NewPreflightCommand(rootCtx *RootContext) *cobra.Command {
 
 func NewPrepareCommand(rootCtx *RootContext) *cobra.Command {
 	var (
-		ctx         = &ProverInputsContext{RootContext: *rootCtx}
+		ctx         = &ProverInputContext{RootContext: *rootCtx}
 		blockNumber string
 	)
 
@@ -86,7 +86,7 @@ func NewPrepareCommand(rootCtx *RootContext) *cobra.Command {
 		},
 	}
 
-	config.AddProverInputsFlags(ctx.Viper, cmd.PersistentFlags())
+	config.AddProverInputFlags(ctx.Viper, cmd.PersistentFlags())
 	cmd.Flags().StringVarP(&blockNumber, "block-number", "b", "latest", "Block number")
 
 	return cmd
@@ -94,7 +94,7 @@ func NewPrepareCommand(rootCtx *RootContext) *cobra.Command {
 
 func NewExecuteCommand(rootCtx *RootContext) *cobra.Command {
 	var (
-		ctx         = &ProverInputsContext{RootContext: *rootCtx}
+		ctx         = &ProverInputContext{RootContext: *rootCtx}
 		blockNumber string
 	)
 
@@ -111,16 +111,16 @@ func NewExecuteCommand(rootCtx *RootContext) *cobra.Command {
 		},
 	}
 
-	config.AddProverInputsFlags(ctx.Viper, cmd.PersistentFlags())
+	config.AddProverInputFlags(ctx.Viper, cmd.PersistentFlags())
 	cmd.Flags().StringVarP(&blockNumber, "block-number", "b", "latest", "Block number")
 
 	return cmd
 }
 
-func preRun(ctx *ProverInputsContext, blockNumber *string) func(cmd *cobra.Command, _ []string) error {
+func preRun(ctx *ProverInputContext, blockNumber *string) func(cmd *cobra.Command, _ []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
 		var err error
-		ctx.svc, err = blocks.FromGlobalConfig(ctx.Config)
+		ctx.svc, err = src.FromGlobalConfig(ctx.Config)
 		if err != nil {
 			return fmt.Errorf("failed to create prover inputs service: %v", err)
 		}
@@ -144,22 +144,22 @@ func preRun(ctx *ProverInputsContext, blockNumber *string) func(cmd *cobra.Comma
 }
 
 // Helper function to validate S3 configuration
-func validateS3Config(ctx *ProverInputsContext) error {
-	if ctx.Config.ProverInputsStore.S3.AWSProvider.Bucket == "" || ctx.Config.ProverInputsStore.S3.AWSProvider.KeyPrefix == "" || ctx.Config.ProverInputsStore.S3.AWSProvider.Credentials.AccessKey == "" || ctx.Config.ProverInputsStore.S3.AWSProvider.Credentials.SecretKey == "" || ctx.Config.ProverInputsStore.S3.AWSProvider.Region == "" {
+func validateS3Config(ctx *ProverInputContext) error {
+	if ctx.Config.ProverInputtore.S3.AWSProvider.Bucket == "" || ctx.Config.ProverInputtore.S3.AWSProvider.KeyPrefix == "" || ctx.Config.ProverInputtore.S3.AWSProvider.Credentials.AccessKey == "" || ctx.Config.ProverInputtore.S3.AWSProvider.Credentials.SecretKey == "" || ctx.Config.ProverInputtore.S3.AWSProvider.Region == "" {
 		missingFields := []string{}
-		if ctx.Config.ProverInputsStore.S3.AWSProvider.Bucket == "" {
+		if ctx.Config.ProverInputtore.S3.AWSProvider.Bucket == "" {
 			missingFields = append(missingFields, "s3-bucket")
 		}
-		if ctx.Config.ProverInputsStore.S3.AWSProvider.KeyPrefix == "" {
+		if ctx.Config.ProverInputtore.S3.AWSProvider.KeyPrefix == "" {
 			missingFields = append(missingFields, "key-prefix")
 		}
-		if ctx.Config.ProverInputsStore.S3.AWSProvider.Credentials.AccessKey == "" {
+		if ctx.Config.ProverInputtore.S3.AWSProvider.Credentials.AccessKey == "" {
 			missingFields = append(missingFields, "access-key")
 		}
-		if ctx.Config.ProverInputsStore.S3.AWSProvider.Credentials.SecretKey == "" {
+		if ctx.Config.ProverInputtore.S3.AWSProvider.Credentials.SecretKey == "" {
 			missingFields = append(missingFields, "secret-key")
 		}
-		if ctx.Config.ProverInputsStore.S3.AWSProvider.Region == "" {
+		if ctx.Config.ProverInputtore.S3.AWSProvider.Region == "" {
 			missingFields = append(missingFields, "region")
 		}
 		return fmt.Errorf("%s must be specified when using s3 storage", missingFields)
