@@ -1,10 +1,19 @@
 # ZK-PIG
 
+![Test](https://github.com/kkrt-labs/zk-pig/actions/workflows/test.yml/badge.svg?branch=main)
+[![API Reference](
+https://pkg.go.dev/badge/github.com/kkrt-labs/zk-pig
+)](https://pkg.go.dev/github.com/kkrt-labs/zk-pig?tab=doc)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/kkrt-labs/zk-pig/blob/master/LICENSE.md)
+[![Twitter](https://img.shields.io/twitter/follow/KakarotZkEvm.svg)](https://x.com/intent/follow?screen_name=KakarotZkEvm)
+
 **ZK-PIG** is a ZK-EVM Prover Input generator responsible for generating the data inputs necessary for proving Execution Layer (EL) blocks. Those prover inputs can later be consumed by proving infrastructures to generate EL block proofs.
 
 From an architecture perspective, ZK-PIG connects to an Ethereum compatible EL full or archive node via JSON-RPC to fetch the necessary data.
 
 > **Note about Prover Inputs:** ZK-EVM proving engines operate in isolated & stateless environments without a direct access to a full blockchain node. The **Prover Input** refer to the minimal EVM data required by such a ZK-EVM proving engine to effectively prove an EL block. For more information on prover inputs, you can refer to this [article](https://ethresear.ch/t/zk-evm-prover-input-standardization/21626).
+
+The **Kakarot Controller** is a monorepo housing all the services necessary for managing and orchestrating Kakarot proving operations.
 
 ## Installation
 
