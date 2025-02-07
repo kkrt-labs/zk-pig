@@ -6,7 +6,7 @@ import (
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 	ethrpc "github.com/kkrt-labs/go-utils/ethereum/rpc"
-	"github.com/kkrt-labs/zk-pig/pkg/ethereum/trie"
+	"github.com/kkrt-labs/zk-pig/src/ethereum/trie"
 )
 
 // ProverInputs contains the data expected by an EVM prover engine to execute & prove the block.
