@@ -62,7 +62,7 @@ func New(cfg *Config) (*Service, error) {
 	}
 
 	compressStore, err := compressstore.New(compressstore.Config{
-		MultiStoreConfig: cfg.ProverInputStore.MultiStoreConfig,
+		MultiStoreConfig: cfg.ProverInputStore.StoreConfig,
 		ContentEncoding:  cfg.ProverInputStore.ContentEncoding,
 	})
 

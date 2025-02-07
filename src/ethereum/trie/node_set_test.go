@@ -185,17 +185,18 @@ func testDeleteAccount(t *testing.T, trieDB *triedb.Database, stateTrie gethstat
 	}
 
 	for _, preStorageProof := range preAccountProof.Storage {
-		if postProof, ok := postStorageByKey[preStorageProof.Key]; ok && postProof.Value.ToInt().Sign() == 0 && preStorageProof.Value.ToInt().Sign() != 0 {
-			// If the storage has been deleted, delete it from the trie
-			storageTrie, err := trie.NewStateTrie(trie.StorageTrieID(preStateRoot, StorageTrieOwner(preAccountProof.Address), preAccountProof.StorageHash), trieDB)
-			require.NoError(t, err)
-
-			err = storageTrie.DeleteStorage(preAccountProof.Address, hexutil.MustDecode(preStorageProof.Key))
-			require.NoError(t, err, "Could not delete storage for key %v", preStorageProof.Key)
-
-			v, err := storageTrie.GetStorage(preAccountProof.Address, hexutil.MustDecode(preStorageProof.Key))
-			assert.NoError(t, err, "Unexpected storage value for key %v (should have been deleted)", preStorageProof.Key)
-			assert.Len(t, v, 0, "Unexpected storage value for key %v (should have been deleted)", preStorageProof.Key)
+		if postProof, ok := postStorageByKey[preStorageProof.Key]; !(ok && postProof.Value.ToInt().Sign() == 0 && preStorageProof.Value.ToInt().Sign() != 0) {
+			continue
 		}
+		// If the storage has been deleted, delete it from the trie
+		storageTrie, err := trie.NewStateTrie(trie.StorageTrieID(preStateRoot, StorageTrieOwner(preAccountProof.Address), preAccountProof.StorageHash), trieDB)
+		require.NoError(t, err)
+
+		err = storageTrie.DeleteStorage(preAccountProof.Address, hexutil.MustDecode(preStorageProof.Key))
+		require.NoError(t, err, "Could not delete storage for key %v", preStorageProof.Key)
+
+		v, err := storageTrie.GetStorage(preAccountProof.Address, hexutil.MustDecode(preStorageProof.Key))
+		assert.NoError(t, err, "Unexpected storage value for key %v (should have been deleted)", preStorageProof.Key)
+		assert.Len(t, v, 0, "Unexpected storage value for key %v (should have been deleted)", preStorageProof.Key)
 	}
 }

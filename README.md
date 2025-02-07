@@ -30,6 +30,14 @@ You can test the installation by running
 zkpig version
 ```
 
+## Architecture
+
+For a more detailed architecture documentation, you can refer to the [Documentation](https://kkrt-labs/zkpig/docs/prover-input-generation.md).
+
+## Contributing
+
+Interested in contributing? Check out our [Contributing Guidelines](CONTRIBUTING.md) to get started! 
+
 ## Usage
 
 ### Prerequisites
@@ -61,21 +69,13 @@ On successful completion, the prover inputs are stored in the `/data` directory.
 To generate prover inputs for the `latest` block, you can use the following command:
 
 ```sh
-zkpig generate --block-number latest
+zkpig generate
 ```
 
 For more information on the commands, you can use the following command:
 
 ```sh
 zkpig generate --help
-```
-
-### Commands Overview 
-
-To get all available commands, and flags, you can use the following command:
-
-```sh
-zkpig help
 ```
 
 ### Logging
@@ -87,22 +87,32 @@ To configure logging you can set
 ```sh
 zkpig generate \
   --block-number 1234 \
-  --chain-rpc-url http://127.0.0.1:8545 \
-  --data-dir ./data \
-  --store-content-type json \
   --log-level debug \
   --log-format text
 ```
 
-## Architecture
 
-For a more detailed architecture documentation, you can refer to the [Documentation](https://kkrt-labs/zkpig/docs/prover-input-generation.md).
+## Commands Overview
 
-## Contributing
+To get the list of all available commands, and flags, you can run:
 
-Interested in contributing? Check out our [Contributing Guidelines](CONTRIBUTING.md) to get started! 
+```sh
+zkpig help
+```
 
-## Other commands
+### `zkpig generate`
+
+> Description: Generates prover inputs for a given block. It consist in running preflight, prepare and execute in a single run.
+
+#### Usage
+
+```sh
+zkpig generate \
+  --block-number 1234 \
+  --chain-rpc-url http://127.0.0.1:8545 \
+  --data-dir ./data
+  --inputs-content-type json
+```
 
 ### `zkpig preflight`
 
@@ -115,7 +125,7 @@ zkpig preflight \
   --block-number 1234 \
   --chain-rpc-url http://127.0.0.1:8545 \
   --data-dir ./data
-  --store-content-type json
+  --inputs-content-type json
 ```
 
 ### `zkpig prepare`
@@ -126,12 +136,12 @@ zkpig preflight \
 #### Usage
 
 ```sh
-kkrtctl prepare \
+zkpig prepare \
   --block-number 1234 \
   --chain-id 1 \
   --chain-rpc-url http://127.0.0.1:8545 \
   --data-dir ./data \
-  --store-content-type json
+  --inputs-content-type json
 ```
 
 ### `zkpig execute`
@@ -142,19 +152,10 @@ kkrtctl prepare \
 #### Usage
 
 ```sh
-kkrtctl prover-inputs execute \
+zkpig execute \
   --chain-id 1 \
   --block-number 1234 \
   --chain-rpc-url http://127.0.0.1:8545 \
   --data-dir ./data \
-  --store-content-type json
+  --inputs-content-type json
 ```
-
-### Commands List
-
-1. `zkpig version` - Print the version
-1. `zkpig help` - Print the help message
-1. `zkpig generate --block-number <block-number> --chain-rpc-url <rpc-url> --data-dir <data-dir>` - Generate prover input for a specific block.
-1. `zkpig preflight --block-number <block-number> --chain-rpc-url <rpc-url> --data-dir <data-dir>` - Collect necessary data to generate prover inputs from a remote JSON-RPC Ethereum Execution Layer node
-1. `zkpig prepare --block-number <block-number> --chain-rpc-url <rpc-url> --data-dir <data-dir>` - Prepare prover inputs by basing on data previously collected during preflight.
-1. `zkpig execute --block-number <block-number> --chain-rpc-url <rpc-url> --data-dir <data-dir>` - Execute block by basing on prover inputs previously generated during prepare.

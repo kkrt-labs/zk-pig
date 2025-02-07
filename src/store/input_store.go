@@ -24,9 +24,9 @@ type ProverInputStore interface {
 }
 
 type ProverInputStoreConfig struct {
-	MultiStoreConfig multistore.Config
-	ContentType      store.ContentType
-	ContentEncoding  store.ContentEncoding
+	StoreConfig     multistore.Config
+	ContentType     store.ContentType
+	ContentEncoding store.ContentEncoding
 }
 
 type proverInputStore struct {
@@ -35,7 +35,7 @@ type proverInputStore struct {
 }
 
 func New(cfg *ProverInputStoreConfig) (ProverInputStore, error) {
-	inputstore, err := multistore.NewFromConfig(cfg.MultiStoreConfig)
+	inputstore, err := multistore.NewFromConfig(cfg.StoreConfig)
 	if err != nil {
 		return nil, err
 	}

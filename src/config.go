@@ -3,6 +3,7 @@ package src
 import (
 	"fmt"
 	"math/big"
+	"path/filepath"
 
 	aws "github.com/kkrt-labs/go-utils/aws"
 	jsonrpcmrgd "github.com/kkrt-labs/go-utils/jsonrpc/merged"
@@ -27,14 +28,14 @@ type StoreConfig struct {
 // Config is the configuration for the RPCPreflight.
 type Config struct {
 	Chain              ChainConfig
-	BaseDir            string `json:"blocks-dir"` // Base directory for storing block data
+	DataDir            string
 	PreflightDataStore inputstore.PreflightDataStoreConfig
 	ProverInputStore   inputstore.ProverInputStoreConfig
 }
 
 func (cfg *Config) SetDefault() *Config {
-	if cfg.BaseDir == "" {
-		cfg.BaseDir = "data/blocks"
+	if cfg.DataDir == "" {
+		cfg.DataDir = "data"
 	}
 
 	if cfg.Chain.RPC != nil {
@@ -45,7 +46,33 @@ func (cfg *Config) SetDefault() *Config {
 }
 
 func FromGlobalConfig(gcfg *config.Config) (*Service, error) {
-	// Parse content encoding and type with error handling
+	// Initialize configuration with default values
+	cfg := &Config{
+		Chain:   ChainConfig{},
+		DataDir: gcfg.DataDir,
+	}
+
+	// Set Chain ID if provided
+	var err error
+	if gcfg.Chain.ID != "" {
+		if cfg.Chain.ID, err = parseChainID(gcfg.Chain.ID); err != nil {
+			return nil, err
+		}
+	}
+
+	// --- Set RPC configuration if URL is provided ---
+	if gcfg.Chain.RPC.URL != "" {
+		cfg.Chain.RPC = &jsonrpcmrgd.Config{Addr: gcfg.Chain.RPC.URL}
+	}
+
+	// --- Set Preflight Data Store configuration ---
+	if gcfg.PreflightDataStore.File.Dir != "" {
+		cfg.PreflightDataStore = inputstore.PreflightDataStoreConfig{
+			FileConfig: &filestore.Config{DataDir: filepath.Join(gcfg.DataDir, ChainID(gcfg), gcfg.PreflightDataStore.File.Dir)},
+		}
+	}
+
+	// --- Set Prover Input Store configuration
 	contentEncoding, err := store.ParseContentEncoding(gcfg.ProverInputStore.ContentEncoding)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse content encoding: %v", err)
@@ -55,37 +82,33 @@ func FromGlobalConfig(gcfg *config.Config) (*Service, error) {
 		return nil, fmt.Errorf("failed to parse content type: %v", err)
 	}
 
-	// Initialize configuration with default values
-	cfg := &Config{
-		Chain:   ChainConfig{},
-		BaseDir: gcfg.DataDir.Root,
+	var proverInputStoreCfg multistore.Config
+
+	// If File Dir config is set file store
+	if gcfg.ProverInputStore.File.Dir != "" {
+		proverInputStoreCfg.FileConfig = &filestore.Config{DataDir: filepath.Join(gcfg.DataDir, ChainID(gcfg), gcfg.ProverInputStore.File.Dir)}
 	}
 
-	// Set Chain ID if provided
-	if gcfg.Chain.ID != "" {
-		if cfg.Chain.ID, err = parseChainID(gcfg.Chain.ID); err != nil {
-			return nil, err
+	// Configure S3 store
+	if gcfg.ProverInputStore.S3.Bucket != "" {
+		proverInputStoreCfg.S3Config = &s3store.Config{
+			Bucket:    gcfg.ProverInputStore.S3.Bucket,
+			KeyPrefix: gcfg.ProverInputStore.S3.BucketKeyPrefix,
+			ProviderConfig: &aws.ProviderConfig{
+				Region: gcfg.ProverInputStore.S3.AWSProvider.Region,
+				Credentials: &aws.CredentialsConfig{
+					AccessKey: gcfg.ProverInputStore.S3.AWSProvider.Credentials.AccessKey,
+					SecretKey: gcfg.ProverInputStore.S3.AWSProvider.Credentials.SecretKey,
+				},
+			},
 		}
-	}
-
-	// Set RPC configuration if URL is provided
-	if gcfg.Chain.RPC.URL != "" {
-		cfg.Chain.RPC = &jsonrpcmrgd.Config{Addr: gcfg.Chain.RPC.URL}
-	}
-
-	// Configure multi-store settings
-	multiStoreConfig := configureMultiStore(gcfg, cfg.BaseDir)
-
-	// Set preflight data store configuration
-	cfg.PreflightDataStore = inputstore.PreflightDataStoreConfig{
-		FileConfig: &filestore.Config{DataDir: gcfg.DataDir.Root + "/" + ChainID(gcfg) + "/" + gcfg.DataDir.Preflight},
 	}
 
 	// Set prover inputs store configuration
 	cfg.ProverInputStore = inputstore.ProverInputStoreConfig{
-		MultiStoreConfig: multiStoreConfig,
-		ContentEncoding:  contentEncoding,
-		ContentType:      contentType,
+		StoreConfig:     proverInputStoreCfg,
+		ContentEncoding: contentEncoding,
+		ContentType:     contentType,
 	}
 
 	return New(cfg)
@@ -98,32 +121,6 @@ func parseChainID(chainID string) (*big.Int, error) {
 		return nil, fmt.Errorf("invalid chain id %q", chainID)
 	}
 	return id, nil
-}
-
-// Helper function to configure multi-store settings
-func configureMultiStore(gcfg *config.Config, baseDir string) multistore.Config {
-	var multiStoreConfig multistore.Config
-	// Configure file store
-	if gcfg.DataDir.Inputs != "" {
-		multiStoreConfig.FileConfig = &filestore.Config{DataDir: baseDir + "/" + ChainID(gcfg) + "/" + gcfg.DataDir.Inputs}
-	}
-
-	// Configure S3 store
-	if gcfg.ProverInputStore.S3.AWSProvider.Bucket != "" {
-		multiStoreConfig.S3Config = &s3store.Config{
-			Bucket:    gcfg.ProverInputStore.S3.AWSProvider.Bucket,
-			KeyPrefix: gcfg.ProverInputStore.S3.AWSProvider.KeyPrefix,
-			ProviderConfig: &aws.ProviderConfig{
-				Region: gcfg.ProverInputStore.S3.AWSProvider.Region,
-				Credentials: &aws.CredentialsConfig{
-					AccessKey: gcfg.ProverInputStore.S3.AWSProvider.Credentials.AccessKey,
-					SecretKey: gcfg.ProverInputStore.S3.AWSProvider.Credentials.SecretKey,
-				},
-			},
-		}
-	}
-
-	return multiStoreConfig
 }
 
 func ChainID(gcfg *config.Config) string {

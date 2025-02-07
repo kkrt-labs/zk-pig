@@ -60,11 +60,11 @@ var testCases = []testCase{
 	// 	contentEncoding: storeinputs.ContentEncodingPlain,
 	// 	storage:         "s3",
 	// 	s3Config: &s3.Config{
-	// 		Bucket:    "kkrt-dev-prover-inputs-s3-euw1-prover-inputs",
+	// 		Bucket:    "kkrt-dev-prover-input-s3-euw1-prover-input",
 	// 		Region:    "eu-west-1",
 	// 		AccessKey: "access-key",
 	// 		SecretKey: "secret-key",
-	// 		KeyPrefix: "test",
+	// 		BucketKeyPrefix: "test",
 	// 	},
 	// },
 }
@@ -72,7 +72,7 @@ var testCases = []testCase{
 func setupProverInputTestStore(t *testing.T, tc testCase) (store ProverInputStore, baseDir string) {
 	baseDir = t.TempDir()
 	cfg := &ProverInputStoreConfig{
-		MultiStoreConfig: multistore.Config{
+		StoreConfig: multistore.Config{
 			FileConfig: &filestore.Config{
 				DataDir: baseDir,
 			},
@@ -80,7 +80,7 @@ func setupProverInputTestStore(t *testing.T, tc testCase) (store ProverInputStor
 		},
 	}
 	compressStore, err := compressstore.New(compressstore.Config{
-		MultiStoreConfig: cfg.MultiStoreConfig,
+		MultiStoreConfig: cfg.StoreConfig,
 		ContentEncoding:  tc.contentEncoding,
 	})
 	store = NewFromStore(compressStore, tc.contentType)
