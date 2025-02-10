@@ -145,7 +145,7 @@ func preRun(ctx *ProverInputContext, blockNumber *string) func(cmd *cobra.Comman
 
 // Helper function to validate S3 configuration
 func validateS3Config(ctx *ProverInputContext) error {
-	if ctx.Config.ProverInputStore.S3.Bucket == "" || ctx.Config.ProverInputStore.S3.BucketKeyPrefix == "" || ctx.Config.ProverInputStore.S3.AWSProvider.Credentials.AccessKey == "" || ctx.Config.ProverInputStore.S3.AWSProvider.Credentials.SecretKey == "" || ctx.Config.ProverInputStore.S3.AWSProvider.Region == "" {
+	if ctx.Config.ProverInputStore.S3.Bucket != "" || ctx.Config.ProverInputStore.S3.BucketKeyPrefix != "" || ctx.Config.ProverInputStore.S3.AWSProvider.Credentials.AccessKey != "" || ctx.Config.ProverInputStore.S3.AWSProvider.Credentials.SecretKey != "" || ctx.Config.ProverInputStore.S3.AWSProvider.Region != "" {
 		missingFields := []string{}
 		if ctx.Config.ProverInputStore.S3.Bucket == "" {
 			missingFields = append(missingFields, "s3-bucket")
