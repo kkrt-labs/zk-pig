@@ -2,7 +2,7 @@
 
 This page describes the process for generating Prover Input the minimal necessary data for ZK EVM prover engines to prove a block. 
 
-It consists of 3 steps: [1. Prefligth](#step-1-preflight), [2. Prepare](#step-2-prepare) and [3. Execute](#step-3-execute)
+It consists of 3 steps: [1. Preflight](#step-1-preflight), [2. Prepare](#step-2-prepare) and [3. Execute](#step-3-execute)
 
 ## About Ethereum
 
@@ -76,7 +76,7 @@ The intermediary `PreflightData` contains:
 - **Pre-State Proofs**: The list of pre-state proofs for every accounts and storage accessed during block execution, obtained via `eth_getProof(account, accessedSlots, parent.Number)` after preflight block execution
 - **Post-State Proofs**: The list of post-state proofs for every destructed accounts and deleted storage during block execution, obtained via `eth_getProof(..., block.Number)` after preflight block execution
 
-The `PreflightData` contain redundant and unnecessary data which is later optimized during [Prepare](#step-2-prepare).
+The `PreflightData` contain redundant data which is later optimized during [Prepare](#step-2-prepare).
 
 #### Step 2: Prepare
 
