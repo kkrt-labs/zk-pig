@@ -51,7 +51,7 @@ This includes
    - when accessing a state data (either an account or a storage slot)
    - when deleting some state entries which may result in a [MPT branch node reduction](modified-mpt.md#branch-node-reduction) which resolves extra nodes
 - **codes** of all smart contracts called during block execution
-- **ancestors headers**, minimally containing the direct parent of the executed block and optionnaly older ancestors if accessed with opcode `BLOCKHASH` during block execution. For instance, the opcode `BLOCKHASH`enables smart contracts to access the hash of any of the 256 most recent blocks (excluding the current block, as its hash is computed post-execution)
+- **ancestors headers**, minimally containing the direct parent of the executed block and optionally older ancestors if accessed with opcode `BLOCKHASH` during block execution. For instance, the opcode `BLOCKHASH`enables smart contracts to access the hash of any of the 256 most recent blocks (excluding the current block, as its hash is computed post-execution)
 
 ### Witness examples
 
