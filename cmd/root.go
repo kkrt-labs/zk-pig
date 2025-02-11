@@ -65,6 +65,7 @@ func NewZkPigCommand() *cobra.Command {
 	rootCmd.AddCommand(NewPreflightCommand(ctx))
 	rootCmd.AddCommand(NewPrepareCommand(ctx))
 	rootCmd.AddCommand(NewExecuteCommand(ctx))
+	rootCmd.AddCommand(NewConfigCommand(ctx))
 
 	return rootCmd
 }

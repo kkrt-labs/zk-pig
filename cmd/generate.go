@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"encoding/json"
 	"fmt"
 	"math/big"
 
@@ -117,10 +118,47 @@ func NewExecuteCommand(rootCtx *RootContext) *cobra.Command {
 	return cmd
 }
 
+func NewConfigCommand(rootCtx *RootContext) *cobra.Command {
+	var (
+		ctx = &ProverInputContext{RootContext: *rootCtx}
+	)
+
+	cmd := &cobra.Command{
+		Use:   "config",
+		Short: "Returns current configuration",
+		RunE: func(cmd *cobra.Command, _ []string) error {
+			cfg, err := prepareConfig(ctx)
+			if err != nil {
+				return err
+			}
+			return json.NewEncoder(cmd.OutOrStdout()).Encode(cfg)
+		},
+	}
+
+	config.AddProverInputFlags(ctx.Viper, cmd.PersistentFlags())
+
+	return cmd
+}
+
+func prepareConfig(ctx *ProverInputContext) (*src.Config, error) {
+	var err error
+	cfg, err := src.FromGlobalConfig(ctx.Config)
+	if err != nil {
+		return nil, err
+	}
+	cfg.SetDefault()
+
+	return cfg, err
+}
+
 func preRun(ctx *ProverInputContext, blockNumber *string) func(cmd *cobra.Command, _ []string) error {
 	return func(cmd *cobra.Command, _ []string) error {
-		var err error
-		ctx.svc, err = src.FromGlobalConfig(ctx.Config)
+		cfg, err := prepareConfig(ctx)
+		if err != nil {
+			return err
+		}
+
+		ctx.svc, err = src.New(cfg)
 		if err != nil {
 			return fmt.Errorf("failed to create prover inputs service: %v", err)
 		}

@@ -45,7 +45,7 @@ func (cfg *Config) SetDefault() *Config {
 	return cfg
 }
 
-func FromGlobalConfig(gcfg *config.Config) (*Service, error) {
+func FromGlobalConfig(gcfg *config.Config) (*Config, error) {
 	// Initialize configuration with default values
 	cfg := &Config{
 		Chain:   ChainConfig{},
@@ -111,7 +111,7 @@ func FromGlobalConfig(gcfg *config.Config) (*Service, error) {
 		ContentType:     contentType,
 	}
 
-	return New(cfg)
+	return cfg, err
 }
 
 // Helper function to parse chain ID
