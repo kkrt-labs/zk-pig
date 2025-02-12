@@ -36,7 +36,7 @@ func NewGenerateCommand(rootCtx *RootContext) *cobra.Command {
 			return ctx.svc.Stop(cmd.Context())
 		},
 	}
-
+	config.AddChainFlags(ctx.Viper, cmd.PersistentFlags())
 	config.AddProverInputFlags(ctx.Viper, cmd.PersistentFlags())
 	cmd.Flags().StringVarP(&blockNumber, "block-number", "b", "latest", "Block number")
 
@@ -135,6 +135,7 @@ func NewConfigCommand(rootCtx *RootContext) *cobra.Command {
 		},
 	}
 
+	config.AddChainFlags(ctx.Viper, cmd.PersistentFlags())
 	config.AddProverInputFlags(ctx.Viper, cmd.PersistentFlags())
 
 	return cmd

@@ -128,7 +128,6 @@ func AddStoreFlags(v *viper.Viper, f *pflag.FlagSet) {
 }
 
 func AddProverInputFlags(v *viper.Viper, f *pflag.FlagSet) {
-	AddChainFlags(v, f)
 	AddAWSFlags(v, f)
 	AddStoreFlags(v, f)
 }
