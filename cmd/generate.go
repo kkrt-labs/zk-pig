@@ -7,7 +7,6 @@ import (
 
 	"github.com/kkrt-labs/go-utils/ethereum/rpc/jsonrpc"
 	"github.com/kkrt-labs/zk-pig/src"
-	"github.com/kkrt-labs/zk-pig/src/config"
 	"github.com/spf13/cobra"
 )
 
@@ -109,7 +108,6 @@ func NewExecuteCommand(rootCtx *RootContext) *cobra.Command {
 		},
 	}
 
-	config.AddProverInputFlags(ctx.Viper, cmd.PersistentFlags())
 	cmd.Flags().StringVarP(&blockNumber, "block-number", "b", "latest", "Block number")
 
 	return cmd
