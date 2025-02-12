@@ -36,8 +36,7 @@ func NewGenerateCommand(rootCtx *RootContext) *cobra.Command {
 			return ctx.svc.Stop(cmd.Context())
 		},
 	}
-	config.AddChainFlags(ctx.Viper, cmd.PersistentFlags())
-	config.AddProverInputFlags(ctx.Viper, cmd.PersistentFlags())
+
 	cmd.Flags().StringVarP(&blockNumber, "block-number", "b", "latest", "Block number")
 
 	return cmd
@@ -62,7 +61,6 @@ func NewPreflightCommand(rootCtx *RootContext) *cobra.Command {
 		},
 	}
 
-	config.AddProverInputFlags(ctx.Viper, cmd.PersistentFlags())
 	cmd.Flags().StringVarP(&blockNumber, "block-number", "b", "latest", "Block number")
 
 	return cmd
@@ -87,7 +85,6 @@ func NewPrepareCommand(rootCtx *RootContext) *cobra.Command {
 		},
 	}
 
-	config.AddProverInputFlags(ctx.Viper, cmd.PersistentFlags())
 	cmd.Flags().StringVarP(&blockNumber, "block-number", "b", "latest", "Block number")
 
 	return cmd
@@ -135,9 +132,6 @@ func NewConfigCommand(rootCtx *RootContext) *cobra.Command {
 		},
 	}
 
-	config.AddChainFlags(ctx.Viper, cmd.PersistentFlags())
-	config.AddProverInputFlags(ctx.Viper, cmd.PersistentFlags())
-
 	return cmd
 }
 
@@ -184,13 +178,17 @@ func preRun(ctx *ProverInputContext, blockNumber *string) func(cmd *cobra.Comman
 
 // Helper function to validate S3 configuration
 func validateS3Config(ctx *ProverInputContext) error {
-	if ctx.Config.ProverInputStore.S3.Bucket != "" || ctx.Config.ProverInputStore.S3.BucketKeyPrefix != "" || ctx.Config.ProverInputStore.S3.AWSProvider.Credentials.AccessKey != "" || ctx.Config.ProverInputStore.S3.AWSProvider.Credentials.SecretKey != "" || ctx.Config.ProverInputStore.S3.AWSProvider.Region != "" {
+	// Check if any S3 field is set
+	if ctx.Config.ProverInputStore.S3.Bucket != "" ||
+		ctx.Config.ProverInputStore.S3.BucketKeyPrefix != "" ||
+		ctx.Config.ProverInputStore.S3.AWSProvider.Credentials.AccessKey != "" ||
+		ctx.Config.ProverInputStore.S3.AWSProvider.Credentials.SecretKey != "" ||
+		ctx.Config.ProverInputStore.S3.AWSProvider.Region != "" {
+
+		// If any S3 field is set, ensure all required fields are set
 		missingFields := []string{}
 		if ctx.Config.ProverInputStore.S3.Bucket == "" {
 			missingFields = append(missingFields, "s3-bucket")
-		}
-		if ctx.Config.ProverInputStore.S3.BucketKeyPrefix == "" {
-			missingFields = append(missingFields, "key-prefix")
 		}
 		if ctx.Config.ProverInputStore.S3.AWSProvider.Credentials.AccessKey == "" {
 			missingFields = append(missingFields, "access-key")
@@ -201,7 +199,12 @@ func validateS3Config(ctx *ProverInputContext) error {
 		if ctx.Config.ProverInputStore.S3.AWSProvider.Region == "" {
 			missingFields = append(missingFields, "region")
 		}
-		return fmt.Errorf("%s must be specified when using s3 storage", missingFields)
+
+		// If any required field is missing, return an error
+		if len(missingFields) > 0 {
+			return fmt.Errorf("%s must be specified when using s3 storage", missingFields)
+		}
 	}
+
 	return nil
 }
