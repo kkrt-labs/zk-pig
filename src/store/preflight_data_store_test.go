@@ -9,7 +9,7 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/kkrt-labs/go-utils/ethereum/rpc"
 	filestore "github.com/kkrt-labs/go-utils/store/file"
-	input "github.com/kkrt-labs/zk-pig/src/prover-input"
+	"github.com/kkrt-labs/zk-pig/src/generator"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -30,7 +30,7 @@ func TestPreflightDataStore(t *testing.T) {
 			preflightDataStore, _ := setupPreflightDataTestStore(t)
 
 			// Test PreflightData
-			preflightData := &input.PreflightData{
+			preflightData := &generator.PreflightData{
 				ChainConfig: &params.ChainConfig{
 					ChainID: big.NewInt(1),
 				},

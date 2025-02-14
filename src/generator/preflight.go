@@ -6,6 +6,7 @@ import (
 	"math/big"
 
 	gethcommon "github.com/ethereum/go-ethereum/common"
+	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	gethstate "github.com/ethereum/go-ethereum/core/state"
@@ -22,16 +23,27 @@ import (
 	"github.com/kkrt-labs/zk-pig/src/ethereum/evm"
 	"github.com/kkrt-labs/zk-pig/src/ethereum/state"
 	"github.com/kkrt-labs/zk-pig/src/ethereum/trie"
-	input "github.com/kkrt-labs/zk-pig/src/prover-input"
 	"go.uber.org/zap"
 )
+
+// PreflightData contains data expected by an EVM prover engine to execute & prove the block.
+// It contains the partial state & chain data necessary for processing the block and validating the final state.
+// The format is convenient but sub-optimal as it contains duplicated data, it is an intermediate object necessary to generate the final ProverInput.
+type PreflightData struct {
+	Block           *ethrpc.Block        `json:"block"`           // Block to execute
+	Ancestors       []*gethtypes.Header  `json:"ancestors"`       // Ancestors of the block that are accessed during the block execution
+	ChainConfig     *params.ChainConfig  `json:"chainConfig"`     // Chain configuration
+	Codes           []hexutil.Bytes      `json:"codes"`           // Contract bytecodes used during the block execution
+	PreStateProofs  []*trie.AccountProof `json:"preStateProofs"`  // Proofs of every accessed account and storage slot accessed during the block processing
+	PostStateProofs []*trie.AccountProof `json:"postStateProofs"` // Proofs of every account and storage slot deleted during the block processing
+}
 
 // Preflight is the interface for the preflight block execution which consists of processing an EVM block without final state validation.
 // It enables to collect necessary data for necessary for later full "block processing + final state validation".
 // It outputs intermediary data that will be later used to prepare necessary pre-state data for the full block execution.
 type Preflight interface {
 	// Preflight executes a preflight block execution and returns the intermediate PreflightExecInputs data.
-	Preflight(ctx context.Context, blockNumber *big.Int) (*input.PreflightData, error)
+	Preflight(ctx context.Context, blockNumber *big.Int) (*PreflightData, error)
 }
 
 // preflight is the implementation of the Preflight interface using an RPC remote to fetch the state datas.
@@ -47,7 +59,7 @@ func NewPreflight(remote ethrpc.Client) Preflight {
 }
 
 // Preflight executes a preflight block execution, that collect and returns the intermediary preflight data input.
-func (pf *preflight) Preflight(ctx context.Context, blockNumber *big.Int) (*input.PreflightData, error) {
+func (pf *preflight) Preflight(ctx context.Context, blockNumber *big.Int) (*PreflightData, error) {
 	ctx = tag.WithComponent(ctx, "preflight")
 	chainCfg, block, err := pf.init(ctx, blockNumber)
 	if err != nil {
@@ -102,7 +114,7 @@ type preflightContext struct {
 	parentHeader *gethtypes.Header
 }
 
-func (pf *preflight) preflight(ctx context.Context, chainCfg *params.ChainConfig, block *gethtypes.Block) (*input.PreflightData, error) {
+func (pf *preflight) preflight(ctx context.Context, chainCfg *params.ChainConfig, block *gethtypes.Block) (*PreflightData, error) {
 	log.LoggerFromContext(ctx).Info("Process preflight...")
 
 	genCtx, err := pf.prepareContext(ctx, chainCfg)
@@ -128,7 +140,7 @@ func (pf *preflight) preflight(ctx context.Context, chainCfg *params.ChainConfig
 		return nil, err
 	}
 
-	data := &input.PreflightData{
+	data := &PreflightData{
 		ChainConfig:     chainCfg,
 		Block:           new(ethrpc.Block).FromBlock(block, chainCfg),
 		PreStateProofs:  preStateProofs,

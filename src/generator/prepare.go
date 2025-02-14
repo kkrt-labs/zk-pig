@@ -25,7 +25,7 @@ import (
 // It bases on the preflight data collected during preflight to prepare the final prover inputs
 type Preparer interface {
 	// Prepare prepares the ProvableBlockInputs data for the EVM prover engine.
-	Prepare(ctx context.Context, inputs *input.PreflightData) (*input.ProverInput, error)
+	Prepare(ctx context.Context, inputs *PreflightData) (*input.ProverInput, error)
 }
 
 type preparer struct{}
@@ -36,7 +36,7 @@ func NewPreparer() Preparer {
 }
 
 // Prepare prepares the ProvableBlockInputs data for the EVM prover engine.
-func (p *preparer) Prepare(ctx context.Context, data *input.PreflightData) (*input.ProverInput, error) {
+func (p *preparer) Prepare(ctx context.Context, data *PreflightData) (*input.ProverInput, error) {
 	ctx = tag.WithComponent(ctx, "prepare")
 	ctx = tag.WithTags(
 		ctx,
@@ -62,7 +62,7 @@ type preparerContext struct {
 	hc       *core.HeaderChain
 }
 
-func (p *preparer) prepare(ctx context.Context, inputs *input.PreflightData) (*input.ProverInput, error) {
+func (p *preparer) prepare(ctx context.Context, inputs *PreflightData) (*input.ProverInput, error) {
 	log.LoggerFromContext(ctx).Info("Process provable inputs preparation...")
 
 	valCtx, err := p.prepareContext(ctx, inputs)
@@ -86,7 +86,7 @@ func (p *preparer) prepare(ctx context.Context, inputs *input.PreflightData) (*i
 	return p.prepareProverInput(valCtx, execParams), nil
 }
 
-func (p *preparer) prepareContext(ctx context.Context, inputs *input.PreflightData) (*preparerContext, error) {
+func (p *preparer) prepareContext(ctx context.Context, inputs *PreflightData) (*preparerContext, error) {
 	log.LoggerFromContext(ctx).Debug("Prepare context...")
 
 	// --- Create necessary database and chain instances ---
@@ -108,7 +108,7 @@ func (p *preparer) prepareContext(ctx context.Context, inputs *input.PreflightDa
 	}, nil
 }
 
-func (p *preparer) preparePreState(ctx *preparerContext, inputs *input.PreflightData) error {
+func (p *preparer) preparePreState(ctx *preparerContext, inputs *PreflightData) error {
 	log.LoggerFromContext(ctx.ctx).Info("Prepare pre-state...")
 
 	// -- Preload the ancestors of the block into database ---
@@ -138,7 +138,7 @@ func (p *preparer) preparePreState(ctx *preparerContext, inputs *input.Preflight
 	return nil
 }
 
-func (p *preparer) prepareExecParams(ctx *preparerContext, inputs *input.PreflightData) (*evm.ExecParams, error) {
+func (p *preparer) prepareExecParams(ctx *preparerContext, inputs *PreflightData) (*evm.ExecParams, error) {
 	log.LoggerFromContext(ctx.ctx).Debug("Prepare execution parameters...")
 
 	parentHeader := inputs.Ancestors[0]

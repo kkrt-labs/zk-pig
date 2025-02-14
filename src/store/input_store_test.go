@@ -6,9 +6,8 @@ import (
 	"testing"
 
 	gethcommon "github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-	"github.com/kkrt-labs/go-utils/ethereum/rpc"
 	storeinputs "github.com/kkrt-labs/go-utils/store"
 	compressstore "github.com/kkrt-labs/go-utils/store/compress"
 	filestore "github.com/kkrt-labs/go-utils/store/file"
@@ -99,12 +98,14 @@ func TestProverInputStore(t *testing.T) {
 				ChainConfig: &params.ChainConfig{
 					ChainID: big.NewInt(2),
 				},
-				Block: &rpc.Block{
-					Header: rpc.Header{
-						Number:          (*hexutil.Big)(hexutil.MustDecodeBig("0xf")),
-						Difficulty:      (*hexutil.Big)(hexutil.MustDecodeBig("0xf")),
-						BaseFee:         (*hexutil.Big)(hexutil.MustDecodeBig("0xf")),
-						WithdrawalsRoot: &gethcommon.Hash{0x1},
+				Blocks: []*input.Block{
+					{
+						Header: &gethtypes.Header{
+							Number:          big.NewInt(15),
+							Difficulty:      big.NewInt(15),
+							BaseFee:         big.NewInt(15),
+							WithdrawalsHash: &gethcommon.Hash{0x1},
+						},
 					},
 				},
 			}

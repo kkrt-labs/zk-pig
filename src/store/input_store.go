@@ -68,7 +68,7 @@ func (s *proverInputStore) StoreProverInput(ctx context.Context, data *input.Pro
 		return fmt.Errorf("unsupported content type: %s", contentType)
 	}
 
-	path := s.proverPath(data.Block.Number.ToInt().Uint64())
+	path := s.proverPath(data.Blocks[0].Header.Number.Uint64())
 	headers := store.Headers{
 		ContentType: s.contentType,
 		KeyValue:    map[string]string{"chainID": fmt.Sprintf("%d", data.ChainConfig.ChainID.Uint64())},

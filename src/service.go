@@ -14,7 +14,6 @@ import (
 	compressstore "github.com/kkrt-labs/go-utils/store/compress"
 	"github.com/kkrt-labs/go-utils/svc"
 	"github.com/kkrt-labs/zk-pig/src/generator"
-	input "github.com/kkrt-labs/zk-pig/src/prover-input"
 	inputstore "github.com/kkrt-labs/zk-pig/src/store"
 )
 
@@ -139,7 +138,7 @@ func (s *Service) Preflight(ctx context.Context, blockNumber *big.Int) error {
 	return err
 }
 
-func (s *Service) preflight(ctx context.Context, blockNumber *big.Int) (*input.PreflightData, error) {
+func (s *Service) preflight(ctx context.Context, blockNumber *big.Int) (*generator.PreflightData, error) {
 	data, err := generator.NewPreflight(s.ethrpc).Preflight(ctx, blockNumber)
 	if err != nil {
 		return nil, fmt.Errorf("failed to execute preflight: %v", err)

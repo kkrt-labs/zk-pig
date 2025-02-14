@@ -11,8 +11,8 @@ import (
 
 // ExpectedData represents the structure of the JSON file
 type TestDataInputs struct {
-	PreflightData input.PreflightData `json:"preflightData"`
-	ProverInput   input.ProverInput   `json:"proverInput"`
+	PreflightData PreflightData     `json:"preflightData"`
+	ProverInput   input.ProverInput `json:"proverInput"`
 }
 
 func loadTestDataInputs(t *testing.T, path string) *TestDataInputs {
