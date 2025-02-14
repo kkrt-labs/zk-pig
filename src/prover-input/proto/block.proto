@@ -1,0 +1,45 @@
+syntax = "proto3";
+
+package input;
+
+option go_package = "github.com/kkrt-labs/zk-pig/src/prover-input/proto";
+
+import "src/prover-input/proto/transaction.proto";
+
+message Block {
+  Header header = 1;
+  repeated Transaction transactions = 2;
+  repeated Header uncles = 3;
+  repeated Withdrawal withdrawals = 4;
+}
+
+message Header {
+  bytes parent_hash = 1;
+  bytes sha3_uncles = 2;
+  bytes miner = 3;
+  bytes root = 4;
+  bytes transactions_root = 5;  
+  bytes receipts_root = 6;
+  bytes logs_bloom = 7;
+  bytes difficulty = 8;
+  bytes number = 9;
+  uint64 gas_limit = 10;
+  uint64 gas_used = 11;
+  uint64 timestamp = 12;
+  bytes extra_data = 13;
+  bytes mix_hash = 14;
+  uint64 nonce = 15;
+  optional bytes base_fee_per_gas = 16;
+  optional bytes withdrawals_root = 17;
+  optional uint64 blob_gas_used = 18;
+  optional uint64 excess_blob_gas = 19;
+  optional bytes parent_beacon_root = 20;
+  optional bytes requests_root = 21;
+}
+
+message Withdrawal {
+  uint64 index = 1;
+  uint64 validator_index = 2;
+  bytes address = 3;
+  uint64 amount = 4;
+}

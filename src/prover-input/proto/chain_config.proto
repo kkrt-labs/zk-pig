@@ -1,0 +1,38 @@
+syntax = "proto3";
+
+package input;
+
+option go_package = "github.com/kkrt-labs/zk-pig/src/prover-input/proto";
+
+message ChainConfig {
+  bytes chain_id = 1;
+  optional bytes homestead_block = 2;
+  optional bytes dao_fork_block = 3;
+  optional bool dao_fork_support = 4;
+  optional bytes eip150_block = 5;
+  optional bytes eip155_block = 6;
+  optional bytes eip158_block = 7;
+  optional bytes byzantium_block = 8;
+  optional bytes constantinople_block = 9;
+  optional bytes petersburg_block = 10;
+  optional bytes istanbul_block = 11;
+  optional bytes muir_glacier_block = 12;
+  optional bytes berlin_block = 13;
+  optional bytes london_block = 14;
+  optional bytes arrow_glacier_block = 15;
+  optional bytes gray_glacier_block = 16;
+  optional bytes merge_netsplit_block = 17;
+  optional uint64 shanghai_time = 18;
+  optional uint64 cancun_time = 19;
+  optional uint64 prague_time = 20;
+  optional uint64 verkle_time = 21;
+  optional bytes terminal_total_difficulty = 22;
+  optional bytes deposit_contract_address = 23;
+  optional bytes ethash = 24;
+  optional CliqueConfig clique = 25;
+}
+
+message CliqueConfig {
+  uint64 period = 1;
+  uint64 epoch = 2;
+}

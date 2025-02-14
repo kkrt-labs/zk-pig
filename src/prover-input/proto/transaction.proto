@@ -1,0 +1,88 @@
+syntax = "proto3";
+
+package input;
+
+option go_package = "github.com/kkrt-labs/zk-pig/src/prover-input/proto";
+
+message Transaction {
+  oneof transaction_type {
+    LegacyTransaction legacy_transaction = 1;
+    AccessListTransaction access_list_transaction = 2;
+    DynamicFeeTransaction dynamic_fee_transaction = 3;
+    BlobTransaction blob_transaction = 4;
+  }
+}
+
+message LegacyTransaction {
+  uint64 nonce = 1;
+  bytes gas_price = 2;
+  uint64 gas = 3;
+  bytes to = 4;
+  bytes value = 5;
+  bytes data = 6;
+  bytes v = 7;
+  bytes r = 8;
+  bytes s = 9;
+}
+
+message AccessListTransaction {
+  bytes chain_id = 1;
+  uint64 nonce = 2;
+  bytes gas_price = 3;
+  uint64 gas = 4;
+  bytes to = 5;
+  bytes value = 6;
+  bytes data = 7;
+  repeated AccessTuple access_list = 8;
+  bytes v = 9;
+  bytes r = 10;
+  bytes s = 11;
+}
+
+message DynamicFeeTransaction {
+  bytes chain_id = 1;
+  uint64 nonce = 2;
+  bytes gas_tip_cap = 3;
+  bytes gas_fee_cap = 4;
+  uint64 gas = 5;
+  bytes to = 6;
+  bytes value = 7;
+  bytes data = 8;
+  repeated AccessTuple access_list = 9;
+  bytes v = 10;
+  bytes r = 11;
+  bytes s = 12;
+}
+
+message BlobTransaction {
+  bytes chain_id = 1;
+  uint64 nonce = 2;
+  bytes gas_tip_cap = 3;
+  bytes gas_fee_cap = 4;
+  uint64 gas = 5;
+  bytes to = 6;
+  bytes value = 7;
+  bytes data = 8;
+  repeated AccessTuple access_list = 9; 
+  bytes blob_fee_cap = 10;
+  repeated bytes blob_hashes = 11;
+  BlobTxSidecar sidecar = 12;
+  bytes v = 13;
+  bytes r = 14;
+  bytes s = 15;
+}
+
+message BlobTxSidecar {
+  repeated bytes blobs = 1;
+  repeated bytes commitments = 2;
+  repeated bytes proofs = 3;
+}
+
+message AccessTuple {
+  bytes address = 1;
+  repeated bytes storage_keys = 2;
+}
+
+message AccessList {
+  repeated bytes storage_slots = 1;
+}

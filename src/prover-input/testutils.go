@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"sort"
 
-	gethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
@@ -22,52 +21,28 @@ func NormalizeProverInput(input *ProverInput) *ProverInput {
 
 	normalized := &ProverInput{
 		ChainConfig: input.ChainConfig, // Assuming this is comparable as-is
-		Block:       input.Block,       // Assuming this is comparable as-is
-		Ancestors:   input.Ancestors,   // Assuming this is ordered by block number already
+		Blocks:      input.Blocks,      // Assuming this is comparable as-is
+		Witness: &Witness{
+			Ancestors: input.Witness.Ancestors,
+		}, // Assuming this is ordered by block number already
 	}
 
-	// Normalize Codes ([][]byte)
-	if len(input.Codes) > 0 {
-		normalized.Codes = make([]hexutil.Bytes, len(input.Codes))
-		copy(normalized.Codes, input.Codes)
-		sort.Slice(normalized.Codes, func(i, j int) bool {
-			return bytes.Compare(normalized.Codes[i], normalized.Codes[j]) < 0
+	// Normalize Witness Codes ([][]byte)
+	if len(input.Witness.Codes) > 0 {
+		normalized.Witness.Codes = make([]hexutil.Bytes, len(input.Witness.Codes))
+		copy(normalized.Witness.Codes, input.Witness.Codes)
+		sort.Slice(normalized.Witness.Codes, func(i, j int) bool {
+			return bytes.Compare(normalized.Witness.Codes[i], normalized.Witness.Codes[j]) < 0
 		})
 	}
 
-	// Normalize PreState ([]string)
-	if len(input.PreState) > 0 {
-		normalized.PreState = make([]hexutil.Bytes, len(input.PreState))
-		copy(normalized.PreState, input.PreState)
-		sort.Slice(normalized.PreState, func(i, j int) bool {
-			return bytes.Compare(normalized.PreState[i], normalized.PreState[j]) < 0
+	// Normalize Witness State ([]string)
+	if len(input.Witness.State) > 0 {
+		normalized.Witness.State = make([]hexutil.Bytes, len(input.Witness.State))
+		copy(normalized.Witness.State, input.Witness.State)
+		sort.Slice(normalized.Witness.State, func(i, j int) bool {
+			return bytes.Compare(normalized.Witness.State[i], normalized.Witness.State[j]) < 0
 		})
-	}
-
-	// Normalize AccessList (map[gethcommon.Address][]string)
-	if len(input.AccessList) > 0 {
-		normalized.AccessList = make(map[gethcommon.Address][]hexutil.Bytes)
-
-		// Get sorted addresses
-		addresses := make([]gethcommon.Address, 0, len(input.AccessList))
-		for addr := range input.AccessList {
-			addresses = append(addresses, addr)
-		}
-		sort.Slice(addresses, func(i, j int) bool {
-			return bytes.Compare(addresses[i].Bytes(), addresses[j].Bytes()) < 0
-		})
-
-		// Build normalized access list with sorted storage slots
-		for _, addr := range addresses {
-			if slots, ok := input.AccessList[addr]; ok {
-				normalizedSlots := make([]hexutil.Bytes, len(slots))
-				copy(normalizedSlots, slots)
-				sort.Slice(normalizedSlots, func(i, j int) bool {
-					return bytes.Compare(normalizedSlots[i], normalizedSlots[j]) < 0
-				})
-				normalized.AccessList[addr] = normalizedSlots
-			}
-		}
 	}
 
 	return normalized
