@@ -48,13 +48,6 @@ func bigIntToBytes(b *big.Int) []byte {
 	return nil
 }
 
-func bigIntToUint64(b *big.Int) uint64 {
-	if b != nil {
-		return b.Uint64()
-	}
-	return 0
-}
-
 func bytesToHexutil(b [][]byte) []hexutil.Bytes {
 	if b == nil {
 		return nil

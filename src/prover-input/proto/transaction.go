@@ -204,7 +204,7 @@ func BlobSidecarToProto(sidecar *gethtypes.BlobTxSidecar) *BlobTxSidecar {
 	}
 
 	sidecarProto := new(BlobTxSidecar)
-	for _, blob := range sidecar.Blobs {
+	for _, blob := range sidecar.Blobs { //nolint:gocritic // TODO: each iteration copies 131072 bytes (consider pointers or indexing)
 		sidecarProto.Blobs = append(sidecarProto.Blobs, blob[:])
 	}
 	for _, commitment := range sidecar.Commitments {
