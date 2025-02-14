@@ -4,15 +4,12 @@ import (
 	"context"
 	"fmt"
 
-	gethcommon "github.com/ethereum/go-ethereum/common"
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	gethstate "github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/triedb"
 	"github.com/ethereum/go-ethereum/triedb/hashdb"
-	ethrpc "github.com/kkrt-labs/go-utils/ethereum/rpc"
 	"github.com/kkrt-labs/go-utils/log"
 	"github.com/kkrt-labs/go-utils/tag"
 	"github.com/kkrt-labs/zk-pig/src/ethereum"
@@ -171,33 +168,31 @@ func (p *preparer) execute(ctx *preparerContext, execParams *evm.ExecParams) err
 	return nil
 }
 
-func (p *preparer) prepareProverInput(ctx *preparerContext, execParams *evm.ExecParams) *input.ProverInput {
-	ProverInput := &input.ProverInput{
+func (p *preparer) prepareProverInput(_ *preparerContext, execParams *evm.ExecParams) *input.ProverInput {
+	proverInput := &input.ProverInput{
 		ChainConfig: execParams.Chain.Config(),
-		Block:       new(ethrpc.Block).FromBlock(execParams.Block, execParams.Chain.Config()),
-		Ancestors:   execParams.State.Witness().Headers,
+		Blocks: []*input.Block{
+			{
+				Header:       execParams.Block.Header(),
+				Transactions: execParams.Block.Transactions(),
+				Uncles:       execParams.Block.Uncles(),
+				Withdrawals:  execParams.Block.Withdrawals(),
+			},
+		},
+		Witness: &input.Witness{
+			Ancestors: execParams.State.Witness().Headers,
+		},
 	}
 
 	witness := execParams.State.Witness()
 	for code := range witness.Codes {
-		ProverInput.Codes = append(ProverInput.Codes, []byte(code))
+		proverInput.Witness.Codes = append(proverInput.Witness.Codes, []byte(code))
 	}
 
 	for node := range witness.State {
 		blob := []byte(node)
-		ProverInput.PreState = append(ProverInput.PreState, blob)
+		proverInput.Witness.State = append(proverInput.Witness.State, blob)
 	}
 
-	ProverInput.AccessList = make(map[gethcommon.Address][]hexutil.Bytes)
-	tracker := ctx.trackers.GetAccessTracker(ProverInput.Ancestors[0].Root)
-	for account := range tracker.Accounts {
-		if storage, ok := tracker.Storage[account]; ok {
-			ProverInput.AccessList[account] = []hexutil.Bytes{}
-			for slot := range storage {
-				ProverInput.AccessList[account] = append(ProverInput.AccessList[account], slot.Bytes())
-			}
-		}
-	}
-
-	return ProverInput
+	return proverInput
 }

@@ -35,12 +35,18 @@ func NewExecutor() Executor {
 
 // Execute runs the ProvableBlockInputs data for the EVM prover engine.
 func (e *executor) Execute(ctx context.Context, inputs *input.ProverInput) (*core.ProcessResult, error) {
+	if len(inputs.Blocks) == 0 {
+		return nil, fmt.Errorf("no blocks provided")
+	}
+
+	block := inputs.Blocks[0]
+
 	ctx = tag.WithComponent(ctx, "execute")
 	ctx = tag.WithTags(
 		ctx,
 		tag.Key("chain.id").String(inputs.ChainConfig.ChainID.String()),
-		tag.Key("block.number").Int64(inputs.Block.Number.ToInt().Int64()),
-		tag.Key("block.hash").String(inputs.Block.Hash.Hex()),
+		tag.Key("block.number").Int64(block.Header.Number.Int64()),
+		tag.Key("block.hash").String(block.Header.Hash().Hex()),
 	)
 
 	res, err := e.execute(ctx, inputs)
@@ -102,27 +108,40 @@ func (e *executor) preparePreState(ctx *executorContext, inputs *input.ProverInp
 	log.LoggerFromContext(ctx.ctx).Info("Prepare pre-state...")
 
 	// -- Preload the ancestors of the block into database ---
-	ethereum.WriteHeaders(ctx.stateDB.TrieDB().Disk(), inputs.Ancestors...)
+	ethereum.WriteHeaders(ctx.stateDB.TrieDB().Disk(), inputs.Witness.Ancestors...)
 
 	// --- Preload the account bytecodes into the database ---
 	codes := make([][]byte, 0)
-	for _, code := range inputs.Codes {
+	for _, code := range inputs.Witness.Codes {
 		codes = append(codes, code)
 	}
 	ethereum.WriteCodes(ctx.stateDB.TrieDB().Disk(), codes...)
 
 	// -- Preload the pre-state nodes to database ---
 	nodes := make([][]byte, 0)
-	for _, node := range inputs.PreState {
+	for _, node := range inputs.Witness.State {
 		nodes = append(nodes, node)
 	}
 	ethereum.WriteNodesToHashDB(ctx.stateDB.TrieDB().Disk(), nodes...)
 }
 
 func (e *executor) prepareExecParams(ctx *executorContext, inputs *input.ProverInput) (*evm.ExecParams, error) {
+	if len(inputs.Blocks) == 0 {
+		return nil, fmt.Errorf("no blocks provided")
+	}
+
 	log.LoggerFromContext(ctx.ctx).Debug("Prepare execution parameters...")
 
-	parentHeader := inputs.Ancestors[0]
+	if len(inputs.Witness.Ancestors) == 0 {
+		return nil, fmt.Errorf("no ancestors provided")
+	}
+
+	parentHeader := inputs.Witness.Ancestors[0]
+
+	if parentHeader == nil || parentHeader.Hash() == inputs.Blocks[0].Header.Hash() {
+		return nil, fmt.Errorf("first ancestor must be the parent of the first block")
+	}
+
 	preState, err := gethstate.New(parentHeader.Root, ctx.stateDB)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create pre-state from parent root %v: %v", parentHeader.Root, err)
@@ -132,7 +151,7 @@ func (e *executor) prepareExecParams(ctx *executorContext, inputs *input.ProverI
 		VMConfig: &vm.Config{
 			StatelessSelfValidation: true,
 		},
-		Block:    inputs.Block.Block(),
+		Block:    inputs.Blocks[0].Block(),
 		Validate: true, // We validate the block execution to ensure the result and final state are correct
 		Chain:    ctx.hc,
 		State:    preState,
