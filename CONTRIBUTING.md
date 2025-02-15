@@ -100,7 +100,7 @@ This ensures consistency and enables automated tooling.
 4. Ensure your Pull Request passes all CI checks. If it fails, make the necessary updates to resolve any issues.
 5. Request reviews from relevant team members.
 6. Address feedback and iterate on your changes as needed. And repeat the review process until your Pull Request is approved.
-8. Merge yout Pull Request following to the [merging strategy](#merging-strategy)
+8. Merge your Pull Request following to the [merging strategy](#merging-strategy)
 
 #### Merging Strategy
 
