@@ -10,7 +10,7 @@ import (
 	"github.com/ethereum/go-ethereum/trie/trienode"
 )
 
-// AccountProof holds proofs for an Ethereum account and optionnaly its storage
+// AccountProof holds proofs for an Ethereum account and optionally its storage
 type AccountProof struct {
 	Address     gethcommon.Address `json:"address"`
 	Proof       []string           `json:"accountProof"`
