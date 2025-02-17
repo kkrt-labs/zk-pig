@@ -16,7 +16,7 @@ The **Kakarot Controller** is a monorepo housing all the services necessary for 
 
 ## Installation
 
-### Homebrew
+### Homebrew (macOS & Linux)
 
 `zkpig` is distributed with Homebrew.
 
@@ -37,6 +37,30 @@ To test the installation, run:
 ```sh
 zkpig version
 ```
+
+### Build from Source
+
+To build ZK-PIG from source, you'll need:
+- Go 1.21 or later
+- Git
+- Make
+
+1. Clone the repository:
+
+```sh
+git clone https://github.com/kkrt-labs/zk-pig.git
+cd zk-pig
+```
+
+2. Build the binaries:
+
+```sh
+make goreleaser-snapshot
+```
+
+This will generate binaries for all architectures under the `/dist` directory.
+
+3. Verify the installation by running the appropriate binary for your architecture from the `/dist` directory.
 
 ## Architecture
 
