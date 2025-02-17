@@ -7,7 +7,6 @@ import (
 
 	"github.com/kkrt-labs/go-utils/ethereum/rpc/jsonrpc"
 	"github.com/kkrt-labs/zk-pig/src"
-	"github.com/kkrt-labs/zk-pig/src/config"
 	"github.com/spf13/cobra"
 )
 
@@ -36,8 +35,6 @@ func NewGenerateCommand(rootCtx *RootContext) *cobra.Command {
 			return ctx.svc.Stop(cmd.Context())
 		},
 	}
-
-	config.AddProverInputFlags(ctx.Viper, cmd.Flags())
 
 	cmd.Flags().StringVarP(&blockNumber, "block-number", "b", "latest", "Block number")
 

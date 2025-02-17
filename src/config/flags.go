@@ -126,10 +126,3 @@ func AddStoreFlags(v *viper.Viper, f *pflag.FlagSet) {
 	contentTypeFlag.Add(v, f)
 	contentEncodingFlag.Add(v, f)
 }
-
-func AddProverInputFlags(v *viper.Viper, f *pflag.FlagSet) {
-	AddChainFlags(v, f)
-	AddAWSFlags(v, f)
-	AddChainFlags(v, f)
-	AddStoreFlags(v, f)
-}
