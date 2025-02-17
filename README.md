@@ -16,8 +16,6 @@ The **Kakarot Controller** is a monorepo housing all the services necessary for 
 
 ## Installation
 
-You can install ZK-PIG in several ways:
-
 ### Homebrew (macOS & Linux)
 
 `zkpig` is distributed with Homebrew.
@@ -54,67 +52,15 @@ git clone https://github.com/kkrt-labs/zk-pig.git
 cd zk-pig
 ```
 
-2. Build the binary:
+2. Build the binaries:
 
 ```sh
-make build
+make goreleaser-snapshot
 ```
 
-3. The binary will be available in the `bin` directory. You can either:
+This will generate binaries for all architectures under the `/dist` directory.
 
-   a. Add it to your PATH temporarily:
-   ```sh
-   export PATH=$PATH:$(pwd)/bin
-   ```
-
-   b. Or move it to a standard location:
-   ```sh
-   sudo mv bin/zkpig /usr/local/bin/
-   ```
-
-4. Verify the installation:
-
-```sh
-zkpig version
-```
-
-Troubleshooting:
-- If you get permission errors during installation, ensure you have write permissions to the destination directory
-- If `make build` fails, ensure you have the correct Go version installed: `go version`
-- If the command isn't found after installation, ensure the binary location is in your PATH: `echo $PATH`
-
-### Docker
-
-You can run ZK-PIG using Docker:
-
-1. Pull the latest image:
-
-```sh
-docker pull kkrtlabs/zkpig:latest
-```
-
-2. Verify the installation:
-
-```sh
-docker run kkrtlabs/zkpig:latest version
-```
-
-3. Run ZK-PIG:
-
-```sh
-docker run -v $(pwd)/data:/data \
-  -e CHAIN_RPC_URL=<your-rpc-url> \
-  kkrtlabs/zkpig:latest generate --block-number <block-number>
-```
-
-Docker-specific options:
-- `-v $(pwd)/data:/data`: Mounts your local `data` directory to store the generated prover inputs
-- `-e CHAIN_RPC_URL`: Sets the RPC URL environment variable
-- You can also mount a custom config file using `-v /path/to/config.yaml:/config.yaml`
-
-Troubleshooting:
-- If you encounter permission issues with the mounted volume, ensure your user has the correct permissions
-- For networking issues, verify your Docker network settings and ensure the RPC URL is accessible from within the container
+3. Verify the installation by running the appropriate binary for your architecture from the `/dist` directory.
 
 ## Architecture
 
