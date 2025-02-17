@@ -66,29 +66,29 @@ func testNodeSetFromStateProofs(t *testing.T, stateRoot gethcommon.Hash) {
 	require.NoError(t, err)
 
 	// Verifies that the state has been properly set
-	for i, acccountProof := range stateProofs {
-		t.Run(fmt.Sprintf("#%v:%v", i, acccountProof.Address.Hex()), func(t *testing.T) { testStoredAccount(t, trieDB, stateTrie, stateRoot, acccountProof) })
+	for i, accountProof := range stateProofs {
+		t.Run(fmt.Sprintf("#%v:%v", i, accountProof.Address.Hex()), func(t *testing.T) { testStoredAccount(t, trieDB, stateTrie, stateRoot, accountProof) })
 	}
 }
 
-func testStoredAccount(t *testing.T, trieDB *triedb.Database, stateTrie gethstate.Trie, stateRoot gethcommon.Hash, acccountProof *AccountProof) {
-	storedAccount, err := stateTrie.GetAccount(acccountProof.Address)
+func testStoredAccount(t *testing.T, trieDB *triedb.Database, stateTrie gethstate.Trie, stateRoot gethcommon.Hash, accountProof *AccountProof) {
+	storedAccount, err := stateTrie.GetAccount(accountProof.Address)
 	require.NoError(t, err)
 
-	if acccountProof.Nonce != 0 {
-		assert.Equal(t, acccountProof.Balance.ToInt().String(), storedAccount.Balance.String(), "Balance mismatch")
-		assert.Equal(t, acccountProof.CodeHash, gethcommon.Hash(storedAccount.CodeHash), "CodeHash mismatch")
-		assert.Equal(t, acccountProof.Nonce, storedAccount.Nonce, "Nonce mismatch")
-		assert.Equal(t, acccountProof.StorageHash.Hex(), storedAccount.Root.Hex(), "Root mismatch")
+	if accountProof.Nonce != 0 {
+		assert.Equal(t, accountProof.Balance.ToInt().String(), storedAccount.Balance.String(), "Balance mismatch")
+		assert.Equal(t, accountProof.CodeHash, gethcommon.Hash(storedAccount.CodeHash), "CodeHash mismatch")
+		assert.Equal(t, accountProof.Nonce, storedAccount.Nonce, "Nonce mismatch")
+		assert.Equal(t, accountProof.StorageHash.Hex(), storedAccount.Root.Hex(), "Root mismatch")
 	}
 
-	if len(acccountProof.Storage) != 0 {
-		storageTrie, err := trie.NewStateTrie(trie.StorageTrieID(stateRoot, StorageTrieOwner(acccountProof.Address), acccountProof.StorageHash), trieDB)
+	if len(accountProof.Storage) != 0 {
+		storageTrie, err := trie.NewStateTrie(trie.StorageTrieID(stateRoot, StorageTrieOwner(accountProof.Address), accountProof.StorageHash), trieDB)
 		require.NoError(t, err)
 
 		// Verify storage
-		for _, storageProof := range acccountProof.Storage {
-			storedValue, err := storageTrie.GetStorage(acccountProof.Address, hexutil.MustDecode(storageProof.Key))
+		for _, storageProof := range accountProof.Storage {
+			storedValue, err := storageTrie.GetStorage(accountProof.Address, hexutil.MustDecode(storageProof.Key))
 			assert.NoError(t, err, "Unexpected storage error for key %v", storageProof.Key)
 			assert.Equal(t, storageProof.Value.String(), hexutil.EncodeBig(new(big.Int).SetBytes(storedValue)), "Storage value mismatch for key %v", storageProof.Key)
 		}
@@ -142,8 +142,8 @@ func testNodeSetFromStateTransitionProofs(t *testing.T, id string) {
 	require.NoError(t, err)
 
 	// Verifies that the state has been properly created
-	for i, acccountProof := range data.PreProofs {
-		t.Run(fmt.Sprintf("Creation#%v:%v", i, acccountProof.Address.Hex()), func(t *testing.T) { testStoredAccount(t, trieDB, stateTrie, data.PreRoot, acccountProof) })
+	for i, accountProof := range data.PreProofs {
+		t.Run(fmt.Sprintf("Creation#%v:%v", i, accountProof.Address.Hex()), func(t *testing.T) { testStoredAccount(t, trieDB, stateTrie, data.PreRoot, accountProof) })
 	}
 
 	// Test deletions can be performed

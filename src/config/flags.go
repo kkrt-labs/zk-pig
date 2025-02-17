@@ -80,7 +80,7 @@ func AddChainFlags(v *viper.Viper, f *pflag.FlagSet) {
 
 var (
 	awsS3BucketFlag = &spf13.StringFlag{
-		ViperKey:    "prover-input-store.s3.aws-provider.bucket",
+		ViperKey:    "prover-input-store.s3.bucket",
 		Name:        "inputs-aws-s3-bucket",
 		Env:         "INPUTS_AWS_S3_BUCKET",
 		Description: "Optional AWS S3 bucket to store prover inputs",
@@ -125,10 +125,4 @@ func AddStoreFlags(v *viper.Viper, f *pflag.FlagSet) {
 	inputsDirFlag.Add(v, f)
 	contentTypeFlag.Add(v, f)
 	contentEncodingFlag.Add(v, f)
-}
-
-func AddProverInputFlags(v *viper.Viper, f *pflag.FlagSet) {
-	AddChainFlags(v, f)
-	AddAWSFlags(v, f)
-	AddStoreFlags(v, f)
 }
