@@ -80,7 +80,7 @@ The `PreflightData` contains redundant data which is later optimized during [Pre
 
 #### Step 2: Prepare
 
-This step optimizes `PreflightData` into final `ProverInput` offline. It reduces the `Pre-State Proofs` and `Post-State Proofs` that contain redundant and unecessary data into `Pre-State` a minimal list of MPT nodes necessary for the EVM block execution. 
+This step optimizes `PreflightData` into final `ProverInput` offline. It reduces the `Pre-State Proofs` and `Post-State Proofs` that contain redundant and unnecessary data into `Pre-State` a minimal list of MPT nodes necessary for the EVM block execution. 
 
 It:
 
