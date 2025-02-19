@@ -45,7 +45,7 @@ type AccountsNodeSet struct {
 	set *trienode.NodeSet
 }
 
-// NewProvedNodeSet creates a new ProvedNodeSet
+// NewAccountNodeSet creates a new AccountsNodeSet
 // - owner of the nodeset: empty for the account trie and the owning account address hash for storage tries.
 func NewAccountNodeSet() *AccountsNodeSet {
 	return &AccountsNodeSet{

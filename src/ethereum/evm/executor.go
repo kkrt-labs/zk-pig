@@ -121,7 +121,7 @@ func (e *executor) validateBlock(ctx context.Context, params *ExecParams, res *c
 	return nil
 }
 
-// summarizeBadBlock generates a human-readable summary of a bad block.
+// summarizeBadBlockError generates a human-readable summary of a bad block.
 func summarizeBadBlockError(chainCfg *gethparams.ChainConfig, block *types.Block, res *core.ProcessResult, err error) error {
 	var receipts types.Receipts
 	if res != nil {
