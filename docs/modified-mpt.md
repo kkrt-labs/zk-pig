@@ -107,7 +107,7 @@ This modified MPT is used during both [Prepare](prover-input-generation.md#step-
 
 To further address this issue, we use a supplemental technique during the [Prepare](prover-input-generation.md#step-2-prepare) phase. 
 
-For every deletion resulting in a branch node reduction, we pre-inject some hypothetized short-nodes into the pre-state, ensuring that if the remaining child is a short-node, then it resolve's to one of the pre-injected hypothetized short nodes. Consequently, ensuring that, during branch node reduction, the remaining child node resolution will succeed.
+For every deletion resulting in a branch node reduction, we pre-inject some hypothetized short-nodes into the pre-state, ensuring that if the remaining child is a short-node, then it resolves to one of the pre-injected hypothetized short nodes. Consequently, ensuring that, during branch node reduction, the remaining child node resolution will succeed.
 
 To compute the hypothetized short-nodes, we base on the post-state proof for every deleted MPT path. Indeed, in case of a deletion, the post-state proof is actually an exclusion proof, in which the last proof's element is an MPT node proving that there is no value at the given path. If this last proof's item is a short-node, this means that the deletion triggered a branch node reduction, and it is possible to compute all the short-nodes that could have potentially reduced into the last proof's element (see [below](#pre-state-preparation-workflow)).
 
@@ -133,7 +133,7 @@ This ensures that all short nodes that could potentially reduce into `n'_q` have
 
 As a result, during prepare the following scenarios can occur, when reducing a branch node and resolving the remaining child node
 - child is found, which means that the remaining child node is a short node and it has been pre-injected during [pre-state preparation](#supplemental-technique-pre-injected-short-nodes-from-post-state-in-pre-state) then the branch node is reduced as per standard implementation.
-- child is not found, then the [Modified MPT implementation](#modified-mpt-implementation) reduces branch node in a one-nibble short-node. This is exactly what the standard MPT implementation would have done with full-state access, indeed if the remaining child is not found, it implies that it is not a short-node (or it would have been pre-injected and found), thus the standard implementation would reduce the branch node into in a one-nibbe short-node.
+- child is not found, then the [Modified MPT implementation](#modified-mpt-implementation) reduces branch node in a one-nibble short-node. This is exactly what the standard MPT implementation would have done with full-state access, indeed if the remaining child is not found, it implies that it is not a short-node (or it would have been pre-injected and found), thus the standard implementation would reduce the branch node into in a one-nibble short-node.
 
 So in both scenarios, the behavior is the same as a standard Ethereum MPT implementation with full-state access.
 
