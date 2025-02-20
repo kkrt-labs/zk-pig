@@ -20,13 +20,13 @@ ZK proving engines operate in isolated & stateless environments without a direct
   - **Ancestors**: At minimum, the parent header, and optionally all block headers up to the oldest ancestor block accessed during execution (maximum 256 entries).
   - **Codes**: Bytecode of all smart contracts called during execution.
   - **PreState**: The partial pre-state accessed during execution, represented as a list of RLP-encoded MPT nodes (both account storage and all storage tries in the same list).
-- **AccessList**: A mapping of accessed state entries (accounts and storage) during block execution. While this data is actually redundant, it currently facilitate some ZK EVM prover engines by enabling to perform some pre-state validations before executing the block. On the long run we may re-assess if this is absolutely needed.
+- **AccessList**: A mapping of accessed state entries (accounts and storage) during block execution. While this data is actually redundant, it currently facilitates some ZK EVM prover engines by enabling to perform some pre-state validations before executing the block. On the long run we may re-assess if this is absolutely needed.
 
 ## Generation of Prover Inputs
 
 ### Approach Overview
 
-The current approach consists in collecting Prover Inputs data from a remote Ethereum-compatible JSON-RPC node (full node for recent blocks or archive node for older blocks). This method ensures compatibility across chains exposing Ethereum compatible JSON-RPC API and is relatively lightweight to maintain. Although it incurs performance overhead due to multiple API calls, it offers an acceptable trade-off given current proving times.
+The current approach consists of collecting Prover Inputs data from a remote Ethereum-compatible JSON-RPC node (full node for recent blocks or archive node for older blocks). This method ensures compatibility across chains exposing Ethereum compatible JSON-RPC API and is relatively lightweight to maintain. Although it incurs performance overhead due to multiple API calls, it offers an acceptable trade-off given current proving times.
 
 Alternative approaches, such as integrating prover input generation directly within a full node, offer better performance but require new implementations for each EVM chain.
 
@@ -76,7 +76,7 @@ The intermediary `PreflightData` contains:
 - **Pre-State Proofs**: The list of pre-state proofs for every accounts and storage accessed during block execution, obtained via `eth_getProof(account, accessedSlots, parent.Number)` after preflight block execution
 - **Post-State Proofs**: The list of post-state proofs for every destructed accounts and deleted storage during block execution, obtained via `eth_getProof(..., block.Number)` after preflight block execution
 
-The `PreflightData` contain redundant data which is later optimized during [Prepare](#step-2-prepare).
+The `PreflightData` contains redundant data which is later optimized during [Prepare](#step-2-prepare).
 
 #### Step 2: Prepare
 
