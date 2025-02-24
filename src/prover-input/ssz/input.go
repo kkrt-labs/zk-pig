@@ -379,7 +379,7 @@ func BlockToSSZ(b *proverinput.Block) *Block {
 
 	block.Header = HeaderToSSZ(b.Header)
 	block.Transactions = TransactionsToSSZ(b.Transactions)
-	block.Uncles = HeadersToSSZ(b.Uncles) // TODO: Fix this
+	block.Uncles = HeadersToSSZ(b.Uncles) // TODO: Fix this; issue: it generates blank array for uncles instead of the actual uncles
 	block.Withdrawals = WithdrawalsToSSZ(b.Withdrawals)
 
 	return &block
@@ -473,6 +473,7 @@ func HeaderToSSZ(h *gethtypes.Header) *Header {
 }
 
 // TODO: Fix this
+// issue: it generates blank array for transactions instead of the actual transactions
 func TransactionsToSSZ(txs []*gethtypes.Transaction) []byte {
 	buf := new(bytes.Buffer)
 	for _, tx := range txs {
