@@ -166,3 +166,17 @@ zkpig execute \
   --data-dir ./data \
   --inputs-content-type json
 ```
+
+## Caveats and Known Issues
+
+### Flaky Behavior
+
+- **Description**: There are instances where the system may exhibit flaky behavior. This can manifest as intermittent failures or unexpected results during execution.
+- **Potential Causes**: 
+  - Network instability
+  - Resource constraints
+  - Timing issues in asynchronous operations
+- **Mitigation Strategies**:
+  - Ensure stable network conditions.
+  - Try running the command again.
+- **Reporting**: If you encounter flaky behavior, please report it with detailed logs and steps to reproduce the issue.
