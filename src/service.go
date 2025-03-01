@@ -17,7 +17,7 @@ import (
 	inputstore "github.com/kkrt-labs/zk-pig/src/store"
 )
 
-// Service is a service that enables the generation of prover inpunts for EVM compatible blocks.
+// Service is a service that enables the generation of prover inputs for EVM compatible blocks.
 type Service struct {
 	cfg                *Config
 	preflightDataStore inputstore.PreflightDataStore
@@ -84,8 +84,8 @@ func (s *Service) Start(ctx context.Context) error {
 			return
 		}
 
-		if runable, ok := s.remote.(svc.Runnable); ok {
-			s.err = runable.Start(ctx)
+		if runnable, ok := s.remote.(svc.Runnable); ok {
+			s.err = runnable.Start(ctx)
 			if s.err != nil {
 				s.err = fmt.Errorf("failed to start RPC client: %v", s.err)
 				return
