@@ -42,7 +42,7 @@ Practically, the final state root `S'` is first computed by the block proposer a
 
 ## Block witness
 
-Block witness encompasses the minimal state and chain data required for a stateless EVM block execution (meaning without access to a a database containing the full state) which includes
+Block witness encompasses the minimal state and chain data required for a stateless EVM block execution (meaning without access to a database containing the full state) which includes
 - performing all block operations (apply transactions, apply fee rewards, apply system calls, etc.) 
 - deriving the post state root
 
@@ -51,7 +51,7 @@ This includes
    - when accessing a state data (either an account or a storage slot)
    - when deleting some state entries which may result in a [MPT branch node reduction](modified-mpt.md#branch-node-reduction) which resolves extra nodes
 - **codes** of all smart contracts called during block execution
-- **ancestors headers**, minimally containing the direct parent of the executed block and optionally older ancestors if accessed with opcode `BLOCKHASH` during block execution. For instance, the opcode `BLOCKHASH`enables smart contracts to access the hash of any of the 256 most recent blocks (excluding the current block, as its hash is computed post-execution)
+- **ancestors headers**, minimally containing the direct parent of the executed block and optionally older ancestors if accessed with opcode `BLOCKHASH` during block execution. For instance, the opcode `BLOCKHASH` enables smart contracts to access the hash of any of the 256 most recent blocks (excluding the current block, as its hash is computed post-execution)
 
 ### Witness examples
 
