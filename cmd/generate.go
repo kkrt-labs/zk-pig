@@ -200,7 +200,7 @@ func validateS3Config(ctx *ProverInputContext) error {
 
 		// If any required field is missing, return an error
 		if len(missingFields) > 0 {
-			return fmt.Errorf("%s must be specified when using s3 storage", missingFields)
+			return fmt.Errorf("%v must be specified when using s3 storage", missingFields)
 		}
 	}
 
