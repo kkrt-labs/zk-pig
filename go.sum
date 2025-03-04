@@ -166,8 +166,8 @@ github.com/jackpal/go-nat-pmp v1.0.2 h1:KzKSgb7qkJvOUTqYl9/Hg/me3pWgBmERKrTGD7Bd
 github.com/jackpal/go-nat-pmp v1.0.2/go.mod h1:QPH045xvCAeXUZOxsnwmrtiCoxIr9eob+4orBN1SBKc=
 github.com/kkrt-labs/go-ethereum v1.101413.0 h1:1GrQlq1QHsnbwfQLRBo1vHMnpOJ1xs90yxkM/pzrmmo=
 github.com/kkrt-labs/go-ethereum v1.101413.0/go.mod h1:RAC2gVMWJ6FkxSPESfbshrcKpIokgQKsVKmAuqdekDY=
-github.com/kkrt-labs/go-utils v0.2.2 h1:/zcm/PA55Onkdq9pz005w8VbgC4x4LZVyj31TaZzyec=
-github.com/kkrt-labs/go-utils v0.2.2/go.mod h1:hhlZl0r8E14CbPuxW2gUDIvrv9XWuBdeIU/1KLABl5U=
+github.com/kkrt-labs/go-utils v0.2.3 h1:8+rjYhO7Uto6WLJxvF68E8sNHBdZrsjTTbhLXNOB5rE=
+github.com/kkrt-labs/go-utils v0.2.3/go.mod h1:hhlZl0r8E14CbPuxW2gUDIvrv9XWuBdeIU/1KLABl5U=
 github.com/klauspost/compress v1.17.2 h1:RlWWUY/Dr4fL8qk9YG7DTZ7PDgME2V4csBXA8L/ixi4=
 github.com/klauspost/compress v1.17.2/go.mod h1:ntbaceVETuRiXiv4DpjP66DpAtAGkEQskQzEyD//IeE=
 github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
