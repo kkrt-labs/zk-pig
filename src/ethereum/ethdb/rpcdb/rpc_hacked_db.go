@@ -14,13 +14,19 @@ import (
 type Database struct {
 	ethdb.Database
 	remote rpc.Client
+	ctx    context.Context
 }
 
 // Hack returns a new Database that fetches missing headers from the remote RPC server.
 func Hack(db ethdb.Database, remote rpc.Client) *Database {
+	return HackWithContext(db, remote, context.TODO())
+}
+
+func HackWithContext(db ethdb.Database, remote rpc.Client, ctx context.Context) *Database {
 	return &Database{
 		Database: db,
 		remote:   remote,
+		ctx:      ctx,
 	}
 }
 
@@ -47,7 +53,7 @@ func (db *Database) Get(key []byte) ([]byte, error) {
 
 	// Fetch the header from the remote RPC server
 	// Note: We use the context.TODO() because the ethdb.Database.Get method does not accept a context.
-	header, err := db.remote.HeaderByHash(context.TODO(), hash)
+	header, err := db.remote.HeaderByHash(db.ctx, hash)
 	if err != nil {
 		return nil, err
 	}

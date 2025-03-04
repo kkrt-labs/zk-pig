@@ -25,7 +25,7 @@ func TestRPCDatabase(t *testing.T) {
 
 	remote := rpcmock.NewMockClient(ctrl)
 
-	db := NewRPCDatabase(nil, remote)
+	db := Hack(nil, remote)
 
 	// Prepare test data
 	stateRoot := gethcommon.HexToHash("0x6f39539da0b571e36e04cdee1ef9273ce168644d63822352f3a18c0504220166")

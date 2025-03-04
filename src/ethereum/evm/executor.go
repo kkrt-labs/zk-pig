@@ -12,7 +12,6 @@ import (
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	gethparams "github.com/ethereum/go-ethereum/params"
-	"github.com/kkrt-labs/go-utils/log"
 )
 
 // ExecParams are the parameters for an EVM execution.
@@ -94,10 +93,9 @@ func (e *executor) Execute(ctx context.Context, params *ExecParams) (res *core.P
 	return
 }
 
-func (e *executor) processBlock(ctx context.Context, params *ExecParams) (*core.ProcessResult, error) {
+func (e *executor) processBlock(_ context.Context, params *ExecParams) (*core.ProcessResult, error) {
 	processor := core.NewStateProcessor(params.Chain.Config(), params.Chain)
 
-	log.LoggerFromContext(ctx).Info("Process block...")
 	res, err := processor.Process(params.Block, params.State, *params.VMConfig)
 	if err != nil {
 		if params.Reporter != nil {
@@ -108,8 +106,7 @@ func (e *executor) processBlock(ctx context.Context, params *ExecParams) (*core.
 	return res, err
 }
 
-func (e *executor) validateBlock(ctx context.Context, params *ExecParams, res *core.ProcessResult) error {
-	log.LoggerFromContext(ctx).Info("Validate block & state transition...")
+func (e *executor) validateBlock(_ context.Context, params *ExecParams, res *core.ProcessResult) error {
 	validator := core.NewBlockValidator(params.Chain.Config(), nil)
 	err := validator.ValidateState(params.Block, params.State, res, false)
 	if params.Reporter != nil {
