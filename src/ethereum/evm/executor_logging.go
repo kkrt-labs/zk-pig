@@ -56,14 +56,14 @@ func ExecutorWithLog(namespaces ...string) ExecutorDecorator {
 			// Set tracing logger
 			params.VMConfig.Tracer = NewLoggerTracer(logger).Hooks()
 
-			logger.Info("Start block execution...")
+			logger.Debug("Execute block...")
 			res, err := executor.Execute(log.WithLogger(ctx, logger), params)
 			if err != nil {
 				logger.Error("Block execution failed",
 					zap.Error(err),
 				)
 			} else {
-				logger.Info("Block execution succeeded!",
+				logger.Debug("Block execution succeeded",
 					zap.Uint64("gasUsed", res.GasUsed),
 				)
 			}
@@ -109,7 +109,7 @@ func (t *LoggerTracer) OnTxStart(vm *tracing.VMContext, tx *gethtypes.Transactio
 		zap.String("tx.from", from.Hex()),
 	)
 
-	t.txLogger.Debug("Start executing transaction",
+	t.txLogger.Debug("Execute transaction...",
 		zap.String("vm.blocknumber", vm.BlockNumber.String()),
 	)
 }
@@ -117,11 +117,11 @@ func (t *LoggerTracer) OnTxStart(vm *tracing.VMContext, tx *gethtypes.Transactio
 // OnTxEnd logs transaction execution end
 func (t *LoggerTracer) OnTxEnd(receipt *gethtypes.Receipt, err error) {
 	if err != nil {
-		t.txLogger.Error("failed to execute transaction",
+		t.txLogger.Error("Transaction execution failed",
 			zap.Error(err),
 		)
 	} else {
-		t.txLogger.Debug("Executed transaction",
+		t.txLogger.Debug("Transaction executed",
 			zap.String("receipt.txHash", receipt.TxHash.Hex()),
 			zap.Uint64("receipt.status", receipt.Status),
 			zap.Uint64("receipt.gasUsed", receipt.GasUsed),

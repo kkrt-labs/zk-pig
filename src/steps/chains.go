@@ -1,4 +1,4 @@
-package generator
+package steps
 
 import (
 	"fmt"
@@ -17,7 +17,7 @@ var ChainConfigs = map[string]*params.ChainConfig{
 func getChainConfig(chainID *big.Int) (*params.ChainConfig, error) {
 	cfg, ok := ChainConfigs[chainID.String()]
 	if !ok {
-		return nil, fmt.Errorf("unsupported chain ID: %s", chainID)
+		return nil, fmt.Errorf("unsupported chain: %q", chainID.String())
 	}
 	return cfg, nil
 }

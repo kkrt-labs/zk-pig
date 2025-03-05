@@ -1,4 +1,4 @@
-package generator
+package steps
 
 import (
 	"encoding/json"
