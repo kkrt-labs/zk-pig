@@ -107,7 +107,7 @@ This modified MPT is used during both [Prepare](prover-input-generation.md#step-
 
 To further address this issue, we use a supplemental technique during the [Prepare](prover-input-generation.md#step-2-prepare) phase. 
 
-For every deletion resulting in a branch node reduction, we pre-inject some hypothetized short-nodes into the pre-state, ensuring that if the remaining child is a short-node, then it resolves to one of the pre-injected hypothetized short nodes. Consequently, ensuring that, during branch node reduction, the remaining child node resolution will succeed.
+For every deletion resulting in a branch node reduction, we pre-inject some hypothesized short-nodes into the pre-state, ensuring that if the remaining child is a short-node, then it resolves to one of the pre-injected hypothetized short nodes. Consequently, ensuring that, during branch node reduction, the remaining child node resolution will succeed.
 
 To compute the hypothetized short-nodes, we base on the post-state proof for every deleted MPT path. Indeed, in case of a deletion, the post-state proof is actually an exclusion proof, in which the last proof's element is an MPT node proving that there is no value at the given path. If this last proof's item is a short-node, this means that the deletion triggered a branch node reduction, and it is possible to compute all the short-nodes that could have potentially reduced into the last proof's element (see [below](#pre-state-preparation-workflow)).
 
