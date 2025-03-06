@@ -1,5 +1,5 @@
 # This file is used by the release workflow to generate a draft release on GitHub.
-# It bases on Pull Requests and their labels to generate the changelog.
+# It is bases on Pull Requests and their labels to generate the changelog.
 category-template: '### $TITLE'
 name-template: 'v$RESOLVED_VERSION'
 tag-template: 'v$RESOLVED_VERSION'
