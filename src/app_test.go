@@ -28,7 +28,7 @@ func TestApp(t *testing.T) {
 
 	app, err := NewApp(cfg, zap.NewNop())
 	require.NoError(t, err)
-	// We test that the Daemon can be created successfullly
+	// We test that the Daemon can be created successfully
 	daemon := app.Daemon()
 	assert.NotNil(t, daemon)
 	assert.NoError(t, app.Error())

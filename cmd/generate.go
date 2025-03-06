@@ -25,10 +25,11 @@ func NewGenerateCommand(rootCtx *RootContext) *cobra.Command {
 		Short:   "Generate prover input for a specific block",
 		Long:    "Generate prover inputs by running preflight, prepare and execute in a single run. It runs online and requires --chain-rpc-url to be set to a remote JSON-RPC Ethereum Execution Layer node",
 		PreRunE: preRun(ctx, &blockNumber),
+		PostRunE: func(cmd *cobra.Command, _ []string) error {
+			return ctx.App.Stop(cmd.Context())
+		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			generator := ctx.App.Generator() // must be declared first so object is constructed on App before calling Start
-
-			defer ctx.App.Stop(cmd.Context())
 			err := ctx.App.Start(cmd.Context())
 			if err != nil {
 				return err
@@ -54,9 +55,11 @@ func NewPreflightCommand(rootCtx *RootContext) *cobra.Command {
 		Short:   "Collect necessary data to generate prover inputs from a remote JSON-RPC Ethereum Execution Layer node",
 		Long:    "Collect necessary data to generate prover inputs from a remote JSON-RPC Ethereum Execution Layer node. It runs online and requires --chain-rpc-url to be set to a remote JSON-RPC Ethereum Execution Layer node",
 		PreRunE: preRun(ctx, &blockNumber),
+		PostRunE: func(cmd *cobra.Command, _ []string) error {
+			return ctx.App.Stop(cmd.Context())
+		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			generator := ctx.App.Generator() // must be declared first so object is constructed on App before calling Start
-			defer ctx.App.Stop(cmd.Context())
 			err := ctx.App.Start(cmd.Context())
 			if err != nil {
 				return err
@@ -82,9 +85,11 @@ func NewPrepareCommand(rootCtx *RootContext) *cobra.Command {
 		Short:   "Prepare prover inputs by basing on data previously collected during preflight.",
 		Long:    "Prepare prover inputs by basing on data previously collected during preflight. It can be ran off-line in which case it needs --chain-id to be provided",
 		PreRunE: preRun(ctx, &blockNumber),
+		PostRunE: func(cmd *cobra.Command, _ []string) error {
+			return ctx.App.Stop(cmd.Context())
+		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			generator := ctx.App.Generator() // must be declared first so object is constructed on App before calling Start
-			defer ctx.App.Stop(cmd.Context())
 			err := ctx.App.Start(cmd.Context())
 			if err != nil {
 				return err
@@ -109,9 +114,11 @@ func NewExecuteCommand(rootCtx *RootContext) *cobra.Command {
 		Short:   "Execute block by basing on prover inputs previously generated during prepare.",
 		Long:    "Execute block by basing on prover inputs previously generated during prepare. It can be ran off-line in which case it needs --chain-id to be provided.",
 		PreRunE: preRun(ctx, &blockNumber),
+		PostRunE: func(cmd *cobra.Command, _ []string) error {
+			return ctx.App.Stop(cmd.Context())
+		},
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			generator := ctx.App.Generator() // must be declared first so object is constructed on App before calling Start
-			defer ctx.App.Stop(cmd.Context())
 			err := ctx.App.Start(cmd.Context())
 			if err != nil {
 				return err
@@ -126,7 +133,7 @@ func NewExecuteCommand(rootCtx *RootContext) *cobra.Command {
 }
 
 func preRun(ctx *ProverInputContext, blockNumber *string) func(cmd *cobra.Command, _ []string) error {
-	return func(cmd *cobra.Command, _ []string) error {
+	return func(_ *cobra.Command, _ []string) error {
 		if blockNumber != nil {
 			var err error
 			ctx.blockNumber, err = jsonrpc.FromBlockNumArg(*blockNumber)

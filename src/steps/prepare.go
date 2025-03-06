@@ -42,9 +42,9 @@ func NewPreparer() Preparer {
 }
 
 // NewPreparerFromEvm creates a new Preparer from an EVM executor.
-func NewPreparerFromEvm(evm evm.Executor) Preparer {
+func NewPreparerFromEvm(e evm.Executor) Preparer {
 	return &preparer{
-		evm: evm,
+		evm: e,
 	}
 }
 
@@ -59,14 +59,14 @@ func (p *preparer) Prepare(ctx context.Context, data *PreflightData) (*input.Pro
 	)
 
 	log.LoggerFromContext(ctx).Info("Start preparing prover input...")
-	input, err := p.prepare(ctx, data)
+	in, err := p.prepare(ctx, data)
 	if err != nil {
 		log.LoggerFromContext(ctx).Error("Prover input preparation failed", zap.Error(err))
 		return nil, err
 	}
 	log.LoggerFromContext(ctx).Info("Prover input preparation succeeded")
 
-	return input, nil
+	return in, nil
 }
 
 func (p *preparer) prepare(ctx context.Context, data *PreflightData) (*input.ProverInput, error) {
@@ -119,7 +119,7 @@ func (p *preparer) prepare(ctx context.Context, data *PreflightData) (*input.Pro
 	}, nil
 }
 
-func (p *preparer) prepareStateDBAndChain(ctx context.Context, input *PreflightData) (gethstate.Database, *core.HeaderChain, error) {
+func (p *preparer) prepareStateDBAndChain(_ context.Context, in *PreflightData) (gethstate.Database, *core.HeaderChain, error) {
 	// --- Create in Memory database ---
 	stateDB := gethstate.NewDatabase(
 		triedb.NewDatabase(rawdb.NewMemoryDatabase(), &triedb.Config{HashDB: &hashdb.Config{}}),
@@ -127,24 +127,24 @@ func (p *preparer) prepareStateDBAndChain(ctx context.Context, input *PreflightD
 	) // We use a modified trie database to track trie modifications
 
 	// -- Pre-populates database with Witness data ---
-	ethereum.WriteHeaders(stateDB.TrieDB().Disk(), input.Ancestors...)
-	ethereum.WriteCodes(stateDB.TrieDB().Disk(), hexBytesToBytes(input.Codes)...)
+	ethereum.WriteHeaders(stateDB.TrieDB().Disk(), in.Ancestors...)
+	ethereum.WriteCodes(stateDB.TrieDB().Disk(), hexBytesToBytes(in.Codes)...)
 
 	// --- Create chain instance ---
-	hc, err := ethereum.NewChain(input.ChainConfig, stateDB)
+	hc, err := ethereum.NewChain(in.ChainConfig, stateDB)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create chain: %v", err)
 	}
 
 	// ___ Populate state database with state nodes ---
-	parentHeader := hc.GetHeader(input.Block.Header.ParentHash, input.Block.Header.Number.ToInt().Uint64()-1)
+	parentHeader := hc.GetHeader(in.Block.Header.ParentHash, in.Block.Header.Number.ToInt().Uint64()-1)
 	if parentHeader == nil {
-		return nil, nil, fmt.Errorf("missing parent header for block %q", input.Block.Header.Number.String())
+		return nil, nil, fmt.Errorf("missing parent header for block %q", in.Block.Header.Number.String())
 	}
 
 	genesisHeader := hc.GetHeaderByNumber(0)
 
-	nodeSet, err := trie.NodeSetFromStateTransitionProofs(parentHeader.Root, input.Block.Root, input.PreStateProofs, input.PostStateProofs)
+	nodeSet, err := trie.NodeSetFromStateTransitionProofs(parentHeader.Root, in.Block.Root, in.PreStateProofs, in.PostStateProofs)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create state nodes: %v", err)
 	}

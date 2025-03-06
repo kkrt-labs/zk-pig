@@ -39,30 +39,30 @@ func NewExecutor() Executor {
 }
 
 // NewExecutorFromEvm creates a new instance of the BaseExecutor from an existing EVM.
-func NewExecutorFromEvm(evm evm.Executor) Executor {
+func NewExecutorFromEvm(e evm.Executor) Executor {
 	return &executor{
-		evm: evm,
+		evm: e,
 	}
 }
 
 // Execute runs the ProvableBlockInputs data for the EVM prover engine.
-func (e *executor) Execute(ctx context.Context, input *input.ProverInput) (*core.ProcessResult, error) {
-	if len(input.Blocks) == 0 {
+func (e *executor) Execute(ctx context.Context, in *input.ProverInput) (*core.ProcessResult, error) {
+	if len(in.Blocks) == 0 {
 		return nil, fmt.Errorf("no blocks provided")
 	}
 
-	block := input.Blocks[0]
+	block := in.Blocks[0]
 
 	ctx = tag.WithComponent(ctx, "execute")
 	ctx = tag.WithTags(
 		ctx,
-		tag.Key("chain.id").String(input.ChainConfig.ChainID.String()),
+		tag.Key("chain.id").String(in.ChainConfig.ChainID.String()),
 		tag.Key("block.number").Int64(block.Header.Number.Int64()),
 		tag.Key("block.hash").String(block.Header.Hash().Hex()),
 	)
 
 	log.LoggerFromContext(ctx).Info("Execute block and validate state transition by basing on prover input...")
-	res, err := e.execute(ctx, input)
+	res, err := e.execute(ctx, in)
 	if err != nil {
 		log.LoggerFromContext(ctx).Error("Block execution failed", zap.Error(err))
 		return res, err
@@ -73,15 +73,15 @@ func (e *executor) Execute(ctx context.Context, input *input.ProverInput) (*core
 	return res, err
 }
 
-func (e *executor) execute(ctx context.Context, inputs *input.ProverInput) (*core.ProcessResult, error) {
-	stateDB, hc, err := e.prepareStateDBAndChain(inputs)
+func (e *executor) execute(ctx context.Context, in *input.ProverInput) (*core.ProcessResult, error) {
+	stateDB, hc, err := e.prepareStateDBAndChain(in)
 	if err != nil {
 		return nil, fmt.Errorf("execute: failed to prepare state db and chain: %v", err)
 	}
 
-	parentHeader := hc.GetHeader(inputs.Blocks[0].Header.ParentHash, inputs.Blocks[0].Header.Number.Uint64()-1)
+	parentHeader := hc.GetHeader(in.Blocks[0].Header.ParentHash, in.Blocks[0].Header.Number.Uint64()-1)
 	if parentHeader == nil {
-		return nil, fmt.Errorf("execute: missing parent header for block %q", inputs.Blocks[0].Header.Number.String())
+		return nil, fmt.Errorf("execute: missing parent header for block %q", in.Blocks[0].Header.Number.String())
 	}
 
 	preState, err := gethstate.New(parentHeader.Root, stateDB)
@@ -93,7 +93,7 @@ func (e *executor) execute(ctx context.Context, inputs *input.ProverInput) (*cor
 		VMConfig: &vm.Config{
 			StatelessSelfValidation: true,
 		},
-		Block:    inputs.Blocks[0].Block(),
+		Block:    in.Blocks[0].Block(),
 		Validate: true, // We validate the block execution to ensure the result and final state are correct
 		Chain:    hc,
 		State:    preState,
@@ -107,7 +107,7 @@ func (e *executor) execute(ctx context.Context, inputs *input.ProverInput) (*cor
 	return res, nil
 }
 
-func (e *executor) prepareStateDBAndChain(inputs *input.ProverInput) (gethstate.Database, *core.HeaderChain, error) {
+func (e *executor) prepareStateDBAndChain(in *input.ProverInput) (gethstate.Database, *core.HeaderChain, error) {
 	// --- Create in Memory database ---
 	stateDB := gethstate.NewDatabase(
 		triedb.NewDatabase(rawdb.NewMemoryDatabase(), &triedb.Config{HashDB: &hashdb.Config{}}),
@@ -115,11 +115,11 @@ func (e *executor) prepareStateDBAndChain(inputs *input.ProverInput) (gethstate.
 	) // We use a modified trie database to track trie modifications
 
 	// -- Pre-populates database with Witness data ---
-	ethereum.WriteHeaders(stateDB.TrieDB().Disk(), inputs.Witness.Ancestors...)
-	ethereum.WriteCodes(stateDB.TrieDB().Disk(), hexBytesToBytes(inputs.Witness.Codes)...)
-	ethereum.WriteNodesToHashDB(stateDB.TrieDB().Disk(), hexBytesToBytes(inputs.Witness.State)...)
+	ethereum.WriteHeaders(stateDB.TrieDB().Disk(), in.Witness.Ancestors...)
+	ethereum.WriteCodes(stateDB.TrieDB().Disk(), hexBytesToBytes(in.Witness.Codes)...)
+	ethereum.WriteNodesToHashDB(stateDB.TrieDB().Disk(), hexBytesToBytes(in.Witness.State)...)
 
-	hc, err := ethereum.NewChain(inputs.ChainConfig, stateDB)
+	hc, err := ethereum.NewChain(in.ChainConfig, stateDB)
 	if err != nil {
 		return nil, nil, fmt.Errorf("failed to create chain: %v", err)
 	}

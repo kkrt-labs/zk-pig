@@ -19,10 +19,10 @@ type Database struct {
 
 // Hack returns a new Database that fetches missing headers from the remote RPC server.
 func Hack(db ethdb.Database, remote rpc.Client) *Database {
-	return HackWithContext(db, remote, context.TODO())
+	return HackWithContext(context.TODO(), db, remote)
 }
 
-func HackWithContext(db ethdb.Database, remote rpc.Client, ctx context.Context) *Database {
+func HackWithContext(ctx context.Context, db ethdb.Database, remote rpc.Client) *Database {
 	return &Database{
 		Database: db,
 		remote:   remote,

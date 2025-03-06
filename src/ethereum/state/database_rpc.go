@@ -28,10 +28,10 @@ type RPCDatabase struct {
 
 // HackDatabase creates a new state database that reads the state from a remote RPC node.
 func Hack(db gethstate.Database, remote rpc.Client) *RPCDatabase {
-	return HackWithContext(db, remote, context.TODO())
+	return HackWithContext(context.TODO(), db, remote)
 }
 
-func HackWithContext(db gethstate.Database, remote rpc.Client, ctx context.Context) *RPCDatabase {
+func HackWithContext(ctx context.Context, db gethstate.Database, remote rpc.Client) *RPCDatabase {
 	return &RPCDatabase{
 		Database:               db,
 		remote:                 remote,

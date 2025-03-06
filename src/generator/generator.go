@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"math/big"
 
-	"github.com/ethereum/go-ethereum/core"
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	ethrpc "github.com/kkrt-labs/go-utils/ethereum/rpc"
 	"github.com/kkrt-labs/go-utils/tag"
@@ -68,17 +67,17 @@ func (s *Generator) generate(ctx context.Context, block *gethtypes.Block) error 
 		return err
 	}
 
-	input, err := s.prepare(ctx, data)
+	in, err := s.prepare(ctx, data)
 	if err != nil {
 		return err
 	}
 
-	_, err = s.execute(ctx, input)
+	err = s.execute(ctx, in)
 	if err != nil {
 		return err
 	}
 
-	err = s.storeProverInput(ctx, input)
+	err = s.storeProverInput(ctx, in)
 	if err != nil {
 		return err
 	}
@@ -124,17 +123,17 @@ func (s *Generator) Prepare(ctx context.Context, blockNumber *big.Int) error {
 		return err
 	}
 
-	input, err := s.prepare(ctx, data)
+	in, err := s.prepare(ctx, data)
 	if err != nil {
 		return err
 	}
 
-	_, err = s.execute(ctx, input)
+	err = s.execute(ctx, in)
 	if err != nil {
 		return err
 	}
 
-	err = s.storeProverInput(ctx, input)
+	err = s.storeProverInput(ctx, in)
 	if err != nil {
 		return err
 	}
@@ -145,12 +144,12 @@ func (s *Generator) Prepare(ctx context.Context, blockNumber *big.Int) error {
 func (s *Generator) Execute(ctx context.Context, blockNumber *big.Int) error {
 	ctx = tag.WithComponent(ctx, "zkpig")
 
-	input, err := s.loadProverInput(ctx, blockNumber)
+	in, err := s.loadProverInput(ctx, blockNumber)
 	if err != nil {
 		return err
 	}
 
-	_, err = s.execute(ctx, input)
+	err = s.execute(ctx, in)
 	if err != nil {
 		return err
 	}
@@ -167,20 +166,20 @@ func (s *Generator) preflight(ctx context.Context, block *gethtypes.Block) (*ste
 }
 
 func (s *Generator) prepare(ctx context.Context, data *steps.PreflightData) (*input.ProverInput, error) {
-	input, err := s.Preparer.Prepare(ctx, data)
+	in, err := s.Preparer.Prepare(ctx, data)
 	if err != nil {
 		return nil, fmt.Errorf("failed to prepare prover inputs: %v", err)
 	}
-	return input, nil
+	return in, nil
 }
 
-func (s *Generator) execute(ctx context.Context, input *input.ProverInput) (*core.ProcessResult, error) {
-	res, err := s.Executor.Execute(ctx, input)
+func (s *Generator) execute(ctx context.Context, in *input.ProverInput) error {
+	_, err := s.Executor.Execute(ctx, in)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute block by basing on prover inputs: %v", err)
+		return fmt.Errorf("failed to execute block by basing on prover inputs: %v", err)
 	}
 
-	return res, nil
+	return nil
 }
 
 func (s *Generator) loadPreflightData(ctx context.Context, blockNumber *big.Int) (*steps.PreflightData, error) {
@@ -209,16 +208,16 @@ func (s *Generator) loadProverInput(ctx context.Context, blockNumber *big.Int) (
 		return nil, fmt.Errorf("chain not configured")
 	}
 
-	input, err := s.ProverInputStore.LoadProverInput(ctx, s.ChainID.Uint64(), blockNumber.Uint64())
+	in, err := s.ProverInputStore.LoadProverInput(ctx, s.ChainID.Uint64(), blockNumber.Uint64())
 	if err != nil {
 		return nil, fmt.Errorf("failed to load prover input: %v", err)
 	}
 
-	return input, nil
+	return in, nil
 }
 
-func (s *Generator) storeProverInput(ctx context.Context, input *input.ProverInput) error {
-	err := s.ProverInputStore.StoreProverInput(ctx, input)
+func (s *Generator) storeProverInput(ctx context.Context, in *input.ProverInput) error {
+	err := s.ProverInputStore.StoreProverInput(ctx, in)
 	if err != nil {
 		return fmt.Errorf("failed to store prover input: %v", err)
 	}
@@ -227,6 +226,6 @@ func (s *Generator) storeProverInput(ctx context.Context, input *input.ProverInp
 
 // Stop stops the service.
 // Must be called to release resources.
-func (s *Generator) Stop(ctx context.Context) error {
+func (s *Generator) Stop(_ context.Context) error {
 	return nil
 }

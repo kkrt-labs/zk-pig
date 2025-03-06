@@ -130,11 +130,11 @@ type testService struct {
 	stop  chan error
 }
 
-func (s *testService) Start(ctx context.Context) error {
+func (s *testService) Start(_ context.Context) error {
 	return <-s.start
 }
 
-func (s *testService) Stop(ctx context.Context) error {
+func (s *testService) Stop(_ context.Context) error {
 	return <-s.stop
 }
 
@@ -143,16 +143,14 @@ func TestAppNoDeps(t *testing.T) {
 	defer close(start)
 	defer close(stop)
 
-	newTestService := func() (*testService, error) {
-		return &testService{
-			start: start,
-			stop:  stop,
-		}, nil
-	}
-
 	testApp := func() *App {
 		app := newTestApp()
-		_ = Provide(app, "test", newTestService)
+		_ = Provide(app, "test", func() (*testService, error) {
+			return &testService{
+				start: start,
+				stop:  stop,
+			}, nil
+		})
 		return app
 	}
 
@@ -227,15 +225,13 @@ func TestAppWithDeps(t *testing.T) {
 	defer close(startDep)
 	defer close(stopDep)
 
-	newDepService := func() (*testService, error) {
-		return &testService{
-			start: startDep,
-			stop:  stopDep,
-		}, nil
-	}
-
 	_ = Provide(app, "main", func() (*testService, error) {
-		_ = Provide(app, "dep", newDepService)
+		_ = Provide(app, "dep", func() (*testService, error) {
+			return &testService{
+				start: startDep,
+				stop:  stopDep,
+			}, nil
+		})
 		return &testService{
 			start: startMain,
 			stop:  stopMain,

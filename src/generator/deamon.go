@@ -43,7 +43,7 @@ func (d *Daemon) run(runCtx context.Context) {
 	}()
 }
 
-func (d *Daemon) Stop(ctx context.Context) error {
+func (d *Daemon) Stop(_ context.Context) error {
 	close(d.stop)
 	d.cancelRun()
 	d.wg.Wait()

@@ -65,10 +65,10 @@ func NewPreflight(remote ethrpc.Client) Preflight {
 }
 
 // NewPreflightFromEvm creates a new RPC Preflight instance using the provided EVM.
-func NewPreflightFromEvm(evm evm.Executor, remote ethrpc.Client) Preflight {
+func NewPreflightFromEvm(e evm.Executor, remote ethrpc.Client) Preflight {
 	return &preflight{
 		remote: remote,
-		evm:    evm,
+		evm:    e,
 	}
 }
 
@@ -98,9 +98,9 @@ func (pf *preflight) init(ctx context.Context) error {
 }
 
 func (pf *preflight) configureDBAndChain(ctx context.Context) (*state.RPCDatabase, *core.HeaderChain, error) {
-	db := rpcdb.HackWithContext(rawdb.NewMemoryDatabase(), pf.remote, ctx)
+	db := rpcdb.HackWithContext(ctx, rawdb.NewMemoryDatabase(), pf.remote)
 	trieDB := triedb.NewDatabase(db, &triedb.Config{HashDB: &hashdb.Config{}})
-	rpcDB := state.HackWithContext(gethstate.NewDatabase(trieDB, nil), pf.remote, ctx)
+	rpcDB := state.HackWithContext(ctx, gethstate.NewDatabase(trieDB, nil), pf.remote)
 
 	hc, err := ethereum.NewChain(pf.chainCfg, rpcDB)
 	if err != nil {
@@ -236,6 +236,6 @@ func (pf *preflight) fetchStateProofs(ctx context.Context, trackers *state.Acces
 	return preStateProofs, postStateProofs, nil
 }
 
-func (pf *preflight) Stop(ctx context.Context) error {
+func (pf *preflight) Stop(_ context.Context) error {
 	return nil
 }

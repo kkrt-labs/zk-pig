@@ -74,7 +74,7 @@ func (s *Service) construct() {
 	s.setStatus(Constructing)
 	svc, constructorErr := s.constructor()
 	if constructorErr != nil {
-		s.fail(constructorErr)
+		_ = s.fail(constructorErr)
 		return
 	}
 
@@ -111,7 +111,7 @@ func (s *Service) isCircularDependency(dep *Service) bool {
 
 func (s *Service) addDep(dep *Service) {
 	if s.isCircularDependency(dep) {
-		s.fail(fmt.Errorf("circular dependency detected: %v -> %v", s.name, dep.name))
+		_ = s.fail(fmt.Errorf("circular dependency detected: %v -> %v", s.name, dep.name))
 		return
 	}
 
@@ -120,7 +120,7 @@ func (s *Service) addDep(dep *Service) {
 	dep.depsOf[s.name] = s
 	if dep.err != nil {
 		if s.err == nil {
-			s.fail(nil)
+			_ = s.fail(nil)
 		}
 		s.err.addDepsErr(dep.err)
 	}
@@ -149,7 +149,7 @@ func (s *Service) start(ctx context.Context) *ServiceError {
 		wg.Wait()
 
 		if len(startErr.depsErrs) > 0 {
-			s.fail(startErr)
+			_ = s.fail(startErr)
 			return
 		}
 
@@ -159,7 +159,7 @@ func (s *Service) start(ctx context.Context) *ServiceError {
 				s.app.logger.Info("Starting service", zap.String("service", s.name))
 				err := start.Start(ctx)
 				if err != nil {
-					s.fail(err)
+					_ = s.fail(err)
 					s.app.logger.Error("Failed to start service", zap.String("service", s.name), zap.Error(err))
 					return
 				}
@@ -200,7 +200,7 @@ func (s *Service) stop(ctx context.Context) *ServiceError {
 			s.app.logger.Info("Stopping service", zap.String("service", s.name))
 			err := stop.Stop(ctx)
 			if err != nil {
-				s.fail(err)
+				_ = s.fail(err)
 				s.app.logger.Error("Failed to stop service", zap.String("service", s.name), zap.Error(err))
 				return
 			}
@@ -224,7 +224,7 @@ func (s *Service) stop(ctx context.Context) *ServiceError {
 		wg.Wait()
 
 		if len(stopErr.depsErrs) > 0 {
-			s.fail(stopErr)
+			_ = s.fail(stopErr)
 		}
 	})
 
