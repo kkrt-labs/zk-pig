@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/kkrt-labs/zk-pig/blob/master/LICENSE)  
 [![Twitter](https://img.shields.io/twitter/follow/KakarotZkEvm.svg)](https://x.com/intent/follow?screen_name=KakarotZkEvm)
 
-**ZK-PIG** is a ZK-EVM Prover Input generator responsible for generating the data inputs necessary for proving Execution Layer (EL) blocks. These prover inputs can later be consumed by proving infrastructures to generate EL block proofs.
+**ZK-PIG** is a ZK-EVM Prover Input generator responsible for generating the data inputs necessary for proving Execution Layer (EL) blocks. These prover inputs can later be consumed by proving infrastructure to generate EL block proofs.
 
 From an architecture perspective, ZK-PIG connects to an Ethereum-compatible EL full or archive node via JSON-RPC to fetch the necessary data.
 
