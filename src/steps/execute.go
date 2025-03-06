@@ -19,6 +19,8 @@ import (
 	"go.uber.org/zap"
 )
 
+//go:generate mockgen -destination=./mock/executor.go -package=mocksteps github.com/kkrt-labs/zk-pig/src/steps Executor
+
 // Executor is the interface for EVM execution on provable inputs.
 // It runs a full "execution + final state validation" of the block
 // It is primarily meant to validate that the provable inputs are correct and enable proper EVM execution.

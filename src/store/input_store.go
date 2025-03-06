@@ -14,6 +14,9 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
+//go:generate mockgen -destination=./mock/input_store.go -package=mockstore github.com/kkrt-labs/zk-pig/src/store ProverInputStore
+
+// ProverInputStore is a store for prover inputs.
 type ProverInputStore interface {
 	// StoreProverInput stores the prover inputs for a block.
 	StoreProverInput(ctx context.Context, inputs *input.ProverInput) error

@@ -11,6 +11,9 @@ import (
 	"github.com/kkrt-labs/zk-pig/src/steps"
 )
 
+//go:generate mockgen -destination=./mock/preflight_data_store.go -package=mockstore github.com/kkrt-labs/zk-pig/src/store PreflightDataStore
+
+// PreflightDataStore is a store for preflight data.
 type PreflightDataStore interface {
 	// StorePreflightData stores preflight data for a block.
 	StorePreflightData(ctx context.Context, inputs *steps.PreflightData) error

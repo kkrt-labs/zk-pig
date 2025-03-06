@@ -20,12 +20,14 @@ import (
 	"go.uber.org/zap"
 )
 
+//go:generate mockgen -destination=./mock/preparer.go -package=mocksteps github.com/kkrt-labs/zk-pig/src/steps Preparer
+
 // Preparer is the interface for preparing the prover input that serves as the input for the EVM prover engine.
 // It runs a full "execution + final state validation" of the block ensuring that the necessary data is available.
 // It bases on the preflight data collected during preflight to prepare the final prover input
 type Preparer interface {
 	// Prepare prepares the ProvableBlockInputs data for the EVM prover engine.
-	Prepare(ctx context.Context, input *PreflightData) (*input.ProverInput, error)
+	Prepare(ctx context.Context, data *PreflightData) (*input.ProverInput, error)
 }
 
 type preparer struct {

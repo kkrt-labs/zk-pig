@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"math/big"
 
+	"github.com/ethereum/go-ethereum/core"
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	ethrpc "github.com/kkrt-labs/go-utils/ethereum/rpc"
 	"github.com/kkrt-labs/go-utils/tag"
+	input "github.com/kkrt-labs/zk-pig/src/prover-input"
 	"github.com/kkrt-labs/zk-pig/src/steps"
 	inputstore "github.com/kkrt-labs/zk-pig/src/store"
 )
@@ -43,7 +45,6 @@ func (s *Generator) Start(ctx context.Context) error {
 func (s *Generator) Generate(ctx context.Context, blockNumber *big.Int) error {
 	ctx = tag.WithComponent(ctx, "zkpig")
 	ctx = tag.WithTags(ctx, tag.Key("block.number").Int64(blockNumber.Int64()))
-
 	if s.RPC == nil {
 		return fmt.Errorf("RPC not configured")
 	}
@@ -62,11 +63,23 @@ func (s *Generator) generate(ctx context.Context, block *gethtypes.Block) error 
 		return err
 	}
 
-	if err := s.prepare(ctx, data.Block.Number.ToInt()); err != nil {
+	err = s.storePreflightData(ctx, data)
+	if err != nil {
 		return err
 	}
 
-	if err := s.execute(ctx, data.Block.Number.ToInt()); err != nil {
+	input, err := s.prepare(ctx, data)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.execute(ctx, input)
+	if err != nil {
+		return err
+	}
+
+	err = s.storeProverInput(ctx, input)
+	if err != nil {
 		return err
 	}
 
@@ -77,7 +90,6 @@ func (s *Generator) generate(ctx context.Context, block *gethtypes.Block) error 
 // If requires the remote RPC to be configured and started
 func (s *Generator) Preflight(ctx context.Context, blockNumber *big.Int) error {
 	ctx = tag.WithComponent(ctx, "zkpig")
-
 	if s.RPC == nil {
 		return fmt.Errorf("RPC not configured")
 	}
@@ -87,47 +99,44 @@ func (s *Generator) Preflight(ctx context.Context, blockNumber *big.Int) error {
 		return fmt.Errorf("failed to fetch block: %v", err)
 	}
 
-	_, err = s.preflight(ctx, block)
-
-	return err
-}
-
-func (s *Generator) preflight(ctx context.Context, block *gethtypes.Block) (*steps.PreflightData, error) {
-	data, err := s.Preflighter.Preflight(ctx, block)
+	data, err := s.preflight(ctx, block)
 	if err != nil {
-		return nil, fmt.Errorf("failed to execute preflight: %v", err)
+		return err
 	}
 
-	if err = s.PreflightDataStore.StorePreflightData(ctx, data); err != nil {
-		return nil, fmt.Errorf("failed to store preflight data: %v", err)
+	err = s.storePreflightData(ctx, data)
+	if err != nil {
+		return err
 	}
 
-	return data, nil
+	return nil
 }
 
 func (s *Generator) Prepare(ctx context.Context, blockNumber *big.Int) error {
 	ctx = tag.WithComponent(ctx, "zkpig")
-	return s.prepare(ctx, blockNumber)
-}
 
-func (s *Generator) prepare(ctx context.Context, blockNumber *big.Int) error {
 	if s.ChainID == nil {
 		return fmt.Errorf("prepare: chain not configured")
 	}
 
-	data, err := s.PreflightDataStore.LoadPreflightData(ctx, s.ChainID.Uint64(), blockNumber.Uint64())
+	data, err := s.loadPreflightData(ctx, blockNumber)
 	if err != nil {
-		return fmt.Errorf("prepare: failed to load preflight data: %v", err)
+		return err
 	}
 
-	input, err := s.Preparer.Prepare(ctx, data)
+	input, err := s.prepare(ctx, data)
 	if err != nil {
-		return fmt.Errorf("prepare: %v", err)
+		return err
 	}
 
-	err = s.ProverInputStore.StoreProverInput(ctx, input)
+	_, err = s.execute(ctx, input)
 	if err != nil {
-		return fmt.Errorf("prepare: failed to store prover input: %v", err)
+		return err
+	}
+
+	err = s.storeProverInput(ctx, input)
+	if err != nil {
+		return err
 	}
 
 	return nil
@@ -135,25 +144,85 @@ func (s *Generator) prepare(ctx context.Context, blockNumber *big.Int) error {
 
 func (s *Generator) Execute(ctx context.Context, blockNumber *big.Int) error {
 	ctx = tag.WithComponent(ctx, "zkpig")
-	return s.execute(ctx, blockNumber)
+
+	input, err := s.loadProverInput(ctx, blockNumber)
+	if err != nil {
+		return err
+	}
+
+	_, err = s.execute(ctx, input)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
-func (s *Generator) execute(ctx context.Context, blockNumber *big.Int) error {
+func (s *Generator) preflight(ctx context.Context, block *gethtypes.Block) (*steps.PreflightData, error) {
+	data, err := s.Preflighter.Preflight(ctx, block)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute preflight: %v", err)
+	}
+	return data, nil
+}
+
+func (s *Generator) prepare(ctx context.Context, data *steps.PreflightData) (*input.ProverInput, error) {
+	input, err := s.Preparer.Prepare(ctx, data)
+	if err != nil {
+		return nil, fmt.Errorf("failed to prepare prover inputs: %v", err)
+	}
+	return input, nil
+}
+
+func (s *Generator) execute(ctx context.Context, input *input.ProverInput) (*core.ProcessResult, error) {
+	res, err := s.Executor.Execute(ctx, input)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute block by basing on prover inputs: %v", err)
+	}
+
+	return res, nil
+}
+
+func (s *Generator) loadPreflightData(ctx context.Context, blockNumber *big.Int) (*steps.PreflightData, error) {
 	if s.ChainID == nil {
-		return fmt.Errorf("chain not configured")
+		return nil, fmt.Errorf("chain not configured")
+	}
+
+	data, err := s.PreflightDataStore.LoadPreflightData(ctx, s.ChainID.Uint64(), blockNumber.Uint64())
+	if err != nil {
+		return nil, fmt.Errorf("failed to load preflight data: %v", err)
+	}
+
+	return data, nil
+}
+
+func (s *Generator) storePreflightData(ctx context.Context, data *steps.PreflightData) error {
+	err := s.PreflightDataStore.StorePreflightData(ctx, data)
+	if err != nil {
+		return fmt.Errorf("failed to store preflight data: %v", err)
+	}
+	return nil
+}
+
+func (s *Generator) loadProverInput(ctx context.Context, blockNumber *big.Int) (*input.ProverInput, error) {
+	if s.ChainID == nil {
+		return nil, fmt.Errorf("chain not configured")
 	}
 
 	input, err := s.ProverInputStore.LoadProverInput(ctx, s.ChainID.Uint64(), blockNumber.Uint64())
 	if err != nil {
-		return fmt.Errorf("failed to load provable inputs: %v", err)
+		return nil, fmt.Errorf("failed to load prover input: %v", err)
 	}
 
-	_, err = s.Executor.Execute(ctx, input)
+	return input, nil
+}
+
+func (s *Generator) storeProverInput(ctx context.Context, input *input.ProverInput) error {
+	err := s.ProverInputStore.StoreProverInput(ctx, input)
 	if err != nil {
-		return fmt.Errorf("failed to execute block on provable inputs: %v", err)
+		return fmt.Errorf("failed to store prover input: %v", err)
 	}
-
-	return err
+	return nil
 }
 
 // Stop stops the service.

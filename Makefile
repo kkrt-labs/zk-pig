@@ -98,7 +98,7 @@ mockgen-install:
 		go install go.uber.org/mock/mockgen@$(MOCKGEN_VERSION);  \
 	}
 
-generate-mocks: mockgen-install
+generate: mockgen-install
 	@go generate ./...
 
 goreleaser-snapshot:

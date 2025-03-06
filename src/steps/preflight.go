@@ -37,6 +37,8 @@ type PreflightData struct {
 	PostStateProofs []*trie.AccountProof `json:"postStateProofs"` // Proofs of every account and storage slot deleted during the block processing
 }
 
+//go:generate mockgen -destination=./mock/preflight.go -package=mocksteps github.com/kkrt-labs/zk-pig/src/steps Preflight
+
 // Preflight is the interface for the preflight block execution which consists of processing an EVM block without final state validation.
 // It enables to collect necessary data for necessary for later full "block processing + final state validation".
 // It outputs intermediary data that will be later used to prepare necessary pre-state data for the full block execution.
