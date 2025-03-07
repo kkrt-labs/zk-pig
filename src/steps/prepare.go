@@ -8,6 +8,7 @@ import (
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	gethstate "github.com/ethereum/go-ethereum/core/state"
+	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/triedb"
 	"github.com/ethereum/go-ethereum/triedb/hashdb"
@@ -15,6 +16,7 @@ import (
 	"github.com/kkrt-labs/go-utils/tag"
 	"github.com/kkrt-labs/zk-pig/src/ethereum"
 	"github.com/kkrt-labs/zk-pig/src/ethereum/evm"
+	"github.com/kkrt-labs/zk-pig/src/ethereum/state"
 	"github.com/kkrt-labs/zk-pig/src/ethereum/trie"
 	input "github.com/kkrt-labs/zk-pig/src/prover-input"
 	"go.uber.org/zap"
@@ -75,13 +77,16 @@ func (p *preparer) prepare(ctx context.Context, data *PreflightData) (*input.Pro
 		return nil, fmt.Errorf("failed to prepare state db and chain: %v", err)
 	}
 
+	trackers := state.NewAccessTrackerManager()
+	trackedDB := state.NewAccessTrackerDatabase(stateDB, trackers)
+
 	// ___ Populate state database with state nodes ---
 	parentHeader := hc.GetHeader(data.Block.Header.ParentHash, data.Block.Header.Number.ToInt().Uint64()-1)
 	if parentHeader == nil {
 		return nil, fmt.Errorf("missing parent header for block %q", data.Block.Header.Number.String())
 	}
 
-	preState, err := gethstate.New(parentHeader.Root, stateDB)
+	preState, err := gethstate.New(parentHeader.Root, trackedDB)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create pre-state from parent root %v: %v", parentHeader.Root, err)
 	}
@@ -101,6 +106,18 @@ func (p *preparer) prepare(ctx context.Context, data *PreflightData) (*input.Pro
 		return nil, fmt.Errorf("failed to execute block: %v", err)
 	}
 
+	tracker := trackers.GetAccessTracker(parentHeader.Root)
+	accessList := gethtypes.AccessList{}
+	for addr, accountAccessTracker := range tracker.Accounts {
+		accessTuple := gethtypes.AccessTuple{
+			Address: addr,
+		}
+		for slot := range accountAccessTracker.Storage {
+			accessTuple.StorageKeys = append(accessTuple.StorageKeys, slot)
+		}
+		accessList = append(accessList, accessTuple)
+	}
+
 	return &input.ProverInput{
 		ChainConfig: execParams.Chain.Config(),
 		Blocks: []*input.Block{
@@ -116,6 +133,7 @@ func (p *preparer) prepare(ctx context.Context, data *PreflightData) (*input.Pro
 			Codes:     hexToHexBytes(execParams.State.Witness().Codes),
 			State:     hexToHexBytes(execParams.State.Witness().State),
 		},
+		AccessList: accessList,
 	}, nil
 }
 

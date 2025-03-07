@@ -9,10 +9,11 @@ import (
 // ProverInput contains the data expected by an EVM prover engine to execute & prove the block.
 // It contains the minimal partial state & chain data necessary for processing the block and validating the final state.
 type ProverInput struct {
-	Version     string              `json:"version"`     // Prover Input version
-	Blocks      []*Block            `json:"blocks"`      // Block to execute
-	Witness     *Witness            `json:"witness"`     // Ancestors of the block that are accessed during the block execution
-	ChainConfig *params.ChainConfig `json:"chainConfig"` // Chain configuration
+	Version     string               `json:"version"`     // Prover Input version
+	Blocks      []*Block             `json:"blocks"`      // Block to execute
+	Witness     *Witness             `json:"witness"`     // Ancestors of the block that are accessed during the block execution
+	ChainConfig *params.ChainConfig  `json:"chainConfig"` // Chain configuration
+	AccessList  gethtypes.AccessList `json:"accessList"`  // Access list
 }
 
 type Witness struct {

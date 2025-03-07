@@ -198,37 +198,36 @@ func (pf *preflight) preflight(ctx context.Context, block *gethtypes.Block) (*Pr
 func (pf *preflight) fetchStateProofs(ctx context.Context, trackers *state.AccessTrackerManager, parentHeader *gethtypes.Header, execParams *evm.ExecParams) (preStateProofs, postStateProofs []*trie.AccountProof, err error) {
 	finalState := execParams.State
 	tracker := trackers.GetAccessTracker(parentHeader.Root)
-	for account := range tracker.Accounts {
+	for addr, accountAccessTracker := range tracker.Accounts {
 		var (
 			slots       = []string{}
 			deletedSlot = []string{}
 		)
-		if storage, ok := tracker.Storage[account]; ok {
-			for slot, preStateValue := range storage {
-				slots = append(slots, slot.Hex())
-				if (preStateValue != gethcommon.Hash{}) && (finalState.GetState(account, slot) == gethcommon.Hash{}) {
-					deletedSlot = append(deletedSlot, slot.Hex())
-				}
+
+		for slot, preStateValue := range accountAccessTracker.Storage {
+			slots = append(slots, slot.Hex())
+			if (preStateValue != gethcommon.Hash{}) && (finalState.GetState(addr, slot) == gethcommon.Hash{}) {
+				deletedSlot = append(deletedSlot, slot.Hex())
 			}
 		}
 
 		// Get proofs for every accounts on the initial state (parent state)
-		acc, err := pf.remote.GetProof(ctx, account, slots, parentHeader.Number)
+		acc, err := pf.remote.GetProof(ctx, addr, slots, parentHeader.Number)
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to get proof for account %v: %v", account, err)
+			return nil, nil, fmt.Errorf("failed to get proof for account %v: %v", addr, err)
 		}
 		preStateProofs = append(preStateProofs, trie.AccountProofFromRPC(acc))
 
 		// Also get necessary proofs at final state
-		if len(deletedSlot) == 0 && !finalState.HasSelfDestructed(account) {
+		if len(deletedSlot) == 0 && !finalState.HasSelfDestructed(addr) {
 			// Account was not deleted so we don't need to fetch post-state proofs for it
 			continue
 		}
 
 		// Also get proofs at final state for deleted accounts & slots
-		acc, err = pf.remote.GetProof(ctx, account, deletedSlot, execParams.Block.Number())
+		acc, err = pf.remote.GetProof(ctx, addr, deletedSlot, execParams.Block.Number())
 		if err != nil {
-			return nil, nil, fmt.Errorf("failed to get proof for account %v: %v", account, err)
+			return nil, nil, fmt.Errorf("failed to get proof for account %v: %v", addr, err)
 		}
 		postStateProofs = append(postStateProofs, trie.AccountProofFromRPC(acc))
 	}

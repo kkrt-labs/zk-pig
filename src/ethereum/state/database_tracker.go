@@ -54,9 +54,12 @@ func (db *AccessTrackerDatabase) ContractCodeSize(addr gethcommon.Address, codeH
 	return len(code), err
 }
 
+type AccountAccessTracker struct {
+	Account *gethtypes.StateAccount
+	Storage map[gethcommon.Hash]gethcommon.Hash
+}
 type AccessTracker struct {
-	Accounts map[gethcommon.Address]*gethtypes.StateAccount             `json:"accounts"`
-	Storage  map[gethcommon.Address]map[gethcommon.Hash]gethcommon.Hash `json:"storage"`
+	Accounts map[gethcommon.Address]*AccountAccessTracker
 }
 
 type AccessTrackerManager struct {
@@ -91,8 +94,7 @@ func (m *AccessTrackerManager) Clear() {
 
 func newStateAccessTracker() *AccessTracker {
 	return &AccessTracker{
-		Accounts: make(map[gethcommon.Address]*gethtypes.StateAccount),
-		Storage:  make(map[gethcommon.Address]map[gethcommon.Hash]gethcommon.Hash),
+		Accounts: make(map[gethcommon.Address]*AccountAccessTracker),
 	}
 }
 
@@ -118,8 +120,15 @@ func (r *stateAccessTrackerReader) Account(addr gethcommon.Address) (*gethtypes.
 		return nil, err
 	}
 
-	if account != nil {
-		r.tracker.Accounts[addr] = account.Copy()
+	_, ok := r.tracker.Accounts[addr]
+	if !ok {
+		r.tracker.Accounts[addr] = &AccountAccessTracker{
+			Storage: make(map[gethcommon.Hash]gethcommon.Hash),
+		}
+
+		if account != nil {
+			r.tracker.Accounts[addr].Account = account.Copy()
+		}
 	}
 
 	return account, nil
@@ -133,11 +142,15 @@ func (r *stateAccessTrackerReader) Storage(addr gethcommon.Address, slot gethcom
 		return gethcommon.Hash{}, err
 	}
 
-	if _, ok := r.tracker.Storage[addr]; !ok {
-		r.tracker.Storage[addr] = make(map[gethcommon.Hash]gethcommon.Hash)
+	if _, ok := r.tracker.Accounts[addr]; !ok {
+		r.tracker.Accounts[addr] = &AccountAccessTracker{
+			Storage: make(map[gethcommon.Hash]gethcommon.Hash),
+		}
 	}
 
-	r.tracker.Storage[addr][slot] = value
+	if _, ok := r.tracker.Accounts[addr].Storage[slot]; !ok {
+		r.tracker.Accounts[addr].Storage[slot] = value
+	}
 
 	return value, nil
 }
@@ -148,28 +161,27 @@ func (r *stateAccessTrackerReader) Copy() gethstate.Reader {
 		reader: r.reader.Copy(),
 		tracker: &AccessTracker{
 			Accounts: copyAccounts(r.tracker.Accounts),
-			Storage:  copyStorage(r.tracker.Storage),
 		},
 	}
 }
 
 // copyAccounts returns a deep-copied map of accounts.
-func copyAccounts(accounts map[gethcommon.Address]*gethtypes.StateAccount) map[gethcommon.Address]*gethtypes.StateAccount {
-	copied := make(map[gethcommon.Address]*gethtypes.StateAccount)
+func copyAccounts(accounts map[gethcommon.Address]*AccountAccessTracker) map[gethcommon.Address]*AccountAccessTracker {
+	copied := make(map[gethcommon.Address]*AccountAccessTracker)
 	for addr, acct := range accounts {
-		copied[addr] = acct.Copy()
+		copied[addr] = &AccountAccessTracker{
+			Account: acct.Account.Copy(),
+			Storage: copyStorage(acct.Storage),
+		}
 	}
 	return copied
 }
 
 // copyStorage returns a deep-copied map of storage slots.
-func copyStorage(storage map[gethcommon.Address]map[gethcommon.Hash]gethcommon.Hash) map[gethcommon.Address]map[gethcommon.Hash]gethcommon.Hash {
-	copied := make(map[gethcommon.Address]map[gethcommon.Hash]gethcommon.Hash)
-	for addr, slots := range storage {
-		copied[addr] = make(map[gethcommon.Hash]gethcommon.Hash)
-		for slot, value := range slots {
-			copied[addr][slot] = value
-		}
+func copyStorage(storage map[gethcommon.Hash]gethcommon.Hash) map[gethcommon.Hash]gethcommon.Hash {
+	copied := make(map[gethcommon.Hash]gethcommon.Hash)
+	for slot, value := range storage {
+		copied[slot] = value
 	}
 	return copied
 }

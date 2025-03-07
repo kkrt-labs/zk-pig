@@ -15,6 +15,7 @@ func ToProto(pi *input.ProverInput) *ProverInput {
 		Blocks:      BlocksToProto(pi.Blocks),
 		Witness:     WitnessToProto(pi.Witness),
 		ChainConfig: ChainConfigToProto(pi.ChainConfig),
+		AccessList:  AccessListToProto(pi.AccessList),
 	}
 }
 
@@ -28,6 +29,7 @@ func FromProto(pi *ProverInput) *input.ProverInput {
 		Blocks:      BlocksFromProto(pi.Blocks),
 		Witness:     WitnessFromProto(pi.Witness),
 		ChainConfig: ChainConfigFromProto(pi.ChainConfig),
+		AccessList:  AccessListFromProto(pi.AccessList),
 	}
 }
 

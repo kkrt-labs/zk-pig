@@ -4,6 +4,7 @@ package input;
 
 import "src/prover-input/proto/block.proto";
 import "src/prover-input/proto/chain_config.proto";
+import "src/prover-input/proto/transaction.proto";
 
 option go_package = "github.com/kkrt-labs/zk-pig/src/prover-input/proto";
 
@@ -13,6 +14,7 @@ message ProverInput {
   repeated Block blocks = 2;
   Witness witness = 3;
   ChainConfig chain_config = 4; 
+  repeated AccessTuple access_list = 5;
 }
 
 message Witness {
