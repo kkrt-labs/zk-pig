@@ -24,12 +24,8 @@ func TestRPCDatabase(t *testing.T) {
 	defer ctrl.Finish()
 
 	remote := rpcmock.NewMockClient(ctrl)
-<<<<<<< HEAD
 
 	db := Hack(nil, remote)
-=======
-	db := NewRPCDatabase(nil, remote)
->>>>>>> 96a505a (Update database_rpc_test.go)
 
 	// Prepare test data
 	stateRoot := gethcommon.HexToHash("0x6f39539da0b571e36e04cdee1ef9273ce168644d63822352f3a18c0504220166")
