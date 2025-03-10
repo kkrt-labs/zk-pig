@@ -20,6 +20,9 @@ import (
 	"github.com/justinas/alice"
 	kkrtnet "github.com/kkrt-labs/go-utils/net"
 	kkrthttp "github.com/kkrt-labs/go-utils/net/http"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/collectors"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
@@ -94,6 +97,8 @@ type App struct {
 
 	liveHealth  *health.Health
 	readyHealth *health.Health
+
+	prometheus *prometheus.Registry
 }
 
 func NewApp(cfg *Config, opts ...Option) (*App, error) {
@@ -104,6 +109,7 @@ func NewApp(cfg *Config, opts ...Option) (*App, error) {
 		logger:        zap.NewNop(),
 		mainRouter:    httprouter.New(),
 		healthzRouter: httprouter.New(),
+		prometheus:    prometheus.NewRegistry(),
 	}
 
 	for _, opt := range opts {
@@ -115,6 +121,8 @@ func NewApp(cfg *Config, opts ...Option) (*App, error) {
 	app.liveHealth = newHealth(app)
 	app.readyHealth = newHealth(app)
 
+	app.registerBaseMetrics()
+
 	return app, nil
 }
 
@@ -123,72 +131,7 @@ func newHealth(app *App) *health.Health {
 	return h
 }
 
-func (app *App) EnableMain() {
-	app.main = app.server("main", &app.cfg.Main)
-}
-
-func (app *App) EnableHealthz() {
-	app.healthz = app.server("healthz", &app.cfg.Healthz)
-}
-
-func (app *App) server(name string, cfg *ServerConfig) *kkrthttp.Server {
-	return Provide(app, fmt.Sprintf("app.%v", name), func() (*kkrthttp.Server, error) {
-		return &kkrthttp.Server{
-			Entrypoint: app.entrypoint(name, &cfg.Entrypoint),
-			Server:     app.httpServer(name, cfg),
-		}, nil
-	})
-}
-
-func (app *App) httpServer(name string, cfg *ServerConfig) *http.Server {
-	return Provide(app, fmt.Sprintf("app.%v.server", name), func() (*http.Server, error) {
-		return newServer(cfg)
-	})
-}
-
-func (app *App) entrypoint(name string, cfg *EntrypointConfig) *kkrtnet.Entrypoint {
-	return Provide(app, fmt.Sprintf("app.%v.entrypoint", name), func() (*kkrtnet.Entrypoint, error) {
-		keepAlive, err := time.ParseDuration(cfg.KeepAlive)
-		if err != nil {
-			return nil, fmt.Errorf("failed to parse keep alive: %w", err)
-		}
-
-		return kkrtnet.NewEntrypoint(&kkrtnet.EntrypointConfig{
-			Network:   "tcp",
-			Address:   cfg.Address,
-			KeepAlive: keepAlive,
-		}), nil
-	})
-}
-
-func (app *App) setHandlers() {
-	app.setMainHandler()
-	app.setHealthzHandler()
-}
-
-func (app *App) setMainHandler() {
-	if app.main != nil {
-		h := app.instrumentMiddleware().Then(app.mainRouter)
-		app.main.Server.Handler = h
-	}
-}
-
-func (app *App) instrumentMiddleware() alice.Chain {
-	return alice.New(httplog.LoggerWithConfig(httplog.LoggerConfig{
-		Formatter: httplogzap.ZapLogger(app.logger, zapcore.InfoLevel, ""),
-	}))
-}
-
-func (app *App) setHealthzHandler() {
-	app.healthzRouter.HandlerFunc(http.MethodGet, "/live", app.liveHealth.HandlerFunc)
-	app.healthzRouter.HandlerFunc(http.MethodGet, "/ready", app.readyHealth.HandlerFunc)
-
-	if app.healthz != nil {
-		app.healthz.Server.Handler = app.healthzRouter
-	}
-}
-
-func (app *App) Provide(name string, constructor func() (any, error)) any {
+func (app *App) Provide(name string, constructor func() (any, error), opts ...ServiceOption) any {
 	if name == "" {
 		name = reflect.TypeOf(constructor).Out(0).String()
 	}
@@ -198,15 +141,15 @@ func (app *App) Provide(name string, constructor func() (any, error)) any {
 		return svc.value
 	}
 
-	svc := app.createService(name, constructor)
+	svc := app.createService(name, constructor, opts...)
 	app.services[name] = svc
 
 	return svc.value
 }
 
-func (app *App) createService(name string, constructor func() (any, error)) *Service {
+func (app *App) createService(name string, constructor func() (any, error), opts ...ServiceOption) *Service {
 	previous := app.current
-	svc := newService(name, constructor)
+	svc := newService(name, constructor, opts...)
 	svc.app = app
 
 	app.current = svc // set the current service pointer
@@ -222,10 +165,10 @@ func (app *App) createService(name string, constructor func() (any, error)) *Ser
 	return svc
 }
 
-func Provide[T any](app *App, name string, constructor func() (T, error)) T {
+func Provide[T any](app *App, name string, constructor func() (T, error), opts ...ServiceOption) T {
 	val := app.Provide(name, func() (any, error) {
 		return constructor()
-	})
+	}, opts...)
 
 	v := reflect.ValueOf(val)
 	if v.Kind() == reflect.Invalid {
@@ -319,6 +262,84 @@ func (app *App) stopListeningSignals() {
 	signal.Stop(app.done)
 }
 
+func (app *App) EnableMain() {
+	app.main = app.server("main", &app.cfg.Main)
+}
+
+func (app *App) EnableHealthz() {
+	app.healthz = app.server("healthz", &app.cfg.Healthz)
+}
+
+func (app *App) server(name string, cfg *ServerConfig) *kkrthttp.Server {
+	return Provide(app, fmt.Sprintf("app.%v", name), func() (*kkrthttp.Server, error) {
+		return &kkrthttp.Server{
+			Entrypoint: app.entrypoint(name, &cfg.Entrypoint),
+			Server:     app.httpServer(name, cfg),
+		}, nil
+	})
+}
+
+func (app *App) httpServer(name string, cfg *ServerConfig) *http.Server {
+	return Provide(app, fmt.Sprintf("app.%v.server", name), func() (*http.Server, error) {
+		return newServer(cfg)
+	})
+}
+
+func (app *App) entrypoint(name string, cfg *EntrypointConfig) *kkrtnet.Entrypoint {
+	return Provide(app, fmt.Sprintf("app.%v.entrypoint", name), func() (*kkrtnet.Entrypoint, error) {
+		keepAlive, err := time.ParseDuration(cfg.KeepAlive)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse keep alive: %w", err)
+		}
+
+		return kkrtnet.NewEntrypoint(&kkrtnet.EntrypointConfig{
+			Network:   "tcp",
+			Address:   cfg.Address,
+			KeepAlive: keepAlive,
+		}), nil
+	})
+}
+
+func (app *App) setHandlers() {
+	app.setMainHandler()
+	app.setHealthzHandler()
+}
+
+func (app *App) setMainHandler() {
+	if app.main != nil {
+		h := app.instrumentMiddleware().Then(app.mainRouter)
+		app.main.Server.Handler = h
+	}
+}
+
+func (app *App) instrumentMiddleware() alice.Chain {
+	return alice.New(
+		// Log Requests on main router
+		httplog.LoggerWithConfig(httplog.LoggerConfig{
+			Formatter: httplogzap.ZapLogger(app.logger, zapcore.InfoLevel, ""),
+		}),
+		// Instrument main router with prometheus metrics
+		func(next http.Handler) http.Handler {
+			return promhttp.InstrumentMetricHandler(app.prometheus, next)
+		},
+	)
+}
+
+func (app *App) setHealthzHandler() {
+	app.healthzRouter.Handler(http.MethodGet, "/live", app.liveHealth.Handler())
+	app.healthzRouter.Handler(http.MethodGet, "/ready", app.readyHealth.Handler())
+	app.healthzRouter.Handler(http.MethodGet, "/metrics", promhttp.HandlerFor(app.prometheus, promhttp.HandlerOpts{}))
+
+	if app.healthz != nil {
+		app.healthz.Server.Handler = app.healthzRouter
+	}
+}
+
+func (app *App) registerBaseMetrics() {
+	app.prometheus.MustRegister(collectors.NewProcessCollector(collectors.ProcessCollectorOpts{}))
+	app.prometheus.MustRegister(collectors.NewGoCollector())
+}
+
 type ServiceStatus uint32
 
 const (
@@ -351,16 +372,30 @@ type Service struct {
 
 	stopOnce sync.Once
 	stopChan chan struct{}
+
+	healthConfig *health.Config
+
+	metricsPrefix string
 }
 
-func newService(name string, constructor func() (any, error)) *Service {
-	return &Service{
-		name:        name,
-		constructor: constructor,
-		deps:        make(map[string]*Service),
-		depsOf:      make(map[string]*Service),
-		stopChan:    make(chan struct{}),
+func newService(name string, constructor func() (any, error), opts ...ServiceOption) *Service {
+	s := &Service{
+		name:         name,
+		constructor:  constructor,
+		deps:         make(map[string]*Service),
+		depsOf:       make(map[string]*Service),
+		stopChan:     make(chan struct{}),
+		healthConfig: new(health.Config),
 	}
+
+	for _, opt := range opts {
+		if err := opt(s); err != nil {
+			_ = s.fail(err)
+			return nil
+		}
+	}
+
+	return s
 }
 
 func (s *Service) Name() string {
@@ -414,6 +449,8 @@ func (s *Service) construct() {
 		_ = s.fail(err)
 		return
 	}
+
+	s.registerMetric()
 
 	s.setStatus(Constructed)
 }
@@ -553,39 +590,51 @@ func (s *Service) stop(ctx context.Context) *ServiceError {
 }
 
 func (s *Service) registerReadyCheck() error {
-	return s.app.readyHealth.Register(health.Config{
-		Name: s.name,
-		Check: func(ctx context.Context) error {
-			return s.readyCheck(ctx)
-		},
-		Timeout: 10 * time.Second,
-	})
+	if s.healthConfig.Name == "" {
+		// if no name is set, use the service name
+		s.healthConfig.Name = s.name
+	}
+
+	if s.healthConfig.Check != nil {
+		s.healthConfig.Check = s.wrapCheck(s.healthConfig.Check)
+	} else if checkable, ok := s.value.(Checkable); ok {
+		s.healthConfig.Check = s.wrapCheck(checkable.Ready)
+	} else {
+		return nil
+	}
+
+	return s.app.readyHealth.Register(*s.healthConfig)
 }
 
-func (s *Service) readyCheck(ctx context.Context) error {
-	// we lock to make sure that the service is not
-	// stopped while we are checking if it is ready
-	s.mux.RLock()
-	defer s.mux.RUnlock()
+func (s *Service) wrapCheck(check health.CheckFunc) health.CheckFunc {
+	return func(ctx context.Context) error {
+		// we lock to make sure that the service is not
+		// stopped while we are checking if it is ready
+		s.mux.RLock()
+		defer s.mux.RUnlock()
 
-	switch s.Status() {
-	case Constructing, Constructed:
-		return fmt.Errorf("service not started")
-	case Starting:
-		return fmt.Errorf("service starting")
-	case Running:
-		if checkable, ok := s.value.(Checkable); ok {
-			return checkable.Ready(ctx)
+		switch s.Status() {
+		case Constructing, Constructed:
+			return fmt.Errorf("service not started")
+		case Starting:
+			return fmt.Errorf("service starting")
+		case Running:
+			return check(ctx)
+		case Stopping:
+			return fmt.Errorf("service stopping")
+		case Stopped:
+			return fmt.Errorf("service stopped")
+		case Error:
+			return fmt.Errorf("service in error state: %v", s.err)
 		}
 		return nil
-	case Stopping:
-		return fmt.Errorf("service stopping")
-	case Stopped:
-		return fmt.Errorf("service stopped")
-	case Error:
-		return fmt.Errorf("service in error state: %v", s.err)
 	}
-	return nil
+}
+
+func (s *Service) registerMetric() {
+	if collector, ok := s.value.(prometheus.Collector); ok {
+		prometheus.WrapRegistererWithPrefix(s.metricsPrefix, s.app.prometheus).MustRegister(collector)
+	}
 }
 
 type ServiceError struct {

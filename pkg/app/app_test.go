@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
@@ -394,4 +395,82 @@ func TestHealthChecks(t *testing.T) {
 	require.NoError(t, err)
 	defer resp.Body.Close()
 	assert.Equal(t, resp.StatusCode, http.StatusServiceUnavailable)
+}
+
+type metricsService struct {
+	count prometheus.Counter
+}
+
+func (s *metricsService) incr() {
+	s.count.Inc()
+}
+
+func (s *metricsService) Describe(ch chan<- *prometheus.Desc) {
+	ch <- s.count.Desc()
+}
+
+func (s *metricsService) Collect(ch chan<- prometheus.Metric) {
+	ch <- s.count
+}
+
+func TestMetrics(t *testing.T) {
+	app := newTestApp(t)
+	require.NoError(t, app.Error())
+
+	metrics := &metricsService{
+		count: prometheus.NewCounter(prometheus.CounterOpts{
+			Name: "test_metricA",
+		}),
+	}
+	app.Provide("test-metrics-svc", func() (any, error) {
+		app.EnableHealthz()
+		app.Provide(
+			"test-metrics-svc-with-prefix",
+			func() (any, error) {
+				return &metricsService{
+					count: prometheus.NewCounter(prometheus.CounterOpts{
+						Name: "test_metricB",
+					}),
+				}, nil
+			},
+			WithMetricsPrefix("test_prefix_"),
+		)
+		return metrics, nil
+	})
+
+	err := app.Start(context.Background())
+	require.NoError(t, err)
+
+	require.NotNil(t, app.healthz)
+	healthAddr := app.healthz.Addr()
+	require.NotEmpty(t, healthAddr)
+
+	// Test metrics endpoint
+	req, err := http.NewRequest("GET", "http://"+healthAddr+"/metrics", http.NoBody)
+	require.NoError(t, err)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	assert.Equal(t, resp.StatusCode, http.StatusOK)
+
+	// Test collectors are registered with correct labels
+	families, err := app.prometheus.Gather()
+	require.NoError(t, err)
+	require.Len(t, families, 118)
+	assert.Equal(t, "test_metricA", families[116].GetName())
+	assert.Equal(t, "test_prefix_test_metricB", families[117].GetName())
+
+	// Test metrics are updated
+	assert.Equal(t, float64(0), families[116].GetMetric()[0].GetCounter().GetValue())
+	metrics.incr()
+	metrics.incr()
+	metrics.incr()
+
+	families, err = app.prometheus.Gather()
+	require.NoError(t, err)
+	assert.Equal(t, float64(3), families[116].GetMetric()[0].GetCounter().GetValue())
+
+	err = app.Stop(context.Background())
+	require.NoError(t, err)
 }
