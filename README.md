@@ -1,6 +1,11 @@
 # ZK-PIG
 
-[![Test](https://github.com/kkrt-labs/zk-pig/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/kkrt-labs/zk-pig/actions/workflows/test.yml) [![codecov](https://codecov.io/gh/kkrt-labs/zk-pig/graph/badge.svg?token=ML8SpNgYm1)](https://codecov.io/gh/kkrt-labs/zk-pig) [![API Reference](https://pkg.go.dev/badge/github.com/kkrt-labs/zk-pig)](https://pkg.go.dev/github.com/kkrt-labs/zk-pig?tab=doc) [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/kkrt-labs/zk-pig/blob/master/LICENSE) [![Twitter](https://img.shields.io/twitter/follow/KakarotZkEvm.svg)](https://x.com/intent/follow?screen_name=KakarotZkEvm)
+[![Test](https://github.com/kkrt-labs/zk-pig/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/kkrt-labs/zk-pig/actions/workflows/test.yml)
+[![codecov](https://codecov.io/gh/kkrt-labs/zk-pig/graph/badge.svg?token=ML8SpNgYm1)](https://codecov.io/gh/kkrt-labs/zk-pig)
+[![API Reference](https://pkg.go.dev/badge/github.com/kkrt-labs/zk-pig)](https://pkg.go.dev/github.com/kkrt-labs/zk-pig?tab=doc)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/kkrt-labs/zk-pig/blob/master/LICENSE)
+[![Discord](https://img.shields.io/badge/discord-join%20chat-5B5EA6)](https://discord.com/invite/kakarotzkevm)
+[![Twitter](https://img.shields.io/twitter/follow/KakarotZkEvm.svg)](https://x.com/intent/follow?screen_name=KakarotZkEvm)
 
 **ZK-PIG** is a ZK-EVM Prover Input generator responsible for generating the data inputs necessary for proving Execution Layer (EL) blocks. These prover inputs can later be consumed by proving infrastructures to generate EL block proofs.
 
