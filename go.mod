@@ -5,9 +5,14 @@ go 1.22.0
 toolchain go1.22.9
 
 require (
+	github.com/MadAppGang/httplog v1.3.0
+	github.com/MadAppGang/httplog/zap v1.2.1
 	github.com/ethereum/go-ethereum v1.14.12
+	github.com/hellofresh/health-go/v5 v5.5.3
 	github.com/holiman/uint256 v1.3.2
-	github.com/kkrt-labs/go-utils v0.2.3
+	github.com/julienschmidt/httprouter v1.3.0
+	github.com/justinas/alice v1.2.0
+	github.com/kkrt-labs/go-utils v0.2.4-0.20250310153000-5da3bd5f9e73
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
 	github.com/spf13/viper v1.19.0
@@ -25,11 +30,12 @@ require (
 	github.com/Azure/go-autorest/logger v0.2.1 // indirect
 	github.com/Azure/go-autorest/tracing v0.6.0 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
+	github.com/TylerBrock/colorjson v0.0.0-20200706003622-8a50f05110d2 // indirect
 	github.com/VictoriaMetrics/fastcache v1.12.2 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.36.3 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.10 // indirect
-	github.com/aws/aws-sdk-go-v2/config v1.29.8 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.61 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.29.9 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.62 // indirect
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.30 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.34 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.34 // indirect
@@ -39,10 +45,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/internal/checksum v1.6.2 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.15 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/s3shared v1.18.15 // indirect
-	github.com/aws/aws-sdk-go-v2/service/s3 v1.78.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.25.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.29.0 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.33.16 // indirect
+	github.com/aws/aws-sdk-go-v2/service/s3 v1.78.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.25.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.29.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.33.17 // indirect
 	github.com/aws/smithy-go v1.22.2 // indirect
 	github.com/bits-and-blooms/bitset v1.13.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
@@ -56,6 +62,7 @@ require (
 	github.com/decred/dcrd/dcrec/secp256k1/v4 v4.1.0 // indirect
 	github.com/ethereum/c-kzg-4844 v1.0.0 // indirect
 	github.com/ethereum/go-verkle v0.1.1-0.20240829091221-dffa7562dbe9 // indirect
+	github.com/fatih/color v1.16.0 // indirect
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/go-ole/go-ole v1.3.0 // indirect
 	github.com/gofrs/flock v0.8.1 // indirect
@@ -69,6 +76,8 @@ require (
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jackpal/go-nat-pmp v1.0.2 // indirect
 	github.com/magiconair/properties v1.8.7 // indirect
+	github.com/mattn/go-colorable v0.1.13 // indirect
+	github.com/mattn/go-isatty v0.0.20 // indirect
 	github.com/mattn/go-runewidth v0.0.13 // indirect
 	github.com/mitchellh/mapstructure v1.5.0 // indirect
 	github.com/mmcloughlin/addchain v0.4.0 // indirect
@@ -88,6 +97,8 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.2 // indirect
+	go.opentelemetry.io/otel v1.24.0 // indirect
+	go.opentelemetry.io/otel/trace v1.24.0 // indirect
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/crypto v0.33.0 // indirect
 	golang.org/x/exp v0.0.0-20231110203233-9a3e6036ecaa // indirect

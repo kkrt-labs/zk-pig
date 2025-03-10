@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/kkrt-labs/go-utils/log"
+	"github.com/kkrt-labs/zk-pig/pkg/app"
 	"github.com/kkrt-labs/zk-pig/src"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -71,6 +72,7 @@ func NewZkPigCommand() *cobra.Command {
 	// Add persistent flags for logging
 	log.AddFlags(ctx.Viper, rootCmd.PersistentFlags())
 	src.AddConfigFileFlag(ctx.Viper, rootCmd.PersistentFlags())
+	app.AddFlags(ctx.Viper, rootCmd.PersistentFlags())
 
 	// Add flags for chain, aws, and store
 	src.AddChainFlags(ctx.Viper, rootCmd.PersistentFlags())

@@ -1,8 +1,10 @@
-package svc
+package app
 
 import (
 	"context"
 	"errors"
+	"net"
+	"net/http"
 	"testing"
 	"time"
 
@@ -11,8 +13,29 @@ import (
 	"go.uber.org/zap"
 )
 
-func newTestApp() *App {
-	return NewApp(zap.NewNop())
+func newTestApp(t *testing.T) *App {
+	cfg := new(Config)
+	cfg.Main.Entrypoint.Network = "tcp"
+	cfg.Main.Entrypoint.KeepAlive = "1s"
+	cfg.Main.ReadTimeout = "1s"
+	cfg.Main.ReadHeaderTimeout = "1s"
+	cfg.Main.WriteTimeout = "1s"
+	cfg.Main.IdleTimeout = "1s"
+	cfg.Healthz.Entrypoint.Network = "tcp"
+	cfg.Healthz.Entrypoint.KeepAlive = "1s"
+	cfg.Healthz.ReadTimeout = "1s"
+	cfg.Healthz.ReadHeaderTimeout = "1s"
+	cfg.Healthz.WriteTimeout = "1s"
+	cfg.Healthz.IdleTimeout = "1s"
+
+	app, err := NewApp(
+		cfg,
+		WithLogger(zap.NewNop()),
+		WithName("test"),
+		WithVersion("1.0.0"),
+	)
+	require.NoError(t, err)
+	return app
 }
 
 func TestAppProvide(t *testing.T) {
@@ -54,7 +77,7 @@ func TestAppProvide(t *testing.T) {
 
 	for _, tc := range testCase {
 		t.Run(tc.desc, func(t *testing.T) {
-			app := newTestApp()
+			app := newTestApp(t)
 			res := app.Provide("test", tc.constructor)
 			err := app.Error()
 			if tc.expectErr {
@@ -69,7 +92,7 @@ func TestAppProvide(t *testing.T) {
 
 func TestProvide(t *testing.T) {
 	t.Run("string", func(t *testing.T) {
-		app := newTestApp()
+		app := newTestApp(t)
 		res := Provide(app, "test", func() (string, error) {
 			return "test", nil
 		})
@@ -77,7 +100,7 @@ func TestProvide(t *testing.T) {
 	})
 
 	t.Run("int", func(t *testing.T) {
-		app := newTestApp()
+		app := newTestApp(t)
 		res := Provide(app, "test", func() (int, error) {
 			return 1, nil
 		})
@@ -85,7 +108,7 @@ func TestProvide(t *testing.T) {
 	})
 
 	t.Run("*string", func(t *testing.T) {
-		app := newTestApp()
+		app := newTestApp(t)
 		res := Provide(app, "test", func() (*string, error) {
 			return nil, nil
 		})
@@ -93,7 +116,7 @@ func TestProvide(t *testing.T) {
 	})
 
 	t.Run("*string#nil", func(t *testing.T) {
-		app := newTestApp()
+		app := newTestApp(t)
 		res := Provide(app, "test", func() (*string, error) {
 			return nil, nil
 		})
@@ -101,7 +124,7 @@ func TestProvide(t *testing.T) {
 	})
 
 	t.Run("error", func(t *testing.T) {
-		app := newTestApp()
+		app := newTestApp(t)
 		res := Provide(app, "test", func() (error, error) {
 			return errors.New("error"), nil
 		})
@@ -109,7 +132,7 @@ func TestProvide(t *testing.T) {
 	})
 
 	t.Run("interface", func(t *testing.T) {
-		app := newTestApp()
+		app := newTestApp(t)
 		res := Provide(app, "test", func() (interface{}, error) {
 			return "test", nil
 		})
@@ -117,7 +140,7 @@ func TestProvide(t *testing.T) {
 	})
 
 	t.Run("interface#nil", func(t *testing.T) {
-		app := newTestApp()
+		app := newTestApp(t)
 		res := Provide(app, "test", func() (interface{}, error) {
 			return nil, nil
 		})
@@ -144,7 +167,7 @@ func TestAppNoDeps(t *testing.T) {
 	defer close(stop)
 
 	testApp := func() *App {
-		app := newTestApp()
+		app := newTestApp(t)
 		_ = Provide(app, "test", func() (*testService, error) {
 			return &testService{
 				start: start,
@@ -218,7 +241,7 @@ func TestAppNoDeps(t *testing.T) {
 }
 
 func TestAppWithDeps(t *testing.T) {
-	app := newTestApp()
+	app := newTestApp(t)
 	startMain, stopMain, startDep, stopDep := make(chan error), make(chan error), make(chan error), make(chan error)
 	defer close(startMain)
 	defer close(stopMain)
@@ -283,4 +306,92 @@ func TestServiceError(t *testing.T) {
 >service "dep2": error on dep2
 >>service "dep21"`
 	assert.Equal(t, svcErr.Error(), expected)
+}
+
+func TestAppServers(t *testing.T) {
+	app := newTestApp(t)
+	require.NoError(t, app.Error())
+
+	app.Provide("top", func() (any, error) {
+		app.EnableMain()
+		app.EnableHealthz()
+		return nil, nil
+	})
+
+	err := app.Start(context.Background())
+	require.NoError(t, err)
+
+	// Check main server is running
+	require.NotNil(t, app.main)
+	mainAddr := app.main.Addr()
+	require.NotEmpty(t, mainAddr)
+
+	conn, err := net.Dial("tcp", mainAddr)
+	require.NoError(t, err)
+	conn.Close()
+
+	// Check main server is running
+	require.NotNil(t, app.healthz)
+	healthzAddr := app.healthz.Addr()
+	require.NotEmpty(t, healthzAddr)
+
+	conn, err = net.Dial("tcp", healthzAddr)
+	require.NoError(t, err)
+	conn.Close()
+
+	// Check healthz server is running
+	err = app.Stop(context.Background())
+	require.NoError(t, err)
+}
+
+type checkableService struct {
+	err error
+}
+
+func (s *checkableService) Ready(_ context.Context) error {
+	return s.err
+}
+
+func TestHealthChecks(t *testing.T) {
+	app := newTestApp(t)
+	require.NoError(t, app.Error())
+
+	checkable := new(checkableService)
+	Provide(app, "checkable", func() (*checkableService, error) {
+		app.EnableHealthz()
+		return checkable, nil
+	})
+
+	err := app.Start(context.Background())
+	require.NoError(t, err)
+
+	require.NotNil(t, app.healthz)
+	healthAddr := app.healthz.Addr()
+	require.NotEmpty(t, healthAddr)
+
+	// Test live check
+	req, err := http.NewRequest("GET", "http://"+healthAddr+"/live", http.NoBody)
+	require.NoError(t, err)
+
+	resp, err := http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	assert.Equal(t, resp.StatusCode, http.StatusOK)
+
+	// Test ready check
+	req, err = http.NewRequest("GET", "http://"+healthAddr+"/ready", http.NoBody)
+	require.NoError(t, err)
+
+	resp, err = http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	assert.Equal(t, resp.StatusCode, http.StatusOK)
+
+	// Test ready check with error
+	checkable.err = errors.New("test error")
+
+	resp, err = http.DefaultClient.Do(req)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	assert.Equal(t, resp.StatusCode, http.StatusServiceUnavailable)
 }

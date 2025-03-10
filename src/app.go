@@ -15,7 +15,7 @@ import (
 	filestore "github.com/kkrt-labs/go-utils/store/file"
 	multistore "github.com/kkrt-labs/go-utils/store/multi"
 	s3store "github.com/kkrt-labs/go-utils/store/s3"
-	"github.com/kkrt-labs/zk-pig/pkg/svc"
+	"github.com/kkrt-labs/zk-pig/pkg/app"
 	"github.com/kkrt-labs/zk-pig/src/generator"
 	"github.com/kkrt-labs/zk-pig/src/steps"
 	inputstore "github.com/kkrt-labs/zk-pig/src/store"
@@ -24,24 +24,34 @@ import (
 
 // Service is a service that enables the generation of prover inpunts for EVM compatible blocks.
 type App struct {
-	svc.App
+	app *app.App
 	cfg *Config
 }
 
 func NewApp(cfg *Config, logger *zap.Logger) (*App, error) {
+	a, err := app.NewApp(
+		&cfg.App,
+		app.WithLogger(logger),
+		app.WithName("zk-pig"),
+		app.WithVersion(Version),
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	return &App{
-		App: *svc.NewApp(logger),
+		app: a,
 		cfg: cfg,
 	}, nil
 }
 
-func (app *App) Config() *Config {
-	return app.cfg
+func (a *App) Config() *Config {
+	return a.cfg
 }
 
-func (app *App) BaseJSONRPC() jsonrpc.Client {
-	return svc.Provide(&(app.App), "base-jsonrpc", func() (jsonrpc.Client, error) {
-		gCfg := app.Config()
+func (a *App) BaseJSONRPC() jsonrpc.Client {
+	return app.Provide(a.app, "base-jsonrpc", func() (jsonrpc.Client, error) {
+		gCfg := a.Config()
 		if gCfg.Chain.RPC.URL != "" {
 			cfg := (&jsonrpcmrgd.Config{
 				Addr: gCfg.Chain.RPC.URL,
@@ -58,9 +68,9 @@ func (app *App) BaseJSONRPC() jsonrpc.Client {
 	})
 }
 
-func (app *App) JSONRPC() jsonrpc.Client {
-	return svc.Provide(&(app.App), "jsonrpc", func() (jsonrpc.Client, error) {
-		remote := app.BaseJSONRPC()
+func (a *App) JSONRPC() jsonrpc.Client {
+	return app.Provide(a.app, "jsonrpc", func() (jsonrpc.Client, error) {
+		remote := a.BaseJSONRPC()
 		if remote == nil {
 			return nil, nil
 		}
@@ -77,9 +87,9 @@ func (app *App) JSONRPC() jsonrpc.Client {
 	})
 }
 
-func (app *App) EthRPC() *ethjsonrpc.Client {
-	return svc.Provide(&(app.App), "ethrpc", func() (*ethjsonrpc.Client, error) {
-		jrpc := app.JSONRPC()
+func (a *App) EthRPC() *ethjsonrpc.Client {
+	return app.Provide(a.app, "ethrpc", func() (*ethjsonrpc.Client, error) {
+		jrpc := a.JSONRPC()
 		if jrpc == nil {
 			return nil, fmt.Errorf("jsonrpc client not set")
 		}
@@ -87,9 +97,9 @@ func (app *App) EthRPC() *ethjsonrpc.Client {
 	})
 }
 
-func (app *App) ChainID() *big.Int {
-	return svc.Provide(&(app.App), "chain-id", func() (*big.Int, error) {
-		gCfg := app.Config()
+func (a *App) ChainID() *big.Int {
+	return app.Provide(a.app, "chain-id", func() (*big.Int, error) {
+		gCfg := a.Config()
 		if gCfg.Chain.ID != "" {
 			chainID, ok := new(big.Int).SetString(gCfg.Chain.ID, 10)
 			if !ok {
@@ -102,9 +112,9 @@ func (app *App) ChainID() *big.Int {
 	})
 }
 
-func (app *App) PreflightDataStore() inputstore.PreflightDataStore {
-	return svc.Provide(&(app.App), "preflight-data-store", func() (inputstore.PreflightDataStore, error) {
-		gCfg := app.Config()
+func (a *App) PreflightDataStore() inputstore.PreflightDataStore {
+	return app.Provide(a.app, "preflight-data-store", func() (inputstore.PreflightDataStore, error) {
+		gCfg := a.Config()
 		if gCfg.PreflightDataStore.File.Dir != "" {
 			cfg := &inputstore.PreflightDataStoreConfig{
 				FileConfig: &filestore.Config{
@@ -118,9 +128,9 @@ func (app *App) PreflightDataStore() inputstore.PreflightDataStore {
 	})
 }
 
-func (app *App) ProverInputStore() inputstore.ProverInputStore {
-	return svc.Provide(&(app.App), "prover-input-store", func() (inputstore.ProverInputStore, error) {
-		gCfg := app.Config()
+func (a *App) ProverInputStore() inputstore.ProverInputStore {
+	return app.Provide(a.app, "prover-input-store", func() (inputstore.ProverInputStore, error) {
+		gCfg := a.Config()
 
 		var proverInputStoreCfg multistore.Config
 
@@ -164,50 +174,60 @@ func (app *App) ProverInputStore() inputstore.ProverInputStore {
 	})
 }
 
-func (app *App) Preflight() steps.Preflight {
-	return svc.Provide(&(app.App), "preflight", func() (steps.Preflight, error) {
-		return steps.NewPreflight(app.EthRPC()), nil
+func (a *App) Preflight() steps.Preflight {
+	return app.Provide(a.app, "preflight", func() (steps.Preflight, error) {
+		return steps.NewPreflight(a.EthRPC()), nil
 	})
 }
 
-func (app *App) Preparer() steps.Preparer {
-	return svc.Provide(&(app.App), "preparer", func() (steps.Preparer, error) {
+func (a *App) Preparer() steps.Preparer {
+	return app.Provide(a.app, "preparer", func() (steps.Preparer, error) {
 		return steps.NewPreparer(), nil
 	})
 }
 
-func (app *App) Executor() steps.Executor {
-	return svc.Provide(&(app.App), "executor", func() (steps.Executor, error) {
+func (a *App) Executor() steps.Executor {
+	return app.Provide(a.app, "executor", func() (steps.Executor, error) {
 		return steps.NewExecutor(), nil
 	})
 }
 
-func (app *App) Generator() *generator.Generator {
-	return svc.Provide(&(app.App), "generator", func() (*generator.Generator, error) {
+func (a *App) Generator() *generator.Generator {
+	return app.Provide(a.app, "generator", func() (*generator.Generator, error) {
 		return &generator.Generator{
-			ChainID:            app.ChainID(),
-			RPC:                app.EthRPC(),
-			Preflighter:        app.Preflight(),
-			Preparer:           app.Preparer(),
-			Executor:           app.Executor(),
-			PreflightDataStore: app.PreflightDataStore(),
-			ProverInputStore:   app.ProverInputStore(),
+			ChainID:            a.ChainID(),
+			RPC:                a.EthRPC(),
+			Preflighter:        a.Preflight(),
+			Preparer:           a.Preparer(),
+			Executor:           a.Executor(),
+			PreflightDataStore: a.PreflightDataStore(),
+			ProverInputStore:   a.ProverInputStore(),
 		}, nil
 	})
 }
 
-func (app *App) Daemon() *generator.Daemon {
-	return svc.Provide(&(app.App), "daemon", func() (*generator.Daemon, error) {
+func (a *App) Daemon() *generator.Daemon {
+	return app.Provide(a.app, "daemon", func() (*generator.Daemon, error) {
+		a.app.EnableMain()
+		a.app.EnableHealthz()
 		return &generator.Daemon{
-			Generator: app.Generator(),
+			Generator: a.Generator(),
 		}, nil
 	})
 }
 
-func (app *App) Start(ctx context.Context) error {
-	return app.App.Start(ctx)
+func (a *App) Start(ctx context.Context) error {
+	return a.app.Start(ctx)
 }
 
-func (app *App) Stop(ctx context.Context) error {
-	return app.App.Stop(ctx)
+func (a *App) Stop(ctx context.Context) error {
+	return a.app.Stop(ctx)
+}
+
+func (a *App) Run(ctx context.Context) error {
+	return a.app.Run(ctx)
+}
+
+func (a *App) Error() error {
+	return a.app.Error()
 }

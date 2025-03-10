@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/kkrt-labs/go-utils/log"
+	"github.com/kkrt-labs/zk-pig/pkg/app"
 	"github.com/spf13/viper"
 )
 
@@ -40,6 +41,7 @@ type Config struct {
 		} `mapstructure:"s3,omitempty"`
 	} `mapstructure:"prover-input-store"`
 	Extra map[string]interface{} `mapstructure:"_extra,remain,omitempty"`
+	App   app.Config             `mapstructure:"app"`
 	Log   log.Config             `mapstructure:"log"`
 }
 
