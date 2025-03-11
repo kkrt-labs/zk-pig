@@ -450,8 +450,6 @@ func (s *Service) construct() {
 		return
 	}
 
-	s.registerMetric()
-
 	s.setStatus(Constructed)
 }
 
@@ -525,6 +523,7 @@ func (s *Service) start(ctx context.Context) *ServiceError {
 			}
 		}
 
+		s.registerMetric()
 		s.setStatusWithLock(Running)
 	})
 

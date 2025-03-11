@@ -42,12 +42,12 @@ func TestGenerator(t *testing.T) {
 	err := generator.Start(context.TODO())
 	require.NoError(t, err)
 
-	testBlock := new(gethtypes.Block)
+	testBlock := gethtypes.NewBlockWithHeader(&gethtypes.Header{Number: big.NewInt(1)})
 	testData := new(steps.PreflightData)
 	testInput := new(input.ProverInput)
 
 	t.Run("Preflight#NoError", func(t *testing.T) {
-		rpcCall := ethrpc.EXPECT().BlockByNumber(gomock.Any(), gomock.Any()).Return(testBlock, nil)
+		rpcCall := ethrpc.EXPECT().BlockByNumber(gomock.Any(), big.NewInt(1)).Return(testBlock, nil)
 		preflightCall := preflighter.EXPECT().Preflight(gomock.Any(), testBlock).Return(testData, nil).After(rpcCall)
 		preflightDataStore.EXPECT().StorePreflightData(gomock.Any(), testData).After(preflightCall)
 
@@ -74,7 +74,7 @@ func TestGenerator(t *testing.T) {
 	})
 
 	t.Run("Generate#NoError", func(t *testing.T) {
-		rpcCall := ethrpc.EXPECT().BlockByNumber(gomock.Any(), gomock.Any()).Return(testBlock, nil)
+		rpcCall := ethrpc.EXPECT().BlockByNumber(gomock.Any(), big.NewInt(1)).Return(testBlock, nil)
 		preflightCall := preflighter.EXPECT().Preflight(gomock.Any(), testBlock).Return(testData, nil).After(rpcCall)
 		preflightDataStore.EXPECT().StorePreflightData(gomock.Any(), testData).After(preflightCall)
 		prepareCall := preparer.EXPECT().Prepare(gomock.Any(), testData).Return(testInput, nil).After(preflightCall)

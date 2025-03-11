@@ -8,6 +8,7 @@ import (
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/kkrt-labs/go-utils/log"
 	"github.com/kkrt-labs/go-utils/tag"
+	"github.com/prometheus/client_golang/prometheus"
 	"go.uber.org/zap"
 )
 
@@ -18,16 +19,37 @@ type Daemon struct {
 	latest    chan *gethtypes.Block
 	stop      chan struct{}
 	cancelRun context.CancelFunc
+
+	latestBlockNumber prometheus.Gauge
 }
 
 func (d *Daemon) Start(ctx context.Context) error {
 	d.latest = make(chan *gethtypes.Block)
 	d.stop = make(chan struct{})
+
+	d.setMetrics()
+
 	runCtx, cancelRun := context.WithCancel(ctx)
 	runCtx = tag.WithComponent(runCtx, "zkpig")
 	d.cancelRun = cancelRun
 	d.run(runCtx)
 	return nil
+}
+
+func (d *Daemon) setMetrics() {
+	d.latestBlockNumber = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name:      "latest_block_number",
+		Subsystem: subSystem,
+		Help:      "Latest block number",
+	})
+}
+
+func (d *Daemon) Describe(ch chan<- *prometheus.Desc) {
+	d.latestBlockNumber.Describe(ch)
+}
+
+func (d *Daemon) Collect(ch chan<- prometheus.Metric) {
+	d.latestBlockNumber.Collect(ch)
 }
 
 func (d *Daemon) run(runCtx context.Context) {
@@ -71,6 +93,7 @@ func (d *Daemon) listenLatest(runCtx context.Context) {
 				}
 			}
 			latest = block
+			d.latestBlockNumber.Set(float64(block.Number().Uint64()))
 		}
 
 		select {
