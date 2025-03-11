@@ -2,6 +2,8 @@ package app
 
 import (
 	"context"
+
+	"github.com/kkrt-labs/go-utils/tag"
 )
 
 // Runnable is an interface for any service that maintains long living task(s)
@@ -29,4 +31,30 @@ type Checkable interface {
 	//
 	// Ready is called by the App only when the service is Running (after successful Start() and before calling Stop())
 	Ready(ctx context.Context) error
+}
+
+type Metricable interface {
+	SetMetrics(system, subsystem string, tags ...*tag.Tag)
+}
+
+// Taggable is a service that can get tags attached to it
+type Taggable interface {
+	// AttachTags attaches tags to the service
+	AttachTags(tags ...*tag.Tag)
+}
+
+type Tagged struct {
+	tag.Set
+}
+
+func NewTagged(tags ...*tag.Tag) Tagged {
+	return Tagged{Set: tag.Set(tags)}
+}
+
+func (t *Tagged) AttachTags(tags ...*tag.Tag) {
+	t.Set = t.Set.WithTags(tags...)
+}
+
+func (t *Tagged) Context(ctx context.Context, tags ...*tag.Tag) context.Context {
+	return tag.WithTags(ctx, append(t.Set, tags...)...)
 }
