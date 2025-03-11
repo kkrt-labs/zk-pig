@@ -3,11 +3,13 @@ package app
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"net/http"
 	"testing"
 	"time"
 
+	"github.com/kkrt-labs/go-utils/tag"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -398,7 +400,16 @@ func TestHealthChecks(t *testing.T) {
 }
 
 type metricsService struct {
+	name  string
 	count prometheus.Counter
+}
+
+func (s *metricsService) SetMetrics(appName, subsystem string, _ ...*tag.Tag) {
+	s.count = prometheus.NewCounter(prometheus.CounterOpts{
+		Namespace: appName,
+		Subsystem: subsystem,
+		Name:      fmt.Sprintf("%s_count", s.name),
+	})
 }
 
 func (s *metricsService) incr() {
@@ -415,25 +426,23 @@ func (s *metricsService) Collect(ch chan<- prometheus.Metric) {
 
 func TestMetrics(t *testing.T) {
 	app := newTestApp(t)
+	_ = WithName("testApp")(app)
+
 	require.NoError(t, app.Error())
 
 	metrics := &metricsService{
-		count: prometheus.NewCounter(prometheus.CounterOpts{
-			Name: "test_metricA",
-		}),
+		name: "A",
 	}
-	app.Provide("test-metrics-svc", func() (any, error) {
+	app.Provide("test-wo-cfg", func() (any, error) {
 		app.EnableHealthz()
 		app.Provide(
-			"test-metrics-svc-with-prefix",
+			"test-w-cfg",
 			func() (any, error) {
 				return &metricsService{
-					count: prometheus.NewCounter(prometheus.CounterOpts{
-						Name: "test_metricB",
-					}),
+					name: "B",
 				}, nil
 			},
-			WithMetricsPrefix("test_prefix_"),
+			WithComponentName("subsystem"),
 		)
 		return metrics, nil
 	})
@@ -459,18 +468,18 @@ func TestMetrics(t *testing.T) {
 	require.NoError(t, err)
 	familyCount := len(families)
 	assert.GreaterOrEqual(t, familyCount, 2)
-	assert.Equal(t, "test_metricA", families[familyCount-2].GetName())
-	assert.Equal(t, "test_prefix_test_metricB", families[familyCount-1].GetName())
+	assert.Equal(t, "testApp_subsystem_B_count", families[familyCount-2].GetName())
+	assert.Equal(t, "testApp_test_wo_cfg_A_count", families[familyCount-1].GetName())
 
 	// Test metrics are updated
-	assert.Equal(t, float64(0), families[familyCount-2].GetMetric()[0].GetCounter().GetValue())
+	assert.Equal(t, float64(0), families[familyCount-1].GetMetric()[0].GetCounter().GetValue())
 	metrics.incr()
 	metrics.incr()
 	metrics.incr()
 
 	families, err = app.prometheus.Gather()
 	require.NoError(t, err)
-	assert.Equal(t, float64(3), families[familyCount-2].GetMetric()[0].GetCounter().GetValue())
+	assert.Equal(t, float64(3), families[familyCount-1].GetMetric()[0].GetCounter().GetValue())
 
 	err = app.Stop(context.Background())
 	require.NoError(t, err)

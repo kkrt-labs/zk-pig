@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"reflect"
+	"regexp"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -20,6 +21,7 @@ import (
 	"github.com/justinas/alice"
 	kkrtnet "github.com/kkrt-labs/go-utils/net"
 	kkrthttp "github.com/kkrt-labs/go-utils/net/http"
+	"github.com/kkrt-labs/go-utils/tag"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
@@ -80,10 +82,10 @@ type App struct {
 	name    string
 	version string
 
-	services map[string]*Service
+	services map[string]*service
 
-	top     *Service
-	current *Service
+	top     *service
+	current *service
 
 	done chan os.Signal
 
@@ -104,7 +106,7 @@ type App struct {
 func NewApp(cfg *Config, opts ...Option) (*App, error) {
 	app := &App{
 		cfg:           cfg,
-		services:      make(map[string]*Service),
+		services:      make(map[string]*service),
 		done:          make(chan os.Signal),
 		logger:        zap.NewNop(),
 		mainRouter:    httprouter.New(),
@@ -117,6 +119,8 @@ func NewApp(cfg *Config, opts ...Option) (*App, error) {
 			return nil, err
 		}
 	}
+
+	app.logger = app.logger.With(zap.String("component", "system"))
 
 	app.liveHealth = newHealth(app)
 	app.readyHealth = newHealth(app)
@@ -131,25 +135,33 @@ func newHealth(app *App) *health.Health {
 	return h
 }
 
-func (app *App) Provide(name string, constructor func() (any, error), opts ...ServiceOption) any {
-	if name == "" {
-		name = reflect.TypeOf(constructor).Out(0).String()
+func (app *App) Provide(id string, constructor func() (any, error), opts ...ServiceOption) any {
+	if strings.HasPrefix(id, "system.") {
+		panic(fmt.Sprintf("invalid service id: %q (system.* is reserved for internal use)", id))
 	}
 
-	if svc, ok := app.services[name]; ok {
+	return app.provide(id, constructor, opts...)
+}
+
+func (app *App) provide(id string, constructor func() (any, error), opts ...ServiceOption) any {
+	if id == "" {
+		id = reflect.TypeOf(constructor).Out(0).String()
+	}
+
+	if svc, ok := app.services[id]; ok {
 		app.current.addDep(svc) // current can not be nil here
 		return svc.value
 	}
 
-	svc := app.createService(name, constructor, opts...)
-	app.services[name] = svc
+	svc := app.createService(id, constructor, opts...)
+	app.services[id] = svc
 
 	return svc.value
 }
 
-func (app *App) createService(name string, constructor func() (any, error), opts ...ServiceOption) *Service {
+func (app *App) createService(id string, constructor func() (any, error), opts ...ServiceOption) *service {
 	previous := app.current
-	svc := newService(name, constructor, opts...)
+	svc := newService(id, constructor, opts...)
 	svc.app = app
 
 	app.current = svc // set the current service pointer
@@ -165,8 +177,16 @@ func (app *App) createService(name string, constructor func() (any, error), opts
 	return svc
 }
 
-func Provide[T any](app *App, name string, constructor func() (T, error), opts ...ServiceOption) T {
-	val := app.Provide(name, func() (any, error) {
+func Provide[T any](app *App, id string, constructor func() (T, error), opts ...ServiceOption) T {
+	if strings.HasPrefix(id, "system.") {
+		panic(fmt.Sprintf("invalid service id: %q (system.* is reserved for internal use)", id))
+	}
+
+	return provide(app, id, constructor, opts...)
+}
+
+func provide[T any](app *App, id string, constructor func() (T, error), opts ...ServiceOption) T {
+	val := app.provide(id, func() (any, error) {
 		return constructor()
 	}, opts...)
 
@@ -188,13 +208,13 @@ func (app *App) Error() error {
 }
 
 func (app *App) Start(ctx context.Context) error {
-	app.logger.Info("Starting app...")
+	app.logger.Info("Starting...")
 	err := app.start(ctx)
 	if err != nil {
-		app.logger.Error("Failed to start app", zap.Error(err))
+		app.logger.Error("Failed to start", zap.Error(err))
 		return err
 	}
-	app.logger.Info("App started")
+	app.logger.Info("Successfully started")
 	return nil
 }
 
@@ -217,13 +237,13 @@ func (app *App) start(ctx context.Context) error {
 }
 
 func (app *App) Stop(ctx context.Context) error {
-	app.logger.Info("Stopping app...")
+	app.logger.Info("Stopping...")
 	err := app.stop(ctx)
 	if err != nil {
-		app.logger.Error("Failed to stop app", zap.Error(err))
+		app.logger.Error("Failed to stop", zap.Error(err))
 		return err
 	}
-	app.logger.Info("App stopped")
+	app.logger.Info("Successfully stopped")
 	return nil
 }
 
@@ -247,7 +267,8 @@ func (app *App) Run(ctx context.Context) error {
 
 	app.listenSignals()
 
-	<-app.done
+	sig := <-app.done
+	app.logger.Warn("Received signal", zap.String("signal", sig.String()))
 
 	app.stopListeningSignals()
 
@@ -271,7 +292,7 @@ func (app *App) EnableHealthz() {
 }
 
 func (app *App) server(name string, cfg *ServerConfig) *kkrthttp.Server {
-	return Provide(app, fmt.Sprintf("app.%v", name), func() (*kkrthttp.Server, error) {
+	return provide(app, fmt.Sprintf("system.%v", name), func() (*kkrthttp.Server, error) {
 		return &kkrthttp.Server{
 			Entrypoint: app.entrypoint(name, &cfg.Entrypoint),
 			Server:     app.httpServer(name, cfg),
@@ -280,13 +301,13 @@ func (app *App) server(name string, cfg *ServerConfig) *kkrthttp.Server {
 }
 
 func (app *App) httpServer(name string, cfg *ServerConfig) *http.Server {
-	return Provide(app, fmt.Sprintf("app.%v.server", name), func() (*http.Server, error) {
+	return provide(app, fmt.Sprintf("system.%v.server", name), func() (*http.Server, error) {
 		return newServer(cfg)
 	})
 }
 
 func (app *App) entrypoint(name string, cfg *EntrypointConfig) *kkrtnet.Entrypoint {
-	return Provide(app, fmt.Sprintf("app.%v.entrypoint", name), func() (*kkrtnet.Entrypoint, error) {
+	return provide(app, fmt.Sprintf("system.%v.entrypoint", name), func() (*kkrtnet.Entrypoint, error) {
 		keepAlive, err := time.ParseDuration(cfg.KeepAlive)
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse keep alive: %w", err)
@@ -352,17 +373,16 @@ const (
 	Error
 )
 
-type Service struct {
+type service struct {
+	id string
+
 	app *App
 
-	name string
-
-	value any
-
 	constructor func() (any, error)
+	value       any
 
-	deps   map[string]*Service
-	depsOf map[string]*Service
+	deps   map[string]*service
+	depsOf map[string]*service
 
 	mux    sync.RWMutex
 	status atomic.Uint32
@@ -373,18 +393,20 @@ type Service struct {
 	stopOnce sync.Once
 	stopChan chan struct{}
 
-	healthConfig *health.Config
-
+	name          string
+	tags          tag.Set
+	healthConfig  *health.Config
 	metricsPrefix string
 }
 
-func newService(name string, constructor func() (any, error), opts ...ServiceOption) *Service {
-	s := &Service{
-		name:         name,
+func newService(id string, constructor func() (any, error), opts ...ServiceOption) *service {
+	s := &service{
+		id:           id,
 		constructor:  constructor,
-		deps:         make(map[string]*Service),
-		depsOf:       make(map[string]*Service),
+		deps:         make(map[string]*service),
+		depsOf:       make(map[string]*service),
 		stopChan:     make(chan struct{}),
+		tags:         tag.EmptySet.WithTags(tag.Key("component").String(id)),
 		healthConfig: new(health.Config),
 	}
 
@@ -398,30 +420,30 @@ func newService(name string, constructor func() (any, error), opts ...ServiceOpt
 	return s
 }
 
-func (s *Service) Name() string {
-	return s.name
+func (s *service) Name() string {
+	return s.id
 }
 
-func (s *Service) Status() ServiceStatus {
+func (s *service) Status() ServiceStatus {
 	return ServiceStatus(s.status.Load())
 }
 
-func (s *Service) setStatus(status ServiceStatus) {
+func (s *service) setStatus(status ServiceStatus) {
 	s.status.Store(uint32(status))
 }
 
-func (s *Service) setStatusWithLock(status ServiceStatus) {
+func (s *service) setStatusWithLock(status ServiceStatus) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	s.setStatus(status)
 }
 
-func (s *Service) fail(err error) *ServiceError {
+func (s *service) fail(err error) *ServiceError {
 	if svcErr, ok := err.(*ServiceError); ok {
 		s.err = svcErr
 	} else {
 		s.err = &ServiceError{
-			service:   s,
+			svc:       s,
 			directErr: err,
 		}
 	}
@@ -430,18 +452,26 @@ func (s *Service) fail(err error) *ServiceError {
 	return s.err
 }
 
-func (s *Service) failWithLock(err error) {
+func (s *service) failWithLock(err error) {
 	s.mux.Lock()
 	defer s.mux.Unlock()
 	_ = s.fail(err)
 }
 
-func (s *Service) construct() {
+func (s *service) construct() {
 	s.setStatus(Constructing)
 	val, constructorErr := s.constructor()
 	if constructorErr != nil {
 		_ = s.fail(constructorErr)
 		return
+	}
+
+	if t, ok := val.(Taggable); ok {
+		t.AttachTags(s.tags...)
+	}
+
+	if t, ok := val.(Checkable); ok {
+		s.healthConfig.Check = s.wrapCheck(t.Ready)
 	}
 
 	s.value = val
@@ -450,18 +480,27 @@ func (s *Service) construct() {
 		return
 	}
 
+	s.setMetrics()
+
 	s.setStatus(Constructed)
 }
 
-func (s *Service) addDep(dep *Service) {
+// sanitizeMetricName sanitizes a name by replacing all non-alphanumeric characters with underscores
+// except "_" and ":"
+func sanitizeMetricName(name string) string {
+	re := regexp.MustCompile("[^a-zA-Z0-9_:]")
+	return re.ReplaceAllString(name, "_")
+}
+
+func (s *service) addDep(dep *service) {
 	if s.isCircularDependency(dep) {
-		_ = s.fail(fmt.Errorf("circular dependency detected: %v -> %v", s.name, dep.name))
+		_ = s.fail(fmt.Errorf("circular dependency detected: %v -> %v", s.id, dep.id))
 		return
 	}
 
 	// detect circular dependencies
-	s.deps[dep.name] = dep
-	dep.depsOf[s.name] = s
+	s.deps[dep.id] = dep
+	dep.depsOf[s.id] = s
 	if dep.err != nil {
 		if s.err == nil {
 			_ = s.fail(nil)
@@ -470,8 +509,8 @@ func (s *Service) addDep(dep *Service) {
 	}
 }
 
-func (s *Service) isCircularDependency(dep *Service) bool {
-	if dep.name == s.name {
+func (s *service) isCircularDependency(dep *service) bool {
+	if dep.id == s.id {
 		return true
 	}
 	for _, d := range dep.deps {
@@ -482,7 +521,15 @@ func (s *Service) isCircularDependency(dep *Service) bool {
 	return false
 }
 
-func (s *Service) start(ctx context.Context) *ServiceError {
+func (s *service) getLogger() *zap.Logger {
+	logger := s.app.logger.With(zap.String("service.id", s.id))
+	if s.name != "" {
+		logger = logger.With(zap.String("service.name", s.name))
+	}
+	return logger
+}
+
+func (s *service) start(ctx context.Context) *ServiceError {
 	s.startOnce.Do(func() {
 		if s.err != nil {
 			return
@@ -495,7 +542,7 @@ func (s *Service) start(ctx context.Context) *ServiceError {
 		wg := sync.WaitGroup{}
 		wg.Add(len(s.deps))
 		for _, dep := range s.deps {
-			go func(dep *Service) {
+			go func(dep *service) {
 				defer wg.Done()
 				if err := dep.start(ctx); err != nil {
 					startErr.addDepsErr(err)
@@ -512,14 +559,14 @@ func (s *Service) start(ctx context.Context) *ServiceError {
 		// If all dependencies started successfully then start the service
 		if s.err == nil {
 			if start, ok := s.value.(Runnable); ok {
-				s.app.logger.Info("Starting service", zap.String("service", s.name))
+				s.getLogger().Info("Starting service...")
 				err := start.Start(ctx)
 				if err != nil {
 					s.failWithLock(err)
-					s.app.logger.Error("Failed to start service", zap.String("service", s.name), zap.Error(err))
+					s.getLogger().Error("Failed to start service", zap.Error(err))
 					return
 				}
-				s.app.logger.Info("Service started", zap.String("service", s.name))
+				s.getLogger().Info("Successfully started service")
 			}
 		}
 
@@ -530,7 +577,7 @@ func (s *Service) start(ctx context.Context) *ServiceError {
 	return s.err
 }
 
-func (s *Service) stop(ctx context.Context) *ServiceError {
+func (s *service) stop(ctx context.Context) *ServiceError {
 	if s.err != nil {
 		return s.err
 	}
@@ -554,14 +601,14 @@ func (s *Service) stop(ctx context.Context) *ServiceError {
 		}()
 
 		if stop, ok := s.value.(Runnable); ok {
-			s.app.logger.Info("Stopping service", zap.String("service", s.name))
+			s.getLogger().Info("Stopping service...")
 			err := stop.Stop(ctx)
 			if err != nil {
 				s.failWithLock(err)
-				s.app.logger.Error("Failed to stop service", zap.String("service", s.name), zap.Error(err))
+				s.getLogger().Error("Failed to stop service", zap.Error(err))
 				return
 			}
-			s.app.logger.Info("Service stopped", zap.String("service", s.name))
+			s.getLogger().Info("Successfully stopped service")
 		}
 		if s.err == nil {
 			s.setStatusWithLock(Stopped)
@@ -571,7 +618,7 @@ func (s *Service) stop(ctx context.Context) *ServiceError {
 		wg := sync.WaitGroup{}
 		wg.Add(len(s.deps))
 		for _, dep := range s.deps {
-			go func(dep *Service) {
+			go func(dep *service) {
 				defer wg.Done()
 				if err := dep.stop(ctx); err != nil {
 					stopErr.addDepsErr(err)
@@ -588,24 +635,23 @@ func (s *Service) stop(ctx context.Context) *ServiceError {
 	return s.err
 }
 
-func (s *Service) registerReadyCheck() error {
-	if s.healthConfig.Name == "" {
-		// if no name is set, use the service name
-		s.healthConfig.Name = s.name
+func (s *service) registerReadyCheck() error {
+	if s.healthConfig.Check == nil {
+		return nil
 	}
 
-	if s.healthConfig.Check != nil {
-		s.healthConfig.Check = s.wrapCheck(s.healthConfig.Check)
-	} else if checkable, ok := s.value.(Checkable); ok {
-		s.healthConfig.Check = s.wrapCheck(checkable.Ready)
-	} else {
-		return nil
+	if s.healthConfig.Name == "" {
+		if s.name != "" {
+			s.healthConfig.Name = s.name
+		} else {
+			s.healthConfig.Name = s.id
+		}
 	}
 
 	return s.app.readyHealth.Register(*s.healthConfig)
 }
 
-func (s *Service) wrapCheck(check health.CheckFunc) health.CheckFunc {
+func (s *service) wrapCheck(check health.CheckFunc) health.CheckFunc {
 	return func(ctx context.Context) error {
 		// we lock to make sure that the service is not
 		// stopped while we are checking if it is ready
@@ -630,22 +676,32 @@ func (s *Service) wrapCheck(check health.CheckFunc) health.CheckFunc {
 	}
 }
 
-func (s *Service) registerMetric() {
+func (s *service) setMetrics() {
+	if m, ok := s.value.(Metricable); ok {
+		subsystem := s.name
+		if subsystem == "" {
+			subsystem = s.id
+		}
+		m.SetMetrics(sanitizeMetricName(s.app.name), sanitizeMetricName(subsystem), s.tags...)
+	}
+}
+
+func (s *service) registerMetric() {
 	if collector, ok := s.value.(prometheus.Collector); ok {
-		prometheus.WrapRegistererWithPrefix(s.metricsPrefix, s.app.prometheus).MustRegister(collector)
+		if s.metricsPrefix != "" {
+			prometheus.WrapRegistererWithPrefix(s.metricsPrefix, s.app.prometheus).MustRegister(collector)
+		} else {
+			s.app.prometheus.MustRegister(collector)
+		}
 	}
 }
 
 type ServiceError struct {
-	service *Service
+	svc *service
 
 	mu        sync.RWMutex
 	directErr error
 	depsErrs  []*ServiceError
-}
-
-func (e *ServiceError) Service() *Service {
-	return e.service
 }
 
 func (e *ServiceError) Error() string {
@@ -655,9 +711,9 @@ func (e *ServiceError) Error() string {
 	var s string
 
 	if e.directErr != nil {
-		s = fmt.Sprintf("service %q: %v", e.service.name, e.directErr)
+		s = fmt.Sprintf("service %q: %v", e.svc.id, e.directErr)
 	} else {
-		s = fmt.Sprintf("service %q", e.service.name)
+		s = fmt.Sprintf("service %q", e.svc.id)
 	}
 
 	if len(e.depsErrs) > 0 {

@@ -15,6 +15,7 @@ import (
 	"github.com/ethereum/go-ethereum/triedb/hashdb"
 	"github.com/kkrt-labs/go-utils/log"
 	"github.com/kkrt-labs/go-utils/tag"
+	"github.com/kkrt-labs/zk-pig/pkg/app"
 	"github.com/kkrt-labs/zk-pig/src/ethereum"
 	"github.com/kkrt-labs/zk-pig/src/ethereum/evm"
 	"github.com/kkrt-labs/zk-pig/src/ethereum/state"
@@ -44,7 +45,7 @@ type PrepareOption func(*preparer) error
 // NewPreparer creates a new Preparer.
 func NewPreparer(opts ...PrepareOption) (Preparer, error) {
 	return NewPreparerFromEvm(
-		evm.ExecutorWithTags("evm")(evm.ExecutorWithLog()(evm.NewExecutor())),
+		evm.NewExecutor(),
 		opts...,
 	)
 }
@@ -66,14 +67,6 @@ func NewPreparerFromEvm(e evm.Executor, opts ...PrepareOption) (Preparer, error)
 
 // Prepare prepares the ProvableBlockInputs data for the EVM prover engine.
 func (p *preparer) Prepare(ctx context.Context, data *PreflightData) (*input.ProverInput, error) {
-	ctx = tag.WithComponent(ctx, "prepare")
-	ctx = tag.WithTags(
-		ctx,
-		tag.Key("chain.id").String(data.ChainConfig.ChainID.String()),
-		tag.Key("block.number").Int64(data.Block.Number.ToInt().Int64()),
-		tag.Key("block.hash").String(data.Block.Hash.Hex()),
-	)
-
 	log.LoggerFromContext(ctx).Info("Start preparing prover input...")
 	in, err := p.prepare(ctx, data)
 	if err != nil {
@@ -319,4 +312,27 @@ func witnessToBytes(hex map[string]struct{}) [][]byte {
 		bytes = append(bytes, []byte(h))
 	}
 	return bytes
+}
+
+type taggedPreparer struct {
+	Preparer
+	app.Tagged
+}
+
+func PreparerWithTags(p Preparer, tags ...*tag.Tag) Preparer {
+	return &taggedPreparer{
+		Preparer: p,
+		Tagged:   app.NewTagged(tags...),
+	}
+}
+
+func (tp *taggedPreparer) Prepare(ctx context.Context, data *PreflightData) (*input.ProverInput, error) {
+	ctx = tp.Context(
+		ctx,
+		tag.Key("chain.id").String(data.ChainConfig.ChainID.String()),
+		tag.Key("block.number").Int64(data.Block.Number.ToInt().Int64()),
+		tag.Key("block.hash").String(data.Block.Hash.Hex()),
+	)
+
+	return tp.Preparer.Prepare(ctx, data)
 }

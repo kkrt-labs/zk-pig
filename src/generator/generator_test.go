@@ -39,12 +39,22 @@ func TestGenerator(t *testing.T) {
 	}
 
 	ethrpc.EXPECT().ChainID(gomock.Any()).Return(big.NewInt(1), nil)
+	generator.SetMetrics("test", "generator")
 	err := generator.Start(context.TODO())
 	require.NoError(t, err)
 
 	testBlock := gethtypes.NewBlockWithHeader(&gethtypes.Header{Number: big.NewInt(1)})
 	testData := new(steps.PreflightData)
-	testInput := new(input.ProverInput)
+	testInput := &input.ProverInput{
+		Blocks: []*input.Block{
+			{
+				Header:       testBlock.Header(),
+				Transactions: testBlock.Transactions(),
+				Uncles:       testBlock.Uncles(),
+				Withdrawals:  testBlock.Withdrawals(),
+			},
+		},
+	}
 
 	t.Run("Preflight#NoError", func(t *testing.T) {
 		rpcCall := ethrpc.EXPECT().BlockByNumber(gomock.Any(), big.NewInt(1)).Return(testBlock, nil)

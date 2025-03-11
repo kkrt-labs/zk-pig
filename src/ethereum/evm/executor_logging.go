@@ -12,60 +12,49 @@ import (
 	gethvm "github.com/ethereum/go-ethereum/core/vm"
 	"github.com/kkrt-labs/go-utils/log"
 	"github.com/kkrt-labs/go-utils/tag"
+	"github.com/kkrt-labs/zk-pig/pkg/app"
 	"go.uber.org/zap"
 )
 
-// ExecutorWithTags is an executor decorator that adds tags relative to a block execution to the context
-// It attaches tags: chain.id, block.number, block.hash
-// It also adds the component tag if provided
-// If no namespaces are provided (recommended), it attaches the tags to the default namespace
-func ExecutorWithTags(component string, namespaces ...string) ExecutorDecorator {
-	return func(executor Executor) Executor {
-		return ExecutorFunc(func(ctx context.Context, params *ExecParams) (*core.ProcessResult, error) {
-			if component != "" {
-				ctx = tag.WithComponent(ctx, component)
-			}
-
-			tags := []*tag.Tag{
-				tag.Key("chain.id").String(params.Chain.Config().ChainID.String()),
-				tag.Key("block.number").Int64(params.Block.Number().Int64()),
-				tag.Key("block.hash").String(params.Block.Hash().Hex()),
-			}
-
-			if len(namespaces) == 0 {
-				namespaces = []string{tag.DefaultNamespace}
-			}
-
-			for _, ns := range namespaces {
-				ctx = tag.WithNamespaceTags(ctx, ns, tags...)
-			}
-
-			return executor.Execute(ctx, params)
-		})
-	}
+type tagged struct {
+	executor Executor
+	app.Tagged
 }
 
-// ExecutorWithLog is an executor decorator that logs block execution
+func WithTags(executor Executor, tags ...*tag.Tag) Executor {
+	return &tagged{executor: executor, Tagged: app.NewTagged(tags...)}
+}
+
+func (t *tagged) Execute(ctx context.Context, params *ExecParams) (*core.ProcessResult, error) {
+	ctx = t.Context(ctx)
+
+	ctx = tag.WithTags(
+		ctx,
+		tag.Key("chain.id").String(params.Chain.Config().ChainID.String()),
+		tag.Key("block.number").Int64(params.Block.Number().Int64()),
+		tag.Key("block.hash").String(params.Block.Hash().Hex()),
+	)
+
+	return t.executor.Execute(ctx, params)
+}
+
+// WithLog is an executor decorator that logs block execution
 // If namespaces are provided, it loads tags from the provided namespaces
 // By default (recommended) it logs tags from the default namespace
-func ExecutorWithLog(namespaces ...string) ExecutorDecorator {
+func WithLog() ExecutorDecorator {
 	return func(executor Executor) Executor {
 		return ExecutorFunc(func(ctx context.Context, params *ExecParams) (*core.ProcessResult, error) {
-			logger := log.LoggerWithFieldsFromNamespaceContext(ctx, namespaces...)
+			logger := log.LoggerFromContext(ctx)
 
 			// Set tracing logger
 			params.VMConfig.Tracer = NewLoggerTracer(logger).Hooks()
 
 			logger.Debug("Execute block...")
-			res, err := executor.Execute(log.WithLogger(ctx, logger), params)
+			res, err := executor.Execute(ctx, params)
 			if err != nil {
-				logger.Error("Block execution failed",
-					zap.Error(err),
-				)
+				logger.Error("Block execution failed", zap.Error(err))
 			} else {
-				logger.Debug("Block execution succeeded",
-					zap.Uint64("gasUsed", res.GasUsed),
-				)
+				logger.Debug("Block execution succeeded", zap.Uint64("gasUsed", res.GasUsed))
 			}
 
 			return res, err
