@@ -12,7 +12,7 @@ type AccessTrackerDatabase struct {
 
 	trackers *AccessTrackerManager
 
-	// TODO: remove the current tarcker that should be useless
+	// TODO: remove the current tracker that should be useless
 	// as we can use native go-ethereum witness
 	currentTracker *AccessTracker
 }
