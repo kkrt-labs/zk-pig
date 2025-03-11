@@ -13,6 +13,7 @@ import (
 	"github.com/ethereum/go-ethereum/triedb/hashdb"
 	"github.com/kkrt-labs/go-utils/log"
 	"github.com/kkrt-labs/go-utils/tag"
+	"github.com/kkrt-labs/zk-pig/pkg/app"
 	"github.com/kkrt-labs/zk-pig/src/ethereum"
 	"github.com/kkrt-labs/zk-pig/src/ethereum/evm"
 	input "github.com/kkrt-labs/zk-pig/src/prover-input"
@@ -35,7 +36,7 @@ type executor struct {
 
 // NewExecutor creates a new instance of the Executor.
 func NewExecutor() Executor {
-	return NewExecutorFromEvm(evm.ExecutorWithTags("evm")(evm.ExecutorWithLog()(evm.NewExecutor())))
+	return NewExecutorFromEvm(evm.NewExecutor())
 }
 
 // NewExecutorFromEvm creates a new instance of the BaseExecutor from an existing EVM.
@@ -47,20 +48,6 @@ func NewExecutorFromEvm(e evm.Executor) Executor {
 
 // Execute runs the ProvableBlockInputs data for the EVM prover engine.
 func (e *executor) Execute(ctx context.Context, in *input.ProverInput) (*core.ProcessResult, error) {
-	if len(in.Blocks) == 0 {
-		return nil, fmt.Errorf("no blocks provided")
-	}
-
-	block := in.Blocks[0]
-
-	ctx = tag.WithComponent(ctx, "execute")
-	ctx = tag.WithTags(
-		ctx,
-		tag.Key("chain.id").String(in.ChainConfig.ChainID.String()),
-		tag.Key("block.number").Int64(block.Header.Number.Int64()),
-		tag.Key("block.hash").String(block.Header.Hash().Hex()),
-	)
-
 	log.LoggerFromContext(ctx).Info("Execute block and validate state transition by basing on prover input...")
 	res, err := e.execute(ctx, in)
 	if err != nil {
@@ -133,4 +120,27 @@ func hexBytesToBytes(hex []hexutil.Bytes) [][]byte {
 		bytes = append(bytes, b)
 	}
 	return bytes
+}
+
+type taggedExecutor struct {
+	Executor
+	app.Tagged
+}
+
+func ExecutorWithTags(e Executor, tags ...*tag.Tag) Executor {
+	return &taggedExecutor{
+		Executor: e,
+		Tagged:   app.NewTagged(tags...),
+	}
+}
+
+func (te *taggedExecutor) Execute(ctx context.Context, in *input.ProverInput) (*core.ProcessResult, error) {
+	ctx = te.Context(
+		ctx,
+		tag.Key("chain.id").String(in.ChainConfig.ChainID.String()),
+		tag.Key("block.number").Int64(in.Blocks[0].Header.Number.Int64()),
+		tag.Key("block.hash").String(in.Blocks[0].Header.Hash().Hex()),
+	)
+
+	return te.Executor.Execute(ctx, in)
 }

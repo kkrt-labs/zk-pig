@@ -27,19 +27,21 @@ func (d *Daemon) Start(ctx context.Context) error {
 	d.latest = make(chan *gethtypes.Block)
 	d.stop = make(chan struct{})
 
-	d.setMetrics()
-
 	runCtx, cancelRun := context.WithCancel(ctx)
-	runCtx = tag.WithComponent(runCtx, "zkpig")
+	runCtx = d.Context(
+		runCtx,
+		tag.Key("chain.id").String(d.ChainID.String()),
+	)
 	d.cancelRun = cancelRun
 	d.run(runCtx)
 	return nil
 }
 
-func (d *Daemon) setMetrics() {
+func (d *Daemon) SetMetrics(system, subsystem string, _ ...*tag.Tag) {
 	d.latestBlockNumber = prometheus.NewGauge(prometheus.GaugeOpts{
 		Name:      "latest_block_number",
-		Subsystem: subSystem,
+		Namespace: system,
+		Subsystem: subsystem,
 		Help:      "Latest block number",
 	})
 }
@@ -85,7 +87,11 @@ func (d *Daemon) listenLatest(runCtx context.Context) {
 			log.LoggerFromContext(runCtx).Error("Failed to fetch latest block header", zap.Error(err))
 		} else {
 			if latest == nil || latest.Number().Uint64() < block.Number().Uint64() {
-				log.LoggerFromContext(runCtx).Info("New chain head", zap.Uint64("block.number", block.Number().Uint64()), zap.String("block.hash", block.Hash().Hex()))
+				log.LoggerFromContext(runCtx).Info(
+					"New chain head",
+					zap.Uint64("block.number", block.Number().Uint64()),
+					zap.String("block.hash", block.Hash().Hex()),
+				)
 				select {
 				case d.latest <- block:
 				case <-d.stop:
@@ -110,13 +116,18 @@ func (d *Daemon) processLatest(runCtx context.Context) {
 		case block := <-d.latest:
 			d.wg.Add(1)
 			go func() {
-				logger := log.LoggerFromContext(runCtx).With(zap.Uint64("block.number", block.Number().Uint64()), zap.String("block.hash", block.Hash().Hex()))
-				logger.Info("Start generating prover input...")
-				err := d.generate(runCtx, block)
+				ctx := tag.WithTags(
+					runCtx,
+					tag.Key("block.number").Int64(block.Number().Int64()),
+					tag.Key("block.hash").String(block.Hash().Hex()),
+				)
+				logger := log.LoggerFromContext(ctx)
+				logger.Info("Generate prover input...")
+				err := d.generate(ctx, block)
 				if err != nil {
 					logger.Error("Failed to generate prover input", zap.Error(err))
 				} else {
-					logger.Info("Generated prover input!")
+					logger.Info("Successfully generated prover input")
 				}
 				d.wg.Done()
 			}()

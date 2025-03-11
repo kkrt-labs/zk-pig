@@ -1,10 +1,8 @@
 package app
 
 import (
-	"fmt"
-
 	"github.com/hellofresh/health-go/v5"
-	"github.com/prometheus/common/model"
+	"github.com/kkrt-labs/go-utils/tag"
 	"go.uber.org/zap"
 )
 
@@ -34,21 +32,44 @@ func WithLogger(logger *zap.Logger) Option {
 	}
 }
 
-type ServiceOption func(*Service) error
+type ServiceOption func(*service) error
 
-func WithMetricsPrefix(prefix string) ServiceOption {
-	return func(s *Service) error {
-		if !model.IsValidMetricName(model.LabelValue(prefix)) {
-			return fmt.Errorf("invalid metrics prefix: %s (must contain only alphanumeric characters, underscores and colons)", prefix)
+func WithHealthConfig(cfg *health.Config) ServiceOption {
+	return func(s *service) error {
+		if cfg.Name != "" {
+			s.healthConfig.Name = cfg.Name
 		}
-		s.metricsPrefix = prefix
+
+		if cfg.Check != nil {
+			s.healthConfig.Check = s.wrapCheck(cfg.Check)
+		}
+
+		if cfg.Timeout != 0 {
+			s.healthConfig.Timeout = cfg.Timeout
+		}
+
+		if cfg.SkipOnErr {
+			s.healthConfig.SkipOnErr = true
+		}
+
 		return nil
 	}
 }
 
-func WithHealthConfig(cfg *health.Config) ServiceOption {
-	return func(s *Service) error {
-		s.healthConfig = cfg
+func WithTags(tags ...*tag.Tag) ServiceOption {
+	return func(s *service) error {
+		s.tags = s.tags.WithTags(tags...)
 		return nil
+	}
+}
+
+// WithComponentName sets the name of the component.
+// Multiple services can have the same component name.
+// By default, the component name is the name of the service identifier which is unique.
+// This enables to override the default name (without unicity constraints)
+func WithComponentName(name string) ServiceOption {
+	return func(s *service) error {
+		s.name = name
+		return WithTags(tag.Key("component").String(name))(s)
 	}
 }

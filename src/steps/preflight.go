@@ -17,6 +17,7 @@ import (
 	ethrpc "github.com/kkrt-labs/go-utils/ethereum/rpc"
 	"github.com/kkrt-labs/go-utils/log"
 	"github.com/kkrt-labs/go-utils/tag"
+	"github.com/kkrt-labs/zk-pig/pkg/app"
 	"github.com/kkrt-labs/zk-pig/src/ethereum"
 	"github.com/kkrt-labs/zk-pig/src/ethereum/ethdb/rpcdb"
 	"github.com/kkrt-labs/zk-pig/src/ethereum/evm"
@@ -59,7 +60,7 @@ type preflight struct {
 // NewPreflight creates a new RPC Preflight instance using the provided RPC client.
 func NewPreflight(remote ethrpc.Client) Preflight {
 	return NewPreflightFromEvm(
-		evm.ExecutorWithTags("evm")(evm.ExecutorWithLog()(evm.NewExecutor())),
+		evm.NewExecutor(),
 		remote,
 	)
 }
@@ -112,16 +113,6 @@ func (pf *preflight) configureDBAndChain(ctx context.Context) (*state.RPCDatabas
 
 // Preflight executes a preflight block execution, that collect and returns the intermediary preflight data input.
 func (pf *preflight) Preflight(ctx context.Context, block *gethtypes.Block) (*PreflightData, error) {
-	// Addd preflight tags
-	ctx = tag.WithComponent(ctx, "preflight")
-	ctx = tag.WithTags(ctx, tag.Key("chain.id").String(pf.chainCfg.ChainID.String()))
-
-	ctx = tag.WithTags(
-		ctx,
-		tag.Key("block.number").Int64(block.Number().Int64()),
-		tag.Key("block.hash").String(block.Hash().Hex()),
-	)
-
 	// Execute preflight
 	log.LoggerFromContext(ctx).Info("Run preflight to collect data from RPC node... (this may take a while)")
 	data, err := pf.preflight(ctx, block)
@@ -237,4 +228,26 @@ func (pf *preflight) fetchStateProofs(ctx context.Context, trackers *state.Acces
 
 func (pf *preflight) Stop(_ context.Context) error {
 	return nil
+}
+
+type taggedPreflight struct {
+	pf Preflight
+	app.Tagged
+}
+
+func PreflightWithTags(pf Preflight, tags ...*tag.Tag) Preflight {
+	return &taggedPreflight{
+		pf:     pf,
+		Tagged: app.NewTagged(tags...),
+	}
+}
+
+func (tp *taggedPreflight) Preflight(ctx context.Context, block *gethtypes.Block) (*PreflightData, error) {
+	ctx = tp.Context(
+		ctx,
+		tag.Key("block.number").Int64(block.Number().Int64()),
+		tag.Key("block.hash").String(block.Hash().Hex()),
+	)
+
+	return tp.pf.Preflight(ctx, block)
 }

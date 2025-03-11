@@ -9,6 +9,7 @@ import (
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	ethrpc "github.com/kkrt-labs/go-utils/ethereum/rpc"
 	"github.com/kkrt-labs/go-utils/tag"
+	"github.com/kkrt-labs/zk-pig/pkg/app"
 	input "github.com/kkrt-labs/zk-pig/src/prover-input"
 	"github.com/kkrt-labs/zk-pig/src/steps"
 	inputstore "github.com/kkrt-labs/zk-pig/src/store"
@@ -62,10 +63,13 @@ type Generator struct {
 	countOfBlocksPerStep  *prometheus.GaugeVec
 	generationTimePerStep *prometheus.HistogramVec
 	generateErrorCount    *prometheus.GaugeVec
+
+	app.Tagged
 }
 
 // Start starts the service.
 func (s *Generator) Start(ctx context.Context) error {
+	ctx = s.Context(ctx)
 	if s.RPC != nil {
 		chainID, err := s.RPC.ChainID(ctx)
 		if err != nil {
@@ -76,46 +80,48 @@ func (s *Generator) Start(ctx context.Context) error {
 		return fmt.Errorf("no chain configuration provided")
 	}
 
-	s.setMetrics()
-
 	return nil
 }
 
 var (
 	generationTimeBuckets = []float64{.005, .01, .025, .05, .1, .25, .5, 1, 2.5, 5, 10, 25, 50, 100, 250, 500}
-	subSystem             = "generator"
 )
 
-func (s *Generator) setMetrics() {
+func (s *Generator) SetMetrics(system, subsystem string, _ ...*tag.Tag) {
 	s.blocks = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name:      "blocks",
-		Subsystem: subSystem,
+		Namespace: system,
+		Subsystem: subsystem,
 		Help:      "Blocks for which the generation of prover input is running",
 	}, []string{"blocknumber"})
 
 	s.generationTime = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:      "generation_time",
-		Subsystem: subSystem,
+		Namespace: system,
+		Subsystem: subsystem,
 		Help:      "Time spent to generate prover input (in seconds)",
 		Buckets:   generationTimeBuckets,
 	}, []string{"final_step"})
 
 	s.countOfBlocksPerStep = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name:      "count_of_blocks_per_step",
-		Subsystem: subSystem,
+		Namespace: system,
+		Subsystem: subsystem,
 		Help:      "Count of blocks for which the generation of prover input is running at each step",
 	}, []string{"step"})
 
 	s.generationTimePerStep = prometheus.NewHistogramVec(prometheus.HistogramOpts{
 		Name:      "time_per_step",
-		Subsystem: subSystem,
+		Namespace: system,
+		Subsystem: subsystem,
 		Help:      "Time spent per step to generate prover input (in seconds)",
 		Buckets:   generationTimeBuckets,
 	}, []string{"step"})
 
 	s.generateErrorCount = prometheus.NewGaugeVec(prometheus.GaugeOpts{
 		Name:      "generate_error_count",
-		Subsystem: subSystem,
+		Namespace: system,
+		Subsystem: subsystem,
 		Help:      "Count of errors during the generation of prover input",
 	}, []string{"step"})
 }
@@ -137,16 +143,27 @@ func (s *Generator) Collect(ch chan<- prometheus.Metric) {
 }
 
 func (s *Generator) Generate(ctx context.Context, blockNumber *big.Int) error {
-	ctx = tag.WithComponent(ctx, "zkpig")
-	ctx = tag.WithTags(ctx, tag.Key("block.number").Int64(blockNumber.Int64()))
 	if s.RPC == nil {
 		return fmt.Errorf("RPC not configured")
 	}
+
+	ctx = s.Context(ctx)
+	ctx = tag.WithTags(
+		ctx,
+		tag.Key("chain.id").String(s.ChainID.String()),
+		tag.Key("block.number").Int64(blockNumber.Int64()),
+	)
 
 	block, err := s.RPC.BlockByNumber(ctx, blockNumber)
 	if err != nil {
 		return fmt.Errorf("failed to fetch block: %v", err)
 	}
+
+	ctx = tag.WithTags(
+		ctx,
+		tag.Key("block.number").Int64(block.Number().Int64()),
+		tag.Key("block.hash").String(block.Hash().Hex()),
+	)
 
 	return s.generate(ctx, block)
 }
@@ -206,15 +223,27 @@ func (s *Generator) generate(ctx context.Context, block *gethtypes.Block) error 
 // Preflight executes the preflight checks for the given block number.
 // If requires the remote RPC to be configured and started
 func (s *Generator) Preflight(ctx context.Context, blockNumber *big.Int) error {
-	ctx = tag.WithComponent(ctx, "zkpig")
 	if s.RPC == nil {
 		return fmt.Errorf("RPC not configured")
 	}
+
+	ctx = s.Context(ctx)
+	ctx = tag.WithTags(
+		ctx,
+		tag.Key("chain.id").String(s.ChainID.String()),
+		tag.Key("block.number").Int64(blockNumber.Int64()),
+	)
 
 	block, err := s.RPC.BlockByNumber(ctx, blockNumber)
 	if err != nil {
 		return fmt.Errorf("failed to fetch block: %v", err)
 	}
+
+	ctx = tag.WithTags(
+		ctx,
+		tag.Key("block.number").Int64(block.Number().Int64()),
+		tag.Key("block.hash").String(block.Hash().Hex()),
+	)
 
 	data, err := s.preflight(ctx, block)
 	if err != nil {
@@ -230,7 +259,7 @@ func (s *Generator) Preflight(ctx context.Context, blockNumber *big.Int) error {
 }
 
 func (s *Generator) Prepare(ctx context.Context, blockNumber *big.Int) error {
-	ctx = tag.WithComponent(ctx, "zkpig")
+	ctx = s.Context(ctx)
 
 	if s.ChainID == nil {
 		return fmt.Errorf("prepare: chain not configured")
@@ -260,12 +289,23 @@ func (s *Generator) Prepare(ctx context.Context, blockNumber *big.Int) error {
 }
 
 func (s *Generator) Execute(ctx context.Context, blockNumber *big.Int) error {
-	ctx = tag.WithComponent(ctx, "zkpig")
+	ctx = s.Context(ctx)
+	ctx = tag.WithTags(
+		ctx,
+		tag.Key("chain.id").String(s.ChainID.String()),
+		tag.Key("block.number").Int64(blockNumber.Int64()),
+	)
 
 	in, err := s.loadProverInput(ctx, blockNumber)
 	if err != nil {
 		return err
 	}
+
+	ctx = tag.WithTags(
+		ctx,
+		tag.Key("block.number").Int64(in.Blocks[0].Header.Number.Int64()),
+		tag.Key("block.hash").String(in.Blocks[0].Header.Hash().Hex()),
+	)
 
 	err = s.execute(ctx, in)
 	if err != nil {
