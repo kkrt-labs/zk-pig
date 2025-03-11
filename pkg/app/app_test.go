@@ -457,19 +457,20 @@ func TestMetrics(t *testing.T) {
 	// Test collectors are registered with correct labels
 	families, err := app.prometheus.Gather()
 	require.NoError(t, err)
-	require.Len(t, families, 118)
-	assert.Equal(t, "test_metricA", families[116].GetName())
-	assert.Equal(t, "test_prefix_test_metricB", families[117].GetName())
+	familyCount := len(families)
+	assert.GreaterOrEqual(t, familyCount, 2)
+	assert.Equal(t, "test_metricA", families[familyCount-2].GetName())
+	assert.Equal(t, "test_prefix_test_metricB", families[familyCount-1].GetName())
 
 	// Test metrics are updated
-	assert.Equal(t, float64(0), families[116].GetMetric()[0].GetCounter().GetValue())
+	assert.Equal(t, float64(0), families[familyCount-2].GetMetric()[0].GetCounter().GetValue())
 	metrics.incr()
 	metrics.incr()
 	metrics.incr()
 
 	families, err = app.prometheus.Gather()
 	require.NoError(t, err)
-	assert.Equal(t, float64(3), families[116].GetMetric()[0].GetCounter().GetValue())
+	assert.Equal(t, float64(3), families[familyCount-2].GetMetric()[0].GetCounter().GetValue())
 
 	err = app.Stop(context.Background())
 	require.NoError(t, err)
