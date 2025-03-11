@@ -99,4 +99,54 @@ func TestStateAccessTrackerDatabaseImplementsInterface(t *testing.T) {
 	assert.Implements(t, (*gethstate.Database)(nil), new(AccessTrackerDatabase))
 }
 
-// TODO: implement tests for StateAccessTrackerDatabase
+func TestStateAccessTrackerDatabase(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
+
+	remote := rpcmock.NewMockClient(ctrl)
+	trackerDb := NewAccessTrackerDatabase(nil, remote)
+	assert.Implements(t, (*gethstate.Database)(nil), trackerDb)
+
+	// Prepare test data
+	stateRoot := gethcommon.HexToHash("0x0123456789abcdef000000000000000000000000000000000000000000000000")
+	blockNumber := big.NewInt(42)
+
+	trackerDb.MarkBlock(&gethtypes.Header{
+		Root:   stateRoot,
+		Number: blockNumber,
+	})
+
+	reader, err := trackerDb.Reader(stateRoot)
+	require.NoError(t, err, "failed to get reader for state root")
+
+	accountAddr := gethcommon.HexToAddress("0x123456789abcdef0000000000000000000000000")
+	accountResult := &gethclient.AccountResult{
+		Address:  accountAddr,
+		Balance:  new(big.Int).SetUint64(123),
+		Nonce:    0x2,
+		CodeHash: gethcommon.HexToHash("0xfeedfacefeedfacefeedfacefeedfacefeedfacefeedfacefeedfacefeedface"),
+	}
+
+	t.Run("trackerDb.Reader().Account", func(t *testing.T) {
+		remote.EXPECT().
+			GetProof(gomock.Any(), accountAddr, nil, blockNumber).
+			Return(accountResult, nil)
+
+		stateAccount, err := reader.Account(accountAddr)
+		require.NoError(t, err, "failed to get account from trackerDb")
+		assert.Equal(t, accountResult.Balance, stateAccount.Balance.ToBig(), "Balance mismatch")
+		assert.Equal(t, accountResult.Nonce, stateAccount.Nonce, "Nonce mismatch")
+		assert.Equal(t, accountResult.CodeHash.Bytes(), stateAccount.CodeHash, "CodeHash mismatch")
+	})
+
+	t.Run("trackerDb.Reader().Storage", func(t *testing.T) {
+		slot := gethcommon.HexToHash("0xabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabcabca")
+		remote.EXPECT().
+			StorageAt(gomock.Any(), accountAddr, slot, blockNumber).
+			Return(hexutil.MustDecode("0xdeadbeef"), nil)
+
+		storageVal, err := reader.Storage(accountAddr, slot)
+		require.NoError(t, err, "failed to get storage value")
+		assert.Equal(t, "0x00000000000000000000000000000000000000000000000000000000deadbeef", storageVal.Hex(), "Storage value mismatch")
+	})
+}
