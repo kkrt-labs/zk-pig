@@ -22,7 +22,7 @@ import (
 	"go.uber.org/zap"
 )
 
-// Service is a service that enables the generation of prover inpunts for EVM compatible blocks.
+// Service is a service that enables the generation of prover inputs for EVM compatible blocks.
 type App struct {
 	app *app.App
 	cfg *Config
