@@ -112,7 +112,7 @@ func (pf *preflight) configureDBAndChain(ctx context.Context) (*state.RPCDatabas
 
 // Preflight executes a preflight block execution, that collect and returns the intermediary preflight data input.
 func (pf *preflight) Preflight(ctx context.Context, block *gethtypes.Block) (*PreflightData, error) {
-	// Addd preflight tags
+	// Add preflight tags
 	ctx = tag.WithComponent(ctx, "preflight")
 	ctx = tag.WithTags(ctx, tag.Key("chain.id").String(pf.chainCfg.ChainID.String()))
 
