@@ -42,7 +42,7 @@ Practically, the final state root `S'` is first computed by the block proposer a
 
 ## Block witness
 
-Block witness encompasses the minimal state and chain data required for a stateless EVM block execution (meaning without access to a a database containing the full state) which includes
+Block witness encompasses the minimal state and chain data required for a stateless EVM block execution (meaning without access to a database containing the full state) which includes
 - performing all block operations (apply transactions, apply fee rewards, apply system calls, etc.) 
 - deriving the post state root
 
