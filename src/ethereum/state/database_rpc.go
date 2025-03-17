@@ -91,22 +91,6 @@ func (db *RPCDatabase) OpenStorageTrie(stateRoot gethcommon.Hash, address gethco
 	return &NoOpTrie{}, nil
 }
 
-// ContractCode implements the gethstate.Database interface.
-func (db *RPCDatabase) ContractCode(addr gethcommon.Address, _ gethcommon.Hash) ([]byte, error) {
-	code, err := db.remote.CodeAt(db.ctx, addr, db.currentBlockNumber)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get code for address %s: %v", addr.Hex(), err)
-	}
-
-	return code, nil
-}
-
-// ContractCodeSize implements the gethstate.Database interface.
-func (db *RPCDatabase) ContractCodeSize(addr gethcommon.Address, codeHash gethcommon.Hash) (int, error) {
-	code, err := db.ContractCode(addr, codeHash)
-	return len(code), err
-}
-
 // rpcReader is a state reader that retrieves state information from a remote node (typically an archive node).
 // it provides the ability to read account and storage information from a remote node
 // it is useful when the local node does not have a full state trie
@@ -166,6 +150,19 @@ func (r *rpcReader) Storage(addr gethcommon.Address, slot gethcommon.Hash) (geth
 		return gethcommon.Hash{}, fmt.Errorf("failed to get storage slot for address %s and slot %s and block %v: %v", addr.Hex(), slot.Hex(), r.blockNumber, err)
 	}
 	return gethcommon.BytesToHash(value), nil
+}
+
+func (r *rpcReader) Code(addr gethcommon.Address, codeHash gethcommon.Hash) ([]byte, error) {
+	code, err := r.remote.CodeAt(r.ctx, addr, r.blockNumber)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get code for address %s and block %v: %v", addr.Hex(), r.blockNumber, err)
+	}
+	return code, nil
+}
+
+func (r *rpcReader) CodeSize(addr gethcommon.Address, codeHash gethcommon.Hash) (int, error) {
+	code, err := r.Code(addr, codeHash)
+	return len(code), err
 }
 
 // Copy implementing Reader interface, returning a deep-copied state reader.

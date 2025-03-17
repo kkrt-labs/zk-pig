@@ -71,27 +71,22 @@ func TestRPCDatabase(t *testing.T) {
 		assert.Equal(t, "0x000000000000000000000000000000000000000000000000000000000000abcd", storageValue.Hex(), "Storage value mismatch")
 	})
 
-	t.Run("db.CodeAt", func(t *testing.T) {
+	t.Run("reader.Code", func(t *testing.T) {
 		remote.EXPECT().
 			CodeAt(gomock.Any(), accountAddr, blockNumber).
 			Return(hexutil.MustDecode("0xabcdef0123456789"), nil)
-		code, err := db.ContractCode(accountAddr, gethcommon.Hash{})
+		code, err := reader.Code(accountAddr, gethcommon.Hash{})
 		require.NoError(t, err)
 		assert.Equal(t, "0xabcdef0123456789", hexutil.Encode(code), "Code mismatch")
 	})
 
-	t.Run("db.ContractCodeSize", func(t *testing.T) {
+	t.Run("reader.CodeSize", func(t *testing.T) {
 		remote.EXPECT().
 			CodeAt(gomock.Any(), accountAddr, blockNumber).
 			Return(hexutil.MustDecode("0xabcdef0123456789"), nil)
-		size, err := db.ContractCodeSize(accountAddr, gethcommon.Hash{})
+		size, err := reader.CodeSize(accountAddr, gethcommon.Hash{})
 		require.NoError(t, err)
 		assert.Equal(t, 8, size, "Code Size mismatch")
-	})
-
-	t.Run("reader.Copy", func(t *testing.T) {
-		readerCopy := reader.Copy()
-		assert.Equal(t, reader, readerCopy, "Reader copy mismatch")
 	})
 }
 

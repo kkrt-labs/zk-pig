@@ -39,21 +39,6 @@ func (db *AccessTrackerDatabase) Reader(stateRoot gethcommon.Hash) (gethstate.Re
 	return newStateAccessTrackerReader(reader, tracker), nil
 }
 
-// ContractCode implements the gethstate.Database interface.
-func (db *AccessTrackerDatabase) ContractCode(addr gethcommon.Address, codeHash gethcommon.Hash) ([]byte, error) {
-	code, err := db.Database.ContractCode(addr, codeHash)
-	if err != nil {
-		return nil, err
-	}
-	return code, nil
-}
-
-// ContractCodeSize implements the gethstate.Database interface.
-func (db *AccessTrackerDatabase) ContractCodeSize(addr gethcommon.Address, codeHash gethcommon.Hash) (int, error) {
-	code, err := db.ContractCode(addr, codeHash)
-	return len(code), err
-}
-
 type AccountAccessTracker struct {
 	Account *gethtypes.StateAccount
 	Storage map[gethcommon.Hash]gethcommon.Hash
@@ -155,14 +140,18 @@ func (r *stateAccessTrackerReader) Storage(addr gethcommon.Address, slot gethcom
 	return value, nil
 }
 
-// Copy implementing Reader interface, returning a deep-copied state reader.
-func (r *stateAccessTrackerReader) Copy() gethstate.Reader {
-	return &stateAccessTrackerReader{
-		reader: r.reader.Copy(),
-		tracker: &AccessTracker{
-			Accounts: copyAccounts(r.tracker.Accounts),
-		},
-	}
+// Code implementing Reader interface, retrieving the code associated with
+// a particular account address.
+func (r *stateAccessTrackerReader) Code(addr gethcommon.Address, codeHash gethcommon.Hash) ([]byte, error) {
+	code, err := r.reader.Code(addr, codeHash)
+	return code, err
+}
+
+// CodeSize implementing Reader interface, retrieving the size of the code associated with
+// a particular account address.
+func (r *stateAccessTrackerReader) CodeSize(addr gethcommon.Address, codeHash gethcommon.Hash) (int, error) {
+	size, err := r.reader.CodeSize(addr, codeHash)
+	return size, err
 }
 
 // copyAccounts returns a deep-copied map of accounts.
