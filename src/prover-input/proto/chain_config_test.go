@@ -50,6 +50,28 @@ func TestChainConfigToProto(t *testing.T) {
 					Period: 1000000000000000000,
 					Epoch:  3000000000000000000,
 				},
+				BlobScheduleConfig: &params.BlobScheduleConfig{
+					Cancun: &params.BlobConfig{
+						Target:         1000000000000000000,
+						Max:            2000000000000000000,
+						UpdateFraction: 3000000000000000000,
+					},
+					Prague: &params.BlobConfig{
+						Target:         4000000000000000000,
+						Max:            5000000000000000000,
+						UpdateFraction: 6000000000000000000,
+					},
+					Osaka: &params.BlobConfig{
+						Target:         7000000000000000000,
+						Max:            8000000000000000000,
+						UpdateFraction: 9000000000000000000,
+					},
+					Verkle: &params.BlobConfig{
+						Target:         1000000000000000000,
+						Max:            1100000000000000000,
+						UpdateFraction: 1200000000000000000,
+					},
+				},
 			},
 		},
 	}

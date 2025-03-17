@@ -30,9 +30,23 @@ message ChainConfig {
   optional bytes deposit_contract_address = 23;
   optional bytes ethash = 24;
   optional CliqueConfig clique = 25;
+  optional BlobScheduleConfig blob_schedule = 26;
 }
 
 message CliqueConfig {
   uint64 period = 1;
   uint64 epoch = 2;
+}
+
+message BlobScheduleConfig {
+  optional BlobConfig cancun = 1;
+  optional BlobConfig prague = 2;
+  optional BlobConfig osaka = 3;
+  optional BlobConfig verkle = 4;
+}
+
+message BlobConfig {
+  uint64 target = 1;
+  uint64 max = 2;
+  uint64 update_fraction = 3;
 }

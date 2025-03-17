@@ -40,7 +40,8 @@ func ChainConfigToProto(c *params.ChainConfig) *ChainConfig {
 			}
 			return nil
 		}(),
-		Clique: CliqueConfigToProto(c.Clique),
+		Clique:       CliqueConfigToProto(c.Clique),
+		BlobSchedule: BlobScheduleConfigToProto(c.BlobScheduleConfig),
 	}
 }
 
@@ -74,6 +75,7 @@ func ChainConfigFromProto(c *ChainConfig) *params.ChainConfig {
 		TerminalTotalDifficulty: bytesToBigInt(c.GetTerminalTotalDifficulty()),
 		DepositContractAddress:  gethcommon.BytesToAddress(c.GetDepositContractAddress()),
 		Clique:                  CliqueConfigFromProto(c.GetClique()),
+		BlobScheduleConfig:      BlobScheduleConfigFromProto(c.GetBlobSchedule()),
 	}
 
 	// Handle consensus engine configs
@@ -103,5 +105,55 @@ func CliqueConfigFromProto(c *CliqueConfig) *params.CliqueConfig {
 	return &params.CliqueConfig{
 		Period: c.Period,
 		Epoch:  c.Epoch,
+	}
+}
+
+func BlobScheduleConfigToProto(c *params.BlobScheduleConfig) *BlobScheduleConfig {
+	if c == nil {
+		return nil
+	}
+
+	return &BlobScheduleConfig{
+		Cancun: BlobConfigToProto(c.Cancun),
+		Prague: BlobConfigToProto(c.Prague),
+		Osaka:  BlobConfigToProto(c.Osaka),
+		Verkle: BlobConfigToProto(c.Verkle),
+	}
+}
+
+func BlobScheduleConfigFromProto(c *BlobScheduleConfig) *params.BlobScheduleConfig {
+	if c == nil {
+		return nil
+	}
+
+	return &params.BlobScheduleConfig{
+		Cancun: BlobConfigFromProto(c.GetCancun()),
+		Prague: BlobConfigFromProto(c.GetPrague()),
+		Osaka:  BlobConfigFromProto(c.GetOsaka()),
+		Verkle: BlobConfigFromProto(c.GetVerkle()),
+	}
+}
+
+func BlobConfigToProto(c *params.BlobConfig) *BlobConfig {
+	if c == nil {
+		return nil
+	}
+
+	return &BlobConfig{
+		Target:         uint64(c.Target),
+		Max:            uint64(c.Max),
+		UpdateFraction: c.UpdateFraction,
+	}
+}
+
+func BlobConfigFromProto(c *BlobConfig) *params.BlobConfig {
+	if c == nil {
+		return nil
+	}
+
+	return &params.BlobConfig{
+		Target:         int(c.Target),
+		Max:            int(c.Max),
+		UpdateFraction: c.UpdateFraction,
 	}
 }
