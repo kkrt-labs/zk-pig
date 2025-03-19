@@ -152,7 +152,7 @@ func (r *rpcReader) Storage(addr gethcommon.Address, slot gethcommon.Hash) (geth
 	return gethcommon.BytesToHash(value), nil
 }
 
-func (r *rpcReader) Code(addr gethcommon.Address, codeHash gethcommon.Hash) ([]byte, error) {
+func (r *rpcReader) Code(addr gethcommon.Address, _ gethcommon.Hash) ([]byte, error) {
 	code, err := r.remote.CodeAt(r.ctx, addr, r.blockNumber)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get code for address %s and block %v: %v", addr.Hex(), r.blockNumber, err)
