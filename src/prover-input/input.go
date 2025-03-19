@@ -32,7 +32,7 @@ type witnessMarshaling struct {
 	Codes     []hexutil.Bytes     `json:"codes"`
 }
 
-func (w Witness) MarshalJSON() ([]byte, error) {
+func (w *Witness) MarshalJSON() ([]byte, error) {
 	return json.Marshal(witnessMarshaling{
 		State:     bytesToHex(w.State),
 		Ancestors: w.Ancestors,
@@ -102,7 +102,7 @@ type extraMarshaling struct {
 	PreState   map[gethcommon.Address]*AccountState `json:"preState,omitempty"`
 }
 
-func (e Extra) MarshalJSON() ([]byte, error) {
+func (e *Extra) MarshalJSON() ([]byte, error) {
 	return json.Marshal(extraMarshaling{
 		AccessList: e.AccessList,
 		Committed:  bytesToHex(e.Committed),
@@ -147,7 +147,7 @@ type accountMarshaling struct {
 	StorageHash gethcommon.Hash `json:"storageHash"`
 }
 
-func (a Account) MarshalJSON() ([]byte, error) {
+func (a *Account) MarshalJSON() ([]byte, error) {
 	return json.Marshal(accountMarshaling{
 		Balance:     (*hexutil.Big)(a.Balance),
 		CodeHash:    a.CodeHash,
