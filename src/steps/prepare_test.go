@@ -17,7 +17,7 @@ func TestPreparer(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			testDataInputs := loadTestDataInputs(t, testDataInputsPath(name))
 			p, err := NewPreparer(
-				WithInclusion(IncludeAll),
+				WithDataInclude(IncludeAll),
 			)
 			require.NoError(t, err)
 			result, err := p.Prepare(context.Background(), &testDataInputs.PreflightData)

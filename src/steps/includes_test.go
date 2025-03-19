@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestInclusionString(t *testing.T) {
+func TestIncludesString(t *testing.T) {
 	tests := []struct {
 		incl Include
 		want string
@@ -22,6 +22,8 @@ func TestInclusionString(t *testing.T) {
 		{IncludeAccessList | IncludePreState, "accessList,preState"},
 		{IncludeAccessList | IncludePreState | IncludeStateDiffs, "accessList,preState,stateDiffs"},
 		{IncludeAccessList | IncludePreState | IncludeStateDiffs | IncludeCommitted, "all"},
+		{1 << 4, "none"},
+		{1<<4 | 1<<3, "committed"},
 	}
 	for _, test := range tests {
 		if got := test.incl.String(); got != test.want {
@@ -30,7 +32,7 @@ func TestInclusionString(t *testing.T) {
 	}
 }
 
-func TestParseInclusion(t *testing.T) {
+func TestParseIncludes(t *testing.T) {
 	tests := []struct {
 		strs []string
 
@@ -49,7 +51,7 @@ func TestParseInclusion(t *testing.T) {
 		{[]string{"all", "none", "invalid"}, 0, true},
 	}
 	for _, test := range tests {
-		got, err := ParseInclude(test.strs...)
+		got, err := ParseIncludes(test.strs...)
 		if test.expectedErr {
 			require.Error(t, err, "ParseInclusion(%v) = %v; want error", test.strs, got)
 		} else {
@@ -59,6 +61,6 @@ func TestParseInclusion(t *testing.T) {
 	}
 }
 
-func TestValidInclusions(t *testing.T) {
-	assert.Equal(t, "[\"accessList\" \"preState\" \"stateDiffs\" \"committed\" \"all\"]", fmt.Sprintf("%q", ValidInclusions))
+func TestValidIncludes(t *testing.T) {
+	assert.Equal(t, "[\"none\" \"accessList\" \"preState\" \"stateDiffs\" \"committed\" \"all\"]", fmt.Sprintf("%q", ValidIncludes))
 }

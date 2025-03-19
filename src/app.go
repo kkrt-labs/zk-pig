@@ -183,12 +183,12 @@ func (a *App) Preflight() steps.Preflight {
 func (a *App) Preparer() steps.Preparer {
 	return app.Provide(a.app, "preparer", func() (steps.Preparer, error) {
 		gCfg := a.Config()
-		inclusion, err := steps.ParseInclude(gCfg.Generator.Include...)
+		inclusion, err := steps.ParseIncludes(gCfg.Generator.Include...)
 		if err != nil {
 			return nil, nil
 		}
 		return steps.NewPreparer(
-			steps.WithInclusion(inclusion),
+			steps.WithDataInclude(inclusion),
 		)
 	})
 }

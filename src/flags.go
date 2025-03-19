@@ -29,7 +29,7 @@ var (
 		ViperKey:    "generator.include",
 		Name:        "include",
 		Env:         "INCLUDE",
-		Description: fmt.Sprintf("Data to include in the generated Prover Input (valid options: %q)", steps.ValidInclusions),
+		Description: fmt.Sprintf("Data to include in the generated Prover Input (valid options: %q)", steps.ValidIncludes),
 	}
 )
 
