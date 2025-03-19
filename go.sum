@@ -296,8 +296,8 @@ github.com/julienschmidt/httprouter v1.3.0/go.mod h1:JR6WtHb+2LUe8TCKY3cZOxFyyO8
 github.com/justinas/alice v1.2.0 h1:+MHSA/vccVCF4Uq37S42jwlkvI2Xzl7zTPCN5BnZNVo=
 github.com/justinas/alice v1.2.0/go.mod h1:fN5HRH/reO/zrUflLfTN43t3vXvKzvZIENsNEe7i7qA=
 github.com/kisielk/gotool v1.0.0/go.mod h1:XhKaO+MFFWcvkIS/tQcRk01m1F5IRFswLeQ+oQHNcck=
-github.com/kkrt-labs/go-ethereum v0.9.40-0.20250317123911-c10ff7457bcb h1:A+m7+X7DW34m1/QwKRkmJNcQWT6lvCc3IeVRuHFIZP4=
-github.com/kkrt-labs/go-ethereum v0.9.40-0.20250317123911-c10ff7457bcb/go.mod h1:1LG2LnMOx2yPRHR/S+xuipXH29vPr6BIH6GElD8N/fo=
+github.com/kkrt-labs/go-ethereum v1.101504.0 h1:PrEf0P69qj5G1GcWo29uMT/Ab+F/evCSkCmYUEuTOxY=
+github.com/kkrt-labs/go-ethereum v1.101504.0/go.mod h1:1LG2LnMOx2yPRHR/S+xuipXH29vPr6BIH6GElD8N/fo=
 github.com/kkrt-labs/go-utils v0.2.4-0.20250310153000-5da3bd5f9e73 h1:KSInEGeRVhHI6P2XKya/75mn7WGw6n+LwXUcBn+9h6s=
 github.com/kkrt-labs/go-utils v0.2.4-0.20250310153000-5da3bd5f9e73/go.mod h1:APUUWzEVRMnYCmJIpkgCwx7qkM5Ujhasirfg817Cab8=
 github.com/klauspost/compress v1.17.4 h1:Ej5ixsIri7BrIjBkRZLTo6ghwrEtHFk7ijlczPW4fZ4=

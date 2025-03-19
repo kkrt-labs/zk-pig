@@ -121,4 +121,4 @@ require (
 	rsc.io/tmplfunc v0.0.3 // indirect
 )
 
-replace github.com/ethereum/go-ethereum => github.com/kkrt-labs/go-ethereum v0.9.40-0.20250317123911-c10ff7457bcb
+replace github.com/ethereum/go-ethereum => github.com/kkrt-labs/go-ethereum v1.101504.0

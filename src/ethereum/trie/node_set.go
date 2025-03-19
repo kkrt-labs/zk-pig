@@ -113,19 +113,13 @@ func NodeSetFromStateTransitionProofs(preRoot, postRoot gethcommon.Hash, preProo
 // - keys is a list of keys to insert into the node set
 func AddNodes(set *trienode.NodeSet, root gethcommon.Hash, proofDB ethdb.KeyValueReader, keys ...[]byte) error {
 	for _, key := range keys {
-		_, _, _, err := trie.VerifyProofWithReporting(
-			root,
-			key,
-			proofDB,
-			&trie.ProofReporter{
-				ReportNode: func(hash gethcommon.Hash, key, node []byte) {
-					set.AddNode(key, trienode.New(hash, node))
-				},
-				ReportLeaf: set.AddLeaf,
-			},
-		)
+		proof, err := trie.VerifyProofWithProof(root, key, proofDB)
 		if err != nil {
-			return fmt.Errorf("failed to add proof for key %x: %v", key, err)
+			return fmt.Errorf("failed to verify proof for key %x: %v", key, err)
+		}
+
+		for _, n := range proof.Nodes() {
+			set.AddNode(n.Path, n.Node)
 		}
 	}
 
@@ -149,12 +143,17 @@ func AddNodes(set *trienode.NodeSet, root gethcommon.Hash, proofDB ethdb.KeyValu
 func AddOrphanNodes(set *trienode.NodeSet, postRoot gethcommon.Hash, postProofDB ethdb.KeyValueReader, keys ...[]byte) error {
 	for _, key := range keys {
 		// Verify the post-state proof
-		v, prefix, node, err := trie.VerifyProofWithLastNode(postRoot, key, postProofDB)
+		// v, prefix, node, err := trie.VerifyProofWithLastNode(postRoot, key, postProofDB)
+		// if err != nil {
+		// 	return fmt.Errorf("invalid post-state proofs: %v", err)
+		// }
+
+		proof, err := trie.VerifyProofWithProof(postRoot, key, postProofDB)
 		if err != nil {
-			return fmt.Errorf("invalid post-state proofs: %v", err)
+			return fmt.Errorf("failed to verify proof for key %x: %v", key, err)
 		}
 
-		if v != nil {
+		if proof.Value() != nil {
 			// The key exists in the post-state, thus was not deleted, so we don't need to do anything
 			continue
 		}
@@ -165,19 +164,20 @@ func AddOrphanNodes(set *trienode.NodeSet, postRoot gethcommon.Hash, postProofDB
 		// We add every possible shorter extension of the last node to the pre-state trie
 		// This is overkill, but it's the easiest way to make sure that the necessary orphan is added to the pre-state trie
 		// TODO: Optimize this by only adding the necessary orphan node
-		shortNodes, ok := trie.ReduceShortNode(node)
-		if !ok {
+		lastNode := proof.Nodes()[len(proof.Nodes())-1]
+		shortNodes, err := trie.ShortenShortNode(lastNode.Node.Blob)
+		if err != nil {
 			// The last proof node in the post-state is not a short node, this means that the deletion did not
 			// result in any trie reduction, so there is no need to add orphan nodes to the pre-state trie
 			continue
 		}
 
-		for subKey, orphan := range shortNodes {
-			fullPath := prefix
-			fullPath = append(fullPath, []byte(subKey)...)
+		for _, sn := range shortNodes {
+			fullPath := lastNode.Path
+			fullPath = append(fullPath, sn.Path...)
 			// If there is no node with the same key in the pre-state trie, we add the possible orphan node
 			if set.Nodes[string(fullPath)] == nil {
-				set.AddNode(fullPath, orphan)
+				set.AddNode(fullPath, sn.Node)
 			}
 		}
 	}
