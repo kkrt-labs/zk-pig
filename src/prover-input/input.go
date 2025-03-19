@@ -89,10 +89,39 @@ func (b *Block) Block() *gethtypes.Block {
 
 // Extra contains additional data that can be included in the Prover Input.
 type Extra struct {
-	AccessList gethtypes.AccessList                 `json:"accessList,omitempty"` // Access list of addresses and storage slots that were accessed during block execution
-	Committed  [][]byte                             `json:"committed,omitempty"`  // Nodes committed during block execution
-	StateDiffs []*StateDiff                         `json:"stateDiffs,omitempty"` // State diffs for accounts that have changes during block execution
-	PreState   map[gethcommon.Address]*AccountState `json:"preState,omitempty"`   // Pre-state for accounts that have changes during block execution
+	AccessList gethtypes.AccessList                 // Access list of addresses and storage slots that were accessed during block execution
+	Committed  [][]byte                             // Nodes committed during block execution
+	StateDiffs []*StateDiff                         // State diffs for accounts that have changes during block execution
+	PreState   map[gethcommon.Address]*AccountState // Pre-state for accounts that have changes during block execution
+}
+
+type extraMarshaling struct {
+	AccessList gethtypes.AccessList                 `json:"accessList,omitempty"`
+	Committed  []hexutil.Bytes                      `json:"committed,omitempty"`
+	StateDiffs []*StateDiff                         `json:"stateDiffs,omitempty"`
+	PreState   map[gethcommon.Address]*AccountState `json:"preState,omitempty"`
+}
+
+func (e Extra) MarshalJSON() ([]byte, error) {
+	return json.Marshal(extraMarshaling{
+		AccessList: e.AccessList,
+		Committed:  bytesToHex(e.Committed),
+		StateDiffs: e.StateDiffs,
+		PreState:   e.PreState,
+	})
+}
+
+func (e *Extra) UnmarshalJSON(b []byte) error {
+	var m extraMarshaling
+	if err := json.Unmarshal(b, &m); err != nil {
+		return err
+	}
+	e.AccessList = m.AccessList
+	e.Committed = hexToBytes(m.Committed)
+	e.StateDiffs = m.StateDiffs
+	e.PreState = m.PreState
+
+	return nil
 }
 
 // StateDiff represents a difference in the state of an account.
@@ -105,10 +134,39 @@ type StateDiff struct {
 
 // Account represents an account in the state.
 type Account struct {
-	Balance     *big.Int        `json:"balance"`
+	Balance     *big.Int
+	CodeHash    gethcommon.Hash
+	Nonce       uint64
+	StorageHash gethcommon.Hash
+}
+
+type accountMarshaling struct {
+	Balance     *hexutil.Big    `json:"balance"`
 	CodeHash    gethcommon.Hash `json:"codeHash"`
-	Nonce       uint64          `json:"nonce"`
+	Nonce       hexutil.Uint64  `json:"nonce"`
 	StorageHash gethcommon.Hash `json:"storageHash"`
+}
+
+func (a Account) MarshalJSON() ([]byte, error) {
+	return json.Marshal(accountMarshaling{
+		Balance:     (*hexutil.Big)(a.Balance),
+		CodeHash:    a.CodeHash,
+		Nonce:       hexutil.Uint64(a.Nonce),
+		StorageHash: a.StorageHash,
+	})
+}
+
+func (a *Account) UnmarshalJSON(b []byte) error {
+	var m accountMarshaling
+	if err := json.Unmarshal(b, &m); err != nil {
+		return err
+	}
+	a.Balance = (*big.Int)(m.Balance)
+	a.CodeHash = m.CodeHash
+	a.Nonce = uint64(m.Nonce)
+	a.StorageHash = m.StorageHash
+
+	return nil
 }
 
 // StorageDiff represents a difference in the storage of an account.
@@ -132,7 +190,7 @@ type accountStateMarshaling struct {
 	Balance     *hexutil.Big                        `json:"balance"`
 	CodeHash    gethcommon.Hash                     `json:"codeHash"`
 	Code        hexutil.Bytes                       `json:"code,omitempty"`
-	Nonce       uint64                              `json:"nonce"`
+	Nonce       hexutil.Uint64                      `json:"nonce"`
 	StorageHash gethcommon.Hash                     `json:"storageHash"`
 	Storage     map[gethcommon.Hash]gethcommon.Hash `json:"storage,omitempty"`
 }
@@ -142,7 +200,7 @@ func (a *AccountState) MarshalJSON() ([]byte, error) {
 		Balance:     (*hexutil.Big)(a.Balance),
 		CodeHash:    a.CodeHash,
 		Code:        a.Code,
-		Nonce:       a.Nonce,
+		Nonce:       hexutil.Uint64(a.Nonce),
 		StorageHash: a.StorageHash,
 		Storage:     a.Storage,
 	})
@@ -156,7 +214,7 @@ func (a *AccountState) UnmarshalJSON(b []byte) error {
 	a.Balance = (*big.Int)(m.Balance)
 	a.CodeHash = m.CodeHash
 	a.Code = m.Code
-	a.Nonce = m.Nonce
+	a.Nonce = uint64(m.Nonce)
 	a.StorageHash = m.StorageHash
 	a.Storage = m.Storage
 
