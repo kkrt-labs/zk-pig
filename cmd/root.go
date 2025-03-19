@@ -75,6 +75,7 @@ func NewZkPigCommand() *cobra.Command {
 	app.AddFlags(ctx.Viper, rootCmd.PersistentFlags())
 
 	// Add flags for chain, aws, and store
+	src.AddGeneratorFlags(ctx.Viper, rootCmd.PersistentFlags())
 	src.AddChainFlags(ctx.Viper, rootCmd.PersistentFlags())
 	src.AddAWSFlags(ctx.Viper, rootCmd.PersistentFlags())
 	src.AddStoreFlags(ctx.Viper, rootCmd.PersistentFlags())

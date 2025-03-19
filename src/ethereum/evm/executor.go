@@ -19,6 +19,7 @@ type ExecParams struct {
 	VMConfig *vm.Config // VM configuration
 	Block    *types.Block
 	Validate bool // Whether to the validate the block at the end of execution
+	Commit   bool // Whether to commit the state changes
 	State    *gethstate.StateDB
 	Chain    *core.HeaderChain
 	Reporter func(error)
@@ -88,6 +89,13 @@ func (e *executor) Execute(ctx context.Context, params *ExecParams) (res *core.P
 
 	if params.Validate {
 		execErr = e.validateBlock(ctx, params, res)
+		if execErr != nil {
+			return
+		}
+	}
+
+	if params.Commit {
+		_, execErr = params.State.CommitWithoutFlush(true, false)
 	}
 
 	return

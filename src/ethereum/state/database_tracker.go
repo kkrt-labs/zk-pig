@@ -153,24 +153,3 @@ func (r *stateAccessTrackerReader) CodeSize(addr gethcommon.Address, codeHash ge
 	size, err := r.reader.CodeSize(addr, codeHash)
 	return size, err
 }
-
-// copyAccounts returns a deep-copied map of accounts.
-func copyAccounts(accounts map[gethcommon.Address]*AccountAccessTracker) map[gethcommon.Address]*AccountAccessTracker {
-	copied := make(map[gethcommon.Address]*AccountAccessTracker)
-	for addr, acct := range accounts {
-		copied[addr] = &AccountAccessTracker{
-			Account: acct.Account.Copy(),
-			Storage: copyStorage(acct.Storage),
-		}
-	}
-	return copied
-}
-
-// copyStorage returns a deep-copied map of storage slots.
-func copyStorage(storage map[gethcommon.Hash]gethcommon.Hash) map[gethcommon.Hash]gethcommon.Hash {
-	copied := make(map[gethcommon.Hash]gethcommon.Hash)
-	for slot, value := range storage {
-		copied[slot] = value
-	}
-	return copied
-}

@@ -5,6 +5,7 @@ import (
 
 	"github.com/kkrt-labs/go-utils/common"
 	"github.com/kkrt-labs/go-utils/spf13"
+	"github.com/kkrt-labs/zk-pig/src/steps"
 	"github.com/spf13/pflag"
 	"github.com/spf13/viper"
 )
@@ -21,6 +22,19 @@ var (
 
 func AddConfigFileFlag(v *viper.Viper, f *pflag.FlagSet) {
 	configFileFlag.Add(v, f)
+}
+
+var (
+	generatorInclusionsFlag = &spf13.StringArrayFlag{
+		ViperKey:    "generator.include",
+		Name:        "include",
+		Env:         "INCLUDE",
+		Description: fmt.Sprintf("Data to include in the generated Prover Input (valid options: %q)", steps.ValidInclusions),
+	}
+)
+
+func AddGeneratorFlags(v *viper.Viper, f *pflag.FlagSet) {
+	generatorInclusionsFlag.Add(v, f)
 }
 
 var (

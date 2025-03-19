@@ -3,7 +3,6 @@ package proto
 import (
 	"testing"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
 	input "github.com/kkrt-labs/zk-pig/src/prover-input"
@@ -68,8 +67,8 @@ func TestWitness(t *testing.T) {
 			desc: "witness with empty fields",
 			input: &input.Witness{
 				Ancestors: []*gethtypes.Header{},
-				State:     []hexutil.Bytes{{0x01, 0x02, 0x03}},
-				Codes:     []hexutil.Bytes{{0x04, 0x05, 0x06}},
+				State:     [][]byte{{0x01, 0x02, 0x03}},
+				Codes:     [][]byte{{0x04, 0x05, 0x06}},
 			},
 		},
 	}

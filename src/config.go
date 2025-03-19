@@ -15,8 +15,11 @@ type Config struct {
 			URL string `mapstructure:"url"`
 		} `mapstructure:"rpc,omitempty"`
 	} `mapstructure:"chain"`
-	DataDir            string   `mapstructure:"data-dir"`
-	Config             []string `mapstructure:"config"`
+	DataDir   string   `mapstructure:"data-dir"`
+	Config    []string `mapstructure:"config"`
+	Generator struct {
+		Include []string `mapstructure:"include"`
+	} `mapstructure:"generator"`
 	PreflightDataStore struct {
 		File struct {
 			Dir string `mapstructure:"dir"`

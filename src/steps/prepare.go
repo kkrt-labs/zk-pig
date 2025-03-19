@@ -1,10 +1,11 @@
 package steps
 
 import (
+	"bytes"
 	"context"
 	"fmt"
 
-	"github.com/ethereum/go-ethereum/common/hexutil"
+	gethcommon "github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
 	"github.com/ethereum/go-ethereum/core/rawdb"
 	gethstate "github.com/ethereum/go-ethereum/core/state"
@@ -34,20 +35,33 @@ type Preparer interface {
 
 type preparer struct {
 	evm evm.Executor
+
+	includeOpt Include
 }
 
+type PrepareOption func(*preparer) error
+
 // NewPreparer creates a new Preparer.
-func NewPreparer() Preparer {
+func NewPreparer(opts ...PrepareOption) (Preparer, error) {
 	return NewPreparerFromEvm(
 		evm.ExecutorWithTags("evm")(evm.ExecutorWithLog()(evm.NewExecutor())),
+		opts...,
 	)
 }
 
 // NewPreparerFromEvm creates a new Preparer from an EVM executor.
-func NewPreparerFromEvm(e evm.Executor) Preparer {
-	return &preparer{
+func NewPreparerFromEvm(e evm.Executor, opts ...PrepareOption) (Preparer, error) {
+	p := &preparer{
 		evm: e,
 	}
+
+	for _, opt := range opts {
+		if err := opt(p); err != nil {
+			return nil, err
+		}
+	}
+
+	return p, nil
 }
 
 // Prepare prepares the ProvableBlockInputs data for the EVM prover engine.
@@ -97,6 +111,7 @@ func (p *preparer) prepare(ctx context.Context, data *PreflightData) (*input.Pro
 		},
 		Block:    data.Block.Block(),
 		Validate: true, // We validate the block execution to ensure the result and final state are correct
+		Commit:   p.include(IncludeCommitted),
 		Chain:    hc,
 		State:    preState,
 	}
@@ -106,16 +121,78 @@ func (p *preparer) prepare(ctx context.Context, data *PreflightData) (*input.Pro
 		return nil, fmt.Errorf("failed to execute block: %v", err)
 	}
 
-	tracker := trackers.GetAccessTracker(parentHeader.Root)
-	accessList := gethtypes.AccessList{}
-	for addr, accountAccessTracker := range tracker.Accounts {
-		accessTuple := gethtypes.AccessTuple{
-			Address: addr,
+	extra := new(input.Extra)
+
+	if p.include(IncludeAccessList) {
+		tracker := trackers.GetAccessTracker(parentHeader.Root)
+		for addr, accountAccessTracker := range tracker.Accounts {
+			accessTuple := gethtypes.AccessTuple{
+				Address:     addr,
+				StorageKeys: make([]gethcommon.Hash, 0),
+			}
+
+			for slot := range accountAccessTracker.Storage {
+				accessTuple.StorageKeys = append(accessTuple.StorageKeys, slot)
+			}
+			extra.AccessList = append(extra.AccessList, accessTuple)
 		}
-		for slot := range accountAccessTracker.Storage {
-			accessTuple.StorageKeys = append(accessTuple.StorageKeys, slot)
+	}
+
+	if p.include(IncludeStateDiffs) {
+		tracker := trackers.GetAccessTracker(parentHeader.Root)
+		for addr, accountAccessTracker := range tracker.Accounts {
+			preAcc := accountAccessTracker.Account
+			postAcc := getAccount(execParams.State, addr)
+
+			if !accountHasChanged(preAcc, postAcc) {
+				continue
+			}
+
+			stateDiff := &input.StateDiff{
+				Address:     addr,
+				PreAccount:  toAccount(preAcc),
+				PostAccount: toAccount(postAcc),
+			}
+
+			if accountRootHasChanged(preAcc, postAcc) {
+				for slot, preValue := range accountAccessTracker.Storage {
+					postValue := execParams.State.GetState(addr, slot)
+					if preValue != postValue {
+						stateDiff.Storage = append(stateDiff.Storage, &input.StorageDiff{
+							Slot:      slot,
+							PreValue:  preValue,
+							PostValue: postValue,
+						})
+					}
+				}
+			}
+
+			extra.StateDiffs = append(extra.StateDiffs, stateDiff)
 		}
-		accessList = append(accessList, accessTuple)
+	}
+
+	if p.include(IncludeCommitted) {
+		extra.Committed = witnessToBytes(execParams.State.Witness().Committed)
+	}
+
+	if p.include(IncludePreState) {
+		extra.PreState = make(map[gethcommon.Address]*input.AccountState)
+		tracker := trackers.GetAccessTracker(parentHeader.Root)
+		for addr, accountAccessTracker := range tracker.Accounts {
+			if accountAccessTracker.Account == nil {
+				extra.PreState[addr] = nil
+				continue
+			}
+
+			extra.PreState[addr] = &input.AccountState{
+				Balance:     accountAccessTracker.Account.Balance.ToBig(),
+				CodeHash:    gethcommon.BytesToHash(accountAccessTracker.Account.CodeHash),
+				Code:        execParams.State.GetCode(addr),
+				Nonce:       accountAccessTracker.Account.Nonce,
+				StorageHash: accountAccessTracker.Account.Root,
+				Storage:     accountAccessTracker.Storage,
+			}
+		}
 	}
 
 	return &input.ProverInput{
@@ -130,11 +207,72 @@ func (p *preparer) prepare(ctx context.Context, data *PreflightData) (*input.Pro
 		},
 		Witness: &input.Witness{
 			Ancestors: execParams.State.Witness().Headers,
-			Codes:     hexToHexBytes(execParams.State.Witness().Codes),
-			State:     hexToHexBytes(execParams.State.Witness().State),
+			Codes:     witnessToBytes(execParams.State.Witness().Codes),
+			State:     witnessToBytes(execParams.State.Witness().State),
 		},
-		AccessList: accessList,
+		Extra: extra,
 	}, nil
+}
+
+func (p *preparer) include(opt Include) bool {
+	return p.includeOpt.Include(opt)
+}
+
+func getAccount(state *gethstate.StateDB, addr gethcommon.Address) *gethtypes.StateAccount {
+	balance := state.GetBalance(addr)
+	nonce := state.GetNonce(addr)
+	codeHash := state.GetCodeHash(addr)
+	root := state.GetStorageRoot(addr)
+	if balance.IsZero() && nonce == 0 && codeHash == (gethcommon.Hash{}) && root == (gethcommon.Hash{}) {
+		return nil
+	}
+
+	return &gethtypes.StateAccount{
+		Balance:  balance,
+		Nonce:    nonce,
+		CodeHash: codeHash.Bytes(),
+		Root:     root,
+	}
+}
+
+func accountRootHasChanged(preAcc, postAcc *gethtypes.StateAccount) bool {
+	if preAcc == nil && postAcc == nil {
+		return false
+	}
+
+	if preAcc != nil && postAcc == nil || preAcc == nil && postAcc != nil {
+		return true
+	}
+
+	return preAcc.Root != postAcc.Root
+}
+
+func accountHasChanged(preAcc, postAcc *gethtypes.StateAccount) bool {
+	if preAcc == nil && postAcc == nil {
+		return false
+	}
+
+	if preAcc != nil && postAcc == nil || preAcc == nil && postAcc != nil {
+		return true
+	}
+
+	return preAcc.Balance.Cmp(postAcc.Balance) != 0 ||
+		preAcc.Nonce != postAcc.Nonce ||
+		!bytes.Equal(preAcc.CodeHash, postAcc.CodeHash) ||
+		preAcc.Root != postAcc.Root
+}
+
+func toAccount(acc *gethtypes.StateAccount) *input.Account {
+	if acc == nil {
+		return nil
+	}
+
+	return &input.Account{
+		Balance:     acc.Balance.ToBig(),
+		CodeHash:    gethcommon.BytesToHash(acc.CodeHash),
+		Nonce:       acc.Nonce,
+		StorageHash: acc.Root,
+	}
 }
 
 func (p *preparer) prepareStateDBAndChain(_ context.Context, in *PreflightData) (gethstate.Database, *core.HeaderChain, error) {
@@ -175,10 +313,10 @@ func (p *preparer) prepareStateDBAndChain(_ context.Context, in *PreflightData) 
 	return stateDB, hc, nil
 }
 
-func hexToHexBytes(hex map[string]struct{}) []hexutil.Bytes {
-	bytes := make([]hexutil.Bytes, 0)
+func witnessToBytes(hex map[string]struct{}) [][]byte {
+	bytes := make([][]byte, 0)
 	for h := range hex {
-		bytes = append(bytes, hexutil.Bytes(h))
+		bytes = append(bytes, []byte(h))
 	}
 	return bytes
 }

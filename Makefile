@@ -89,6 +89,7 @@ generate-proto:
 	@protoc --go_out=. --go_opt=paths=source_relative src/prover-input/proto/transaction.proto
 	@protoc --go_out=. --go_opt=paths=source_relative src/prover-input/proto/block.proto
 	@protoc --go_out=. --go_opt=paths=source_relative src/prover-input/proto/chain_config.proto
+	@protoc --go_out=. --go_opt=paths=source_relative src/prover-input/proto/extra.proto
 	@protoc --go_out=. --go_opt=paths=source_relative src/prover-input/proto/input.proto
 
 # Install mockgen command

@@ -5,8 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"sort"
-
-	"github.com/ethereum/go-ethereum/common/hexutil"
 )
 
 /**
@@ -31,7 +29,7 @@ func NormalizeProverInput(input *ProverInput) *ProverInput {
 
 		// Normalize Witness Codes ([][]byte)
 		if len(input.Witness.Codes) > 0 {
-			normalized.Witness.Codes = make([]hexutil.Bytes, len(input.Witness.Codes))
+			normalized.Witness.Codes = make([][]byte, len(input.Witness.Codes))
 			copy(normalized.Witness.Codes, input.Witness.Codes)
 			sort.Slice(normalized.Witness.Codes, func(i, j int) bool {
 				return bytes.Compare(normalized.Witness.Codes[i], normalized.Witness.Codes[j]) < 0
@@ -40,7 +38,7 @@ func NormalizeProverInput(input *ProverInput) *ProverInput {
 
 		// Normalize Witness State ([]string)
 		if len(input.Witness.State) > 0 {
-			normalized.Witness.State = make([]hexutil.Bytes, len(input.Witness.State))
+			normalized.Witness.State = make([][]byte, len(input.Witness.State))
 			copy(normalized.Witness.State, input.Witness.State)
 			sort.Slice(normalized.Witness.State, func(i, j int) bool {
 				return bytes.Compare(normalized.Witness.State[i], normalized.Witness.State[j]) < 0

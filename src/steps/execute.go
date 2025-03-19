@@ -116,8 +116,8 @@ func (e *executor) prepareStateDBAndChain(in *input.ProverInput) (gethstate.Data
 
 	// -- Pre-populates database with Witness data ---
 	ethereum.WriteHeaders(stateDB.TrieDB().Disk(), in.Witness.Ancestors...)
-	ethereum.WriteCodes(stateDB.TrieDB().Disk(), hexBytesToBytes(in.Witness.Codes)...)
-	ethereum.WriteNodesToHashDB(stateDB.TrieDB().Disk(), hexBytesToBytes(in.Witness.State)...)
+	ethereum.WriteCodes(stateDB.TrieDB().Disk(), in.Witness.Codes...)
+	ethereum.WriteNodesToHashDB(stateDB.TrieDB().Disk(), in.Witness.State...)
 
 	hc, err := ethereum.NewChain(in.ChainConfig, stateDB)
 	if err != nil {
