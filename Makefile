@@ -11,6 +11,7 @@ GOFILES := $(shell find . -name '*.go' -not -path "./vendor/*" -not -path "./tes
 
 # List of packages except testsutils
 PACKAGES ?= $(shell go list ./... | egrep -v "testutils" )
+COVERAGE_IGNORE ?= (\.pb\.go|/mock/)
 
 # Build folder
 BUILD_FOLDER = build
@@ -61,6 +62,7 @@ build/coverage:
 
 unit-test: build/coverage
 	@go test -covermode=count -coverprofile $(UNIT_COVERAGE_OUT) -v $(PACKAGES)
+	@grep -v -E '$(COVERAGE_IGNORE)' $(UNIT_COVERAGE_OUT) > $(UNIT_COVERAGE_OUT).tmp && mv $(UNIT_COVERAGE_OUT).tmp $(UNIT_COVERAGE_OUT)
 
 # Run unit tests with coverage
 test: unit-test
@@ -69,7 +71,6 @@ test: unit-test
 # Run unit tests with race detector
 test-race:
 	@go test -race $(PACKAGES)
-
 
 test-lint: ## Check linting
 	@type golangci-lint >/dev/null 2>&1 && { \
