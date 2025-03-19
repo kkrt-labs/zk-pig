@@ -16,8 +16,8 @@ PACKAGES ?= $(shell go list ./... | egrep -v "testutils" )
 BUILD_FOLDER = build
 
 # Tools versions
-GORELEASER_CROSS_VERSION = v1.24.0
-GOLANGCI_VERSION = v1.62.0
+GORELEASER_CROSS_VERSION = v1.24.1
+GOLANGCI_VERSION = v1.64.7
 MOCKGEN_VERSION = v0.5.0
 
 # GOPRIVVATE
@@ -54,7 +54,7 @@ run:
 
 # Run go mod tidy command to update go.mod and go.sum files
 mod-tidy:
-	@export GOPRIVATE=$(GOPRIVATE) | go mod tidy --compat 1.18
+	@export GOPRIVATE=$(GOPRIVATE) | go mod tidy
 
 build/coverage:
 	@mkdir -p $(COVERAGE_BUILD_FOLDER)

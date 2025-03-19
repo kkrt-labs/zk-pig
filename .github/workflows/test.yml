@@ -15,7 +15,7 @@ on:
       - "go.*"
 
 env:
-  GO_VERSION: 1.22.0
+  GO_VERSION: 1.24.1
 jobs:
   unit-tests:
     name: "Run unit tests in ${{ matrix.os }}"
@@ -79,5 +79,5 @@ jobs:
       - name: Run linting tests
         uses: golangci/golangci-lint-action@v6
         with:
-          version: v1.62.0
+          version: v1.64.7
           args: -v --timeout 3m0s
