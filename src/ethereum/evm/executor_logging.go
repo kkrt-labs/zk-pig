@@ -10,19 +10,19 @@ import (
 	"github.com/ethereum/go-ethereum/core/tracing"
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	gethvm "github.com/ethereum/go-ethereum/core/vm"
+	"github.com/kkrt-labs/go-utils/app/svc"
 	"github.com/kkrt-labs/go-utils/log"
 	"github.com/kkrt-labs/go-utils/tag"
-	"github.com/kkrt-labs/zk-pig/pkg/app"
 	"go.uber.org/zap"
 )
 
 type tagged struct {
 	executor Executor
-	app.Tagged
+	*svc.Tagged
 }
 
 func WithTags(executor Executor, tags ...*tag.Tag) Executor {
-	return &tagged{executor: executor, Tagged: app.NewTagged(tags...)}
+	return &tagged{executor: executor, Tagged: svc.NewTagged(tags...)}
 }
 
 func (t *tagged) Execute(ctx context.Context, params *ExecParams) (*core.ProcessResult, error) {

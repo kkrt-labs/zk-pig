@@ -14,10 +14,10 @@ import (
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/ethereum/go-ethereum/triedb"
 	"github.com/ethereum/go-ethereum/triedb/hashdb"
+	"github.com/kkrt-labs/go-utils/app/svc"
 	ethrpc "github.com/kkrt-labs/go-utils/ethereum/rpc"
 	"github.com/kkrt-labs/go-utils/log"
 	"github.com/kkrt-labs/go-utils/tag"
-	"github.com/kkrt-labs/zk-pig/pkg/app"
 	"github.com/kkrt-labs/zk-pig/src/ethereum"
 	"github.com/kkrt-labs/zk-pig/src/ethereum/ethdb/rpcdb"
 	"github.com/kkrt-labs/zk-pig/src/ethereum/evm"
@@ -232,13 +232,13 @@ func (pf *preflight) Stop(_ context.Context) error {
 
 type taggedPreflight struct {
 	pf Preflight
-	app.Tagged
+	*svc.Tagged
 }
 
 func PreflightWithTags(pf Preflight, tags ...*tag.Tag) Preflight {
 	return &taggedPreflight{
 		pf:     pf,
-		Tagged: app.NewTagged(tags...),
+		Tagged: svc.NewTagged(tags...),
 	}
 }
 

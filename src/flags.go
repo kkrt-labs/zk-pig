@@ -76,7 +76,7 @@ var (
 		Name:         "inputs-content-type",
 		Env:          "INPUTS_CONTENT_TYPE",
 		Description:  fmt.Sprintf("Content type for storing prover inputs (one of %q)", []string{"json", "protobuf"}),
-		DefaultValue: common.Ptr("json"),
+		DefaultValue: common.Ptr("application/json"),
 	}
 	contentEncodingFlag = &spf13.StringFlag{
 		ViperKey:     "prover-input-store.content-encoding",

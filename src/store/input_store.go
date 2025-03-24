@@ -45,8 +45,8 @@ func New(cfg *ProverInputStoreConfig) (ProverInputStore, error) {
 	return NewFromStore(inputstore, cfg.ContentType), nil
 }
 
-func NewFromStore(inputstore store.Store, contentType store.ContentType) ProverInputStore {
-	return &proverInputStore{store: inputstore, contentType: contentType}
+func NewFromStore(s store.Store, contentType store.ContentType) ProverInputStore {
+	return &proverInputStore{store: s, contentType: contentType}
 }
 
 func (s *proverInputStore) StoreProverInput(ctx context.Context, data *input.ProverInput) error {
@@ -64,11 +64,7 @@ func (s *proverInputStore) StoreProverInput(ctx context.Context, data *input.Pro
 			return fmt.Errorf("failed to encode JSON: %w", err)
 		}
 	default:
-		contentType, err := s.contentType.String()
-		if err != nil {
-			return fmt.Errorf("failed to get content type: %w", err)
-		}
-		return fmt.Errorf("unsupported content type: %s", contentType)
+		return fmt.Errorf("unsupported content type: %s", s.contentType)
 	}
 
 	path := s.proverPath(data.ChainConfig.ChainID.Uint64(), data.Blocks[0].Header.Number.Uint64())
@@ -106,11 +102,7 @@ func (s *proverInputStore) LoadProverInput(ctx context.Context, chainID, blockNu
 		}
 		data = protoinput.FromProto(protoMsg)
 	default:
-		contentType, err := s.contentType.String()
-		if err != nil {
-			return nil, fmt.Errorf("failed to get content type: %w", err)
-		}
-		return nil, fmt.Errorf("unsupported content type: %s", contentType)
+		return nil, fmt.Errorf("unsupported content type: %s", s.contentType)
 	}
 
 	return data, nil

@@ -7,7 +7,9 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/kkrt-labs/go-utils/app"
 	aws "github.com/kkrt-labs/go-utils/aws"
+	ethrpc "github.com/kkrt-labs/go-utils/ethereum/rpc"
 	ethjsonrpc "github.com/kkrt-labs/go-utils/ethereum/rpc/jsonrpc"
 	"github.com/kkrt-labs/go-utils/jsonrpc"
 	jsonrpcmrgd "github.com/kkrt-labs/go-utils/jsonrpc/merged"
@@ -15,12 +17,22 @@ import (
 	filestore "github.com/kkrt-labs/go-utils/store/file"
 	multistore "github.com/kkrt-labs/go-utils/store/multi"
 	s3store "github.com/kkrt-labs/go-utils/store/s3"
-	"github.com/kkrt-labs/zk-pig/pkg/app"
 	"github.com/kkrt-labs/zk-pig/src/ethereum/evm"
 	"github.com/kkrt-labs/zk-pig/src/generator"
 	"github.com/kkrt-labs/zk-pig/src/steps"
 	inputstore "github.com/kkrt-labs/zk-pig/src/store"
 	"go.uber.org/zap"
+)
+
+var (
+	preflightDataStoreComponentName     = "preflight-data-store"
+	preflightDataFileStoreComponentName = fmt.Sprintf("%s.file", preflightDataStoreComponentName)
+	proverInputStoreComponentName       = "prover-input-store"
+	proverInputFileStoreComponentName   = fmt.Sprintf("%s.file", proverInputStoreComponentName)
+	proverInputS3StoreComponentName     = fmt.Sprintf("%s.s3", proverInputStoreComponentName)
+	chainComponentName                  = "chain"
+	chainRPCComponentName               = fmt.Sprintf("%s.rpc", chainComponentName)
+	generatorComponentName              = "generator"
 )
 
 // Service is a service that enables the generation of prover inpunts for EVM compatible blocks.
@@ -54,10 +66,10 @@ func provide[T any](a *App, name string, constructor func() (T, error), opts ...
 	return app.Provide(a.app, name, constructor, opts...)
 }
 
-func (a *App) ChainRPCRemoteBase() jsonrpc.Client {
+func (a *App) ChainRPCBase() jsonrpc.Client {
 	return provide(
 		a,
-		"chain.rpc.remote.base",
+		fmt.Sprintf("%s.base", chainRPCComponentName),
 		func() (jsonrpc.Client, error) {
 			gCfg := a.Config()
 			if gCfg.Chain.RPC.URL != "" {
@@ -74,50 +86,149 @@ func (a *App) ChainRPCRemoteBase() jsonrpc.Client {
 			}
 			return nil, nil
 		},
+		app.WithComponentName(chainRPCComponentName),
 	)
 }
 
-func (a *App) ChainRPCRemote() jsonrpc.Client {
+func (a *App) ChainRPCMetrics() jsonrpc.Client {
 	return provide(
 		a,
-		"chain.rpc.remote",
+		fmt.Sprintf("%s.metrics", chainRPCComponentName),
 		func() (jsonrpc.Client, error) {
-			remote := a.ChainRPCRemoteBase()
+			remote := a.ChainRPCBase()
 			if remote == nil {
 				return nil, nil
 			}
 
-			remote = jsonrpc.WithLog()(remote)                           // Logs a first time before the Retry
-			remote = jsonrpc.WithTimeout(500 * time.Millisecond)(remote) // Sets a timeout on outgoing requests
-			remote = jsonrpc.WithTags("")(remote)                        // Add tags are updated according to retry
+			remote = jsonrpc.WithMetrics(remote)
+
+			return remote, nil
+		},
+		app.WithComponentName(chainRPCComponentName),
+	)
+}
+
+func (a *App) ChainRPCLogging() jsonrpc.Client {
+	return provide(
+		a,
+		fmt.Sprintf("%s.logging", chainRPCComponentName),
+		func() (jsonrpc.Client, error) {
+			remote := a.ChainRPCMetrics()
+			if remote == nil {
+				return nil, nil
+			}
+
+			remote = jsonrpc.WithLog()(remote)
+
+			return remote, nil
+		},
+		app.WithComponentName(chainRPCComponentName),
+	)
+}
+
+func (a *App) ChainRPCSecured() jsonrpc.Client {
+	return provide(
+		a,
+		fmt.Sprintf("%s.secured", chainRPCComponentName),
+		func() (jsonrpc.Client, error) {
+			remote := a.ChainRPCLogging()
+			if remote == nil {
+				return nil, nil
+			}
+
+			remote = jsonrpc.WithTimeout(500 * time.Millisecond)(remote)
 			remote = jsonrpc.WithRetry()(remote)
-			remote = jsonrpc.WithTags("jsonrpc")(remote)
+
+			return remote, nil
+		},
+		app.WithComponentName(chainRPCComponentName),
+	)
+}
+
+func (a *App) ChainRPCTagged() jsonrpc.Client {
+	return provide(
+		a,
+		fmt.Sprintf("%s.tagged", chainRPCComponentName),
+		func() (jsonrpc.Client, error) {
+			remote := a.ChainRPCSecured()
+			if remote == nil {
+				return nil, nil
+			}
+
+			return jsonrpc.WithTags(remote), nil
+		},
+		app.WithComponentName(chainRPCComponentName),
+	)
+}
+
+func (a *App) ChainRPC() jsonrpc.Client {
+	return provide(
+		a,
+		chainRPCComponentName,
+		func() (jsonrpc.Client, error) {
+			remote := a.ChainRPCTagged()
+			if remote == nil {
+				return nil, nil
+			}
+
 			remote = jsonrpc.WithVersion("2.0")(remote)
 			remote = jsonrpc.WithIncrementalID()(remote)
 
 			return remote, nil
 		},
+		app.WithComponentName(chainRPCComponentName),
 	)
 }
 
-func (a *App) ChainRPC() *ethjsonrpc.Client {
+func (a *App) ChainBase() ethrpc.Client {
 	return provide(
 		a,
-		"chain.rpc",
-		func() (*ethjsonrpc.Client, error) {
-			jrpc := a.ChainRPCRemote()
-			if jrpc == nil {
+		fmt.Sprintf("%s.base", chainComponentName),
+		func() (ethrpc.Client, error) {
+			remote := a.ChainRPC()
+			if remote == nil {
 				return nil, nil
 			}
-			return ethjsonrpc.NewFromClient(jrpc), nil
+			return ethjsonrpc.NewFromClient(remote), nil
 		},
+		app.WithComponentName(chainComponentName),
+	)
+}
+
+func (a *App) ChainWithMetrics() ethrpc.Client {
+	return provide(
+		a,
+		fmt.Sprintf("%s.metrics", chainComponentName),
+		func() (ethrpc.Client, error) {
+			chain := a.ChainBase()
+			if chain == nil {
+				return nil, nil
+			}
+			return ethrpc.WithMetrics(chain), nil
+		},
+		app.WithComponentName(chainComponentName),
+	)
+}
+
+func (a *App) Chain() ethrpc.Client {
+	return provide(
+		a,
+		fmt.Sprintf("%s.check", chainComponentName),
+		func() (ethrpc.Client, error) {
+			chain := a.ChainWithMetrics()
+			if chain == nil {
+				return nil, nil
+			}
+			return ethrpc.WithCheck(chain), nil
+		},
+		app.WithComponentName(chainComponentName),
 	)
 }
 
 func (a *App) ChainID() *big.Int {
 	return provide(
 		a,
-		"chain.id",
+		fmt.Sprintf("%s.id", chainComponentName),
 		func() (*big.Int, error) {
 			gCfg := a.Config()
 			if gCfg.Chain.ID != "" {
@@ -132,42 +243,144 @@ func (a *App) ChainID() *big.Int {
 		})
 }
 
-func (a *App) PreflightDataStore() inputstore.PreflightDataStore {
+func (a *App) PreflightDataFileStoreBase() store.Store {
 	return provide(
 		a,
-		"generator.preflight-data-store",
-		func() (inputstore.PreflightDataStore, error) {
+		fmt.Sprintf("%s.base", preflightDataFileStoreComponentName),
+		func() (store.Store, error) {
 			gCfg := a.Config()
 			if gCfg.PreflightDataStore.File.Dir != "" {
-				cfg := &inputstore.PreflightDataStoreConfig{
-					FileConfig: &filestore.Config{
-						DataDir: filepath.Join(gCfg.DataDir, gCfg.PreflightDataStore.File.Dir),
-					},
-				}
-				return inputstore.NewPreflightDataStore(cfg)
+				return filestore.New(filestore.Config{
+					DataDir: filepath.Join(gCfg.DataDir, gCfg.PreflightDataStore.File.Dir),
+				}), nil
+			}
+			return nil, nil
+		},
+	)
+}
+
+func (a *App) PreflightDataFileStoreWithMetrics() store.Store {
+	return provide(
+		a,
+		fmt.Sprintf("%s.metrics", preflightDataFileStoreComponentName),
+		func() (store.Store, error) {
+			s := a.PreflightDataFileStoreBase()
+			if s == nil {
+				return nil, nil
+			}
+			return store.WithMetrics(s), nil
+		},
+	)
+}
+
+func (a *App) PreflightDataFileStoreWithLog() store.Store {
+	return provide(
+		a,
+		fmt.Sprintf("%s.logging", preflightDataFileStoreComponentName),
+		func() (store.Store, error) {
+			s := a.PreflightDataFileStoreWithMetrics()
+			if s == nil {
+				return nil, nil
+			}
+			return store.WithLog(s), nil
+		},
+	)
+}
+
+func (a *App) PreflightDataStoreBase() inputstore.PreflightDataStore {
+	return provide(
+		a,
+		fmt.Sprintf("%s.base", preflightDataStoreComponentName),
+		func() (inputstore.PreflightDataStore, error) {
+			s := a.PreflightDataFileStoreWithLog()
+			if s != nil {
+				return inputstore.NewPreflightDataStore(s)
 			}
 
 			return nil, nil
-		})
+		},
+	)
 }
 
-func (a *App) ProverInputStore() inputstore.ProverInputStore {
+func (a *App) PreflightDataStore() inputstore.PreflightDataStore {
 	return provide(
 		a,
-		"generator.prover-input-store",
-		func() (inputstore.ProverInputStore, error) {
+		preflightDataStoreComponentName,
+		func() (inputstore.PreflightDataStore, error) {
+			s := a.PreflightDataStoreBase()
+			s = inputstore.PreflightDataStoreWithLog(s)
+			s = inputstore.PreflightDataStoreWithTags(s)
+			return s, nil
+		},
+		app.WithComponentName(preflightDataStoreComponentName),
+	)
+}
+func (a *App) ProverInputFileStoreBase() store.Store {
+	return provide(
+		a,
+		fmt.Sprintf("%s.base", proverInputFileStoreComponentName),
+		func() (store.Store, error) {
 			gCfg := a.Config()
-
-			var proverInputStoreCfg multistore.Config
-
-			// If File Dir config is set file store
 			if gCfg.ProverInputStore.File.Dir != "" {
-				proverInputStoreCfg.FileConfig = &filestore.Config{DataDir: filepath.Join(gCfg.DataDir, gCfg.ProverInputStore.File.Dir)}
+				return filestore.New(filestore.Config{DataDir: filepath.Join(gCfg.DataDir, gCfg.ProverInputStore.File.Dir)}), nil
 			}
+			return nil, nil
+		},
+	)
+}
 
-			// Configure S3 store
+func (a *App) ProverInputFileStoreWithMetrics() store.Store {
+	return provide(
+		a,
+		fmt.Sprintf("%s.metrics", proverInputFileStoreComponentName),
+		func() (store.Store, error) {
+			s := a.ProverInputFileStoreBase()
+			if s == nil {
+				return nil, nil
+			}
+			return store.WithMetrics(s), nil
+		},
+		app.WithComponentName(proverInputFileStoreComponentName),
+	)
+}
+
+func (a *App) ProverInputFileStoreWithLog() store.Store {
+	return provide(
+		a,
+		fmt.Sprintf("%s.logging", proverInputFileStoreComponentName),
+		func() (store.Store, error) {
+			s := a.ProverInputFileStoreWithMetrics()
+			if s == nil {
+				return nil, nil
+			}
+			return store.WithLog(s), nil
+		},
+	)
+}
+
+func (a *App) ProverInputFileStoreWithTags() store.Store {
+	return provide(
+		a,
+		fmt.Sprintf("%s.tags", proverInputFileStoreComponentName),
+		func() (store.Store, error) {
+			s := a.ProverInputFileStoreWithLog()
+			if s == nil {
+				return nil, nil
+			}
+			return store.WithTags(s), nil
+		},
+		app.WithComponentName(proverInputFileStoreComponentName),
+	)
+}
+
+func (a *App) ProverInputS3StoreBase() store.Store {
+	return provide(
+		a,
+		fmt.Sprintf("%s.base", proverInputS3StoreComponentName),
+		func() (store.Store, error) {
+			gCfg := a.Config()
 			if gCfg.ProverInputStore.S3.Bucket != "" {
-				proverInputStoreCfg.S3Config = &s3store.Config{
+				return s3store.New(&s3store.Config{
 					Bucket:    gCfg.ProverInputStore.S3.Bucket,
 					KeyPrefix: gCfg.ProverInputStore.S3.BucketKeyPrefix,
 					ProviderConfig: &aws.ProviderConfig{
@@ -177,33 +390,111 @@ func (a *App) ProverInputStore() inputstore.ProverInputStore {
 							SecretKey: gCfg.ProverInputStore.S3.AWSProvider.Credentials.SecretKey,
 						},
 					},
-				}
+				})
 			}
+			return nil, nil
+		},
+	)
+}
 
-			contentEncoding, err := store.ParseContentEncoding(gCfg.ProverInputStore.ContentEncoding)
-			if err != nil {
-				return nil, fmt.Errorf("failed to parse content encoding: %v", err)
+func (a *App) ProverInputS3StoreWithMetrics() store.Store {
+	return provide(
+		a,
+		fmt.Sprintf("%s.metrics", proverInputS3StoreComponentName),
+		func() (store.Store, error) {
+			s := a.ProverInputS3StoreBase()
+			if s == nil {
+				return nil, nil
 			}
+			return store.WithMetrics(s), nil
+		},
+		app.WithComponentName(proverInputS3StoreComponentName),
+	)
+}
+
+func (a *App) ProverInputS3StoreWithLog() store.Store {
+	return provide(
+		a,
+		fmt.Sprintf("%s.logging", proverInputS3StoreComponentName),
+		func() (store.Store, error) {
+			s := a.ProverInputS3StoreWithMetrics()
+			if s == nil {
+				return nil, nil
+			}
+			return store.WithLog(s), nil
+		},
+	)
+}
+
+func (a *App) ProverInputS3StoreWithTags() store.Store {
+	return provide(
+		a,
+		fmt.Sprintf("%s.tags", proverInputS3StoreComponentName),
+		func() (store.Store, error) {
+			s := a.ProverInputS3StoreWithLog()
+			if s == nil {
+				return nil, nil
+			}
+			return store.WithTags(s), nil
+		},
+		app.WithComponentName(proverInputS3StoreComponentName),
+	)
+}
+
+func (a *App) ProverInputStoreBase() inputstore.ProverInputStore {
+	return provide(
+		a,
+		fmt.Sprintf("%s.base", proverInputStoreComponentName),
+		func() (inputstore.ProverInputStore, error) {
+			gCfg := a.Config()
+
 			contentType, err := store.ParseContentType(gCfg.ProverInputStore.ContentType)
 			if err != nil {
-				return nil, fmt.Errorf("failed to parse content type: %v", err)
+				return nil, fmt.Errorf("failed to parse ProverInputStore content type: %v", err)
 			}
 
-			// Set prover inputs store configuration
-			cfg := &inputstore.ProverInputStoreConfig{
-				StoreConfig:     proverInputStoreCfg,
-				ContentEncoding: contentEncoding,
-				ContentType:     contentType,
+			stores := make([]store.Store, 0)
+			fileStore := a.ProverInputFileStoreWithTags()
+			if fileStore != nil {
+				stores = append(stores, fileStore)
 			}
 
-			return inputstore.New(cfg)
+			s3Store := a.ProverInputS3StoreWithTags()
+			if s3Store != nil {
+				stores = append(stores, s3Store)
+			}
+
+			multiStore := multistore.New(stores...)
+
+			// TODO: add compression
+			// contentEncoding, err := store.ParseContentEncoding(gCfg.ProverInputStore.ContentEncoding)
+			// if err != nil {
+			// 	return nil, fmt.Errorf("failed to parse ProverInputStore content encoding: %v", err)
+			// }
+			// compressedStore := compressstore.New(multiStore, contentEncoding)
+
+			return inputstore.NewFromStore(multiStore, contentType), nil
 		})
 }
 
+func (a *App) ProverInputStore() inputstore.ProverInputStore {
+	return provide(
+		a,
+		proverInputStoreComponentName,
+		func() (inputstore.ProverInputStore, error) {
+			s := a.ProverInputStoreBase()
+			s = inputstore.ProverInputStoreWithLog(s)
+			s = inputstore.ProverInputStoreWithTags(s)
+
+			return s, nil
+		},
+		app.WithComponentName(proverInputStoreComponentName),
+	)
+}
 func (a *App) PreflightEVM() evm.Executor {
 	return provide(
 		a,
-		"generator.preflight.evm",
+		fmt.Sprintf("%s.preflight.evm", generatorComponentName),
 		func() (evm.Executor, error) {
 			vm := evm.NewExecutor()
 			vm = evm.WithLog()(vm)
@@ -216,9 +507,9 @@ func (a *App) PreflightEVM() evm.Executor {
 func (a *App) PreflightBase() steps.Preflight {
 	return provide(
 		a,
-		"generator.preflight.base",
+		fmt.Sprintf("%s.preflight.base", generatorComponentName),
 		func() (steps.Preflight, error) {
-			return steps.NewPreflightFromEvm(a.PreflightEVM(), a.ChainRPC()), nil
+			return steps.NewPreflightFromEvm(a.PreflightEVM(), a.Chain()), nil
 		},
 	)
 }
@@ -226,7 +517,7 @@ func (a *App) PreflightBase() steps.Preflight {
 func (a *App) Preflight() steps.Preflight {
 	return provide(
 		a,
-		"generator.preflight",
+		fmt.Sprintf("%s.preflight", generatorComponentName),
 		func() (steps.Preflight, error) {
 			return steps.PreflightWithTags(a.PreflightBase()), nil
 		},
@@ -236,7 +527,7 @@ func (a *App) Preflight() steps.Preflight {
 func (a *App) PreparerEVM() evm.Executor {
 	return provide(
 		a,
-		"generator.preparer.evm",
+		fmt.Sprintf("%s.preparer.evm", generatorComponentName),
 		func() (evm.Executor, error) {
 			vm := evm.NewExecutor()
 			vm = evm.WithLog()(vm)
@@ -249,7 +540,7 @@ func (a *App) PreparerEVM() evm.Executor {
 func (a *App) PreparerBase() steps.Preparer {
 	return provide(
 		a,
-		"generator.preparer.base",
+		fmt.Sprintf("%s.preparer.base", generatorComponentName),
 		func() (steps.Preparer, error) {
 			gCfg := a.Config()
 			inclusion, err := steps.ParseIncludes(gCfg.Generator.Include...)
@@ -264,7 +555,7 @@ func (a *App) PreparerBase() steps.Preparer {
 func (a *App) Preparer() steps.Preparer {
 	return provide(
 		a,
-		"generator.preparer",
+		fmt.Sprintf("%s.preparer", generatorComponentName),
 		func() (steps.Preparer, error) {
 			return steps.PreparerWithTags(a.PreparerBase()), nil
 		},
@@ -274,7 +565,7 @@ func (a *App) Preparer() steps.Preparer {
 func (a *App) ExecutorEVM() evm.Executor {
 	return provide(
 		a,
-		"generator.executor.evm",
+		fmt.Sprintf("%s.executor.evm", generatorComponentName),
 		func() (evm.Executor, error) {
 			vm := evm.NewExecutor()
 			vm = evm.WithLog()(vm)
@@ -287,7 +578,7 @@ func (a *App) ExecutorEVM() evm.Executor {
 func (a *App) ExecutorBase() steps.Executor {
 	return provide(
 		a,
-		"generator.executor.base",
+		fmt.Sprintf("%s.executor.base", generatorComponentName),
 		func() (steps.Executor, error) {
 			return steps.NewExecutorFromEvm(a.ExecutorEVM()), nil
 		},
@@ -297,7 +588,7 @@ func (a *App) ExecutorBase() steps.Executor {
 func (a *App) Executor() steps.Executor {
 	return provide(
 		a,
-		"generator.executor",
+		fmt.Sprintf("%s.executor", generatorComponentName),
 		func() (steps.Executor, error) {
 			return steps.ExecutorWithTags(a.ExecutorBase()), nil
 		},
@@ -307,34 +598,35 @@ func (a *App) Executor() steps.Executor {
 func (a *App) Generator() *generator.Generator {
 	return provide(
 		a,
-		"generator.base",
+		fmt.Sprintf("%s.base", generatorComponentName),
 		func() (*generator.Generator, error) {
-			return &generator.Generator{
-				ChainID:            a.ChainID(),
-				RPC:                a.ChainRPC(),
-				Preflighter:        a.Preflight(),
-				Preparer:           a.Preparer(),
-				Executor:           a.Executor(),
-				PreflightDataStore: a.PreflightDataStore(),
-				ProverInputStore:   a.ProverInputStore(),
-			}, nil
+			return generator.NewGenerator(
+				&generator.Config{
+					ChainID:            a.ChainID(),
+					RPC:                a.Chain(),
+					Preflighter:        a.Preflight(),
+					Preparer:           a.Preparer(),
+					Executor:           a.Executor(),
+					PreflightDataStore: a.PreflightDataStore(),
+					ProverInputStore:   a.ProverInputStore(),
+				},
+			)
 		},
-		app.WithComponentName("generator"), // override component name
+		app.WithComponentName(generatorComponentName), // override component name
 	)
 }
 
 func (a *App) Daemon() *generator.Daemon {
 	return provide(
 		a,
-		"generator.daemon",
+		fmt.Sprintf("%s.daemon", generatorComponentName),
 		func() (*generator.Daemon, error) {
-			a.app.EnableMain()
-			a.app.EnableHealthz()
+			a.app.EnableHealthzEntrypoint()
 			return &generator.Daemon{
 				Generator: a.Generator(),
 			}, nil
 		},
-		app.WithComponentName("generator"), // override component name
+		app.WithComponentName(generatorComponentName), // override component name
 	)
 }
 

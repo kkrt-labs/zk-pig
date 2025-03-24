@@ -3,8 +3,8 @@ package src
 import (
 	"fmt"
 
+	"github.com/kkrt-labs/go-utils/app"
 	"github.com/kkrt-labs/go-utils/log"
-	"github.com/kkrt-labs/zk-pig/pkg/app"
 	"github.com/spf13/viper"
 )
 

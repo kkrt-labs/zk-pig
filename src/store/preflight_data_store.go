@@ -23,11 +23,9 @@ type PreflightDataStore interface {
 }
 
 // NewPreflightDataStore creates a new PreflightDataStore instance
-func NewPreflightDataStore(cfg *PreflightDataStoreConfig) (PreflightDataStore, error) {
-	inputstore := filestore.New(*cfg.FileConfig)
-
+func NewPreflightDataStore(store store.Store) (PreflightDataStore, error) {
 	return &preflightDataStore{
-		store: inputstore,
+		store: store,
 	}, nil
 }
 

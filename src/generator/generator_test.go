@@ -6,7 +6,9 @@ import (
 	"testing"
 
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/kkrt-labs/go-utils/app/svc"
 	mockethrpc "github.com/kkrt-labs/go-utils/ethereum/rpc/mock"
+	"github.com/kkrt-labs/go-utils/tag"
 	input "github.com/kkrt-labs/zk-pig/src/prover-input"
 	"github.com/kkrt-labs/zk-pig/src/steps"
 	mocksteps "github.com/kkrt-labs/zk-pig/src/steps/mock"
@@ -15,6 +17,13 @@ import (
 
 	"go.uber.org/mock/gomock"
 )
+
+func TestGeneratorImplementsService(t *testing.T) {
+	require.Implements(t, (*svc.Taggable)(nil), new(Generator))
+	require.Implements(t, (*svc.Metricable)(nil), new(Generator))
+	require.Implements(t, (*svc.MetricsCollector)(nil), new(Generator))
+	require.Implements(t, (*svc.Runnable)(nil), new(Generator))
+}
 
 func TestGenerator(t *testing.T) {
 	ctrl := gomock.NewController(t)
@@ -29,18 +38,21 @@ func TestGenerator(t *testing.T) {
 	proverInputStore := mockstore.NewMockProverInputStore(ctrl)
 	preflightDataStore := mockstore.NewMockPreflightDataStore(ctrl)
 
-	generator := &Generator{
+	generator, err := NewGenerator(&Config{
 		RPC:                ethrpc,
 		Preflighter:        preflighter,
 		Preparer:           preparer,
 		Executor:           executor,
 		ProverInputStore:   proverInputStore,
 		PreflightDataStore: preflightDataStore,
-	}
+	})
+	require.NoError(t, err)
+
+	generator.WithTags(tag.Key("test").String("test"))
 
 	ethrpc.EXPECT().ChainID(gomock.Any()).Return(big.NewInt(1), nil)
 	generator.SetMetrics("test", "generator")
-	err := generator.Start(context.TODO())
+	err = generator.Start(context.TODO())
 	require.NoError(t, err)
 
 	testBlock := gethtypes.NewBlockWithHeader(&gethtypes.Header{Number: big.NewInt(1)})

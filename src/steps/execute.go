@@ -11,9 +11,9 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/triedb"
 	"github.com/ethereum/go-ethereum/triedb/hashdb"
+	"github.com/kkrt-labs/go-utils/app/svc"
 	"github.com/kkrt-labs/go-utils/log"
 	"github.com/kkrt-labs/go-utils/tag"
-	"github.com/kkrt-labs/zk-pig/pkg/app"
 	"github.com/kkrt-labs/zk-pig/src/ethereum"
 	"github.com/kkrt-labs/zk-pig/src/ethereum/evm"
 	input "github.com/kkrt-labs/zk-pig/src/prover-input"
@@ -124,13 +124,13 @@ func hexBytesToBytes(hex []hexutil.Bytes) [][]byte {
 
 type taggedExecutor struct {
 	Executor
-	app.Tagged
+	*svc.Tagged
 }
 
 func ExecutorWithTags(e Executor, tags ...*tag.Tag) Executor {
 	return &taggedExecutor{
 		Executor: e,
-		Tagged:   app.NewTagged(tags...),
+		Tagged:   svc.NewTagged(tags...),
 	}
 }
 

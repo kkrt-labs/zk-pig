@@ -4,8 +4,8 @@ import (
 	"encoding/json"
 	"fmt"
 
+	"github.com/kkrt-labs/go-utils/app"
 	"github.com/kkrt-labs/go-utils/log"
-	"github.com/kkrt-labs/zk-pig/pkg/app"
 	"github.com/kkrt-labs/zk-pig/src"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"

@@ -13,9 +13,9 @@ import (
 	"github.com/ethereum/go-ethereum/core/vm"
 	"github.com/ethereum/go-ethereum/triedb"
 	"github.com/ethereum/go-ethereum/triedb/hashdb"
+	"github.com/kkrt-labs/go-utils/app/svc"
 	"github.com/kkrt-labs/go-utils/log"
 	"github.com/kkrt-labs/go-utils/tag"
-	"github.com/kkrt-labs/zk-pig/pkg/app"
 	"github.com/kkrt-labs/zk-pig/src/ethereum"
 	"github.com/kkrt-labs/zk-pig/src/ethereum/evm"
 	"github.com/kkrt-labs/zk-pig/src/ethereum/state"
@@ -316,13 +316,13 @@ func witnessToBytes(hex map[string]struct{}) [][]byte {
 
 type taggedPreparer struct {
 	Preparer
-	app.Tagged
+	*svc.Tagged
 }
 
 func PreparerWithTags(p Preparer, tags ...*tag.Tag) Preparer {
 	return &taggedPreparer{
 		Preparer: p,
-		Tagged:   app.NewTagged(tags...),
+		Tagged:   svc.NewTagged(tags...),
 	}
 }
 

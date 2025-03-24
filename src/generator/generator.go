@@ -7,9 +7,9 @@ import (
 	"time"
 
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
+	"github.com/kkrt-labs/go-utils/app/svc"
 	ethrpc "github.com/kkrt-labs/go-utils/ethereum/rpc"
 	"github.com/kkrt-labs/go-utils/tag"
-	"github.com/kkrt-labs/zk-pig/pkg/app"
 	input "github.com/kkrt-labs/zk-pig/src/prover-input"
 	"github.com/kkrt-labs/zk-pig/src/steps"
 	inputstore "github.com/kkrt-labs/zk-pig/src/store"
@@ -46,6 +46,18 @@ func (s step) String() string {
 	return stepNames[s]
 }
 
+type Config struct {
+	ChainID *big.Int
+	RPC     ethrpc.Client
+
+	Preflighter steps.Preflight
+	Preparer    steps.Preparer
+	Executor    steps.Executor
+
+	PreflightDataStore inputstore.PreflightDataStore
+	ProverInputStore   inputstore.ProverInputStore
+}
+
 // Generator is a service that enables the generation of prover inpunts for EVM compatible blocks.
 type Generator struct {
 	ChainID *big.Int
@@ -64,7 +76,21 @@ type Generator struct {
 	generationTimePerStep *prometheus.HistogramVec
 	generateErrorCount    *prometheus.GaugeVec
 
-	app.Tagged
+	*svc.Tagged
+}
+
+func NewGenerator(cfg *Config) (*Generator, error) {
+	generator := &Generator{
+		ChainID:            cfg.ChainID,
+		RPC:                cfg.RPC,
+		Preflighter:        cfg.Preflighter,
+		Preparer:           cfg.Preparer,
+		Executor:           cfg.Executor,
+		PreflightDataStore: cfg.PreflightDataStore,
+		ProverInputStore:   cfg.ProverInputStore,
+		Tagged:             svc.NewTagged(),
+	}
+	return generator, nil
 }
 
 // Start starts the service.

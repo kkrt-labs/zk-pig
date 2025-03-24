@@ -18,8 +18,9 @@ func setupPreflightDataTestStore(t *testing.T) (store PreflightDataStore, baseDi
 	cfg := &PreflightDataStoreConfig{
 		FileConfig: &filestore.Config{DataDir: baseDir},
 	}
+	fileStore := filestore.New(*cfg.FileConfig)
 
-	store, err := NewPreflightDataStore(cfg)
+	store, err := NewPreflightDataStore(fileStore)
 	assert.NoError(t, err)
 	return store, baseDir
 }
