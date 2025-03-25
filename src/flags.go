@@ -31,10 +31,18 @@ var (
 		Env:         "INCLUDE",
 		Description: fmt.Sprintf("Data to include in the generated Prover Input (valid options: %q)", steps.ValidIncludes),
 	}
+	generatorFilterModuloFlag = &spf13.IntFlag{
+		ViperKey:     "generator.filter.modulo.value",
+		Name:         "filter-modulo",
+		Env:          "FILTER_MODULO",
+		Description:  "Does not generate prover input for blocks which number is not divisible by the given modulo",
+		DefaultValue: common.Ptr(5),
+	}
 )
 
 func AddGeneratorFlags(v *viper.Viper, f *pflag.FlagSet) {
 	generatorInclusionsFlag.Add(v, f)
+	generatorFilterModuloFlag.Add(v, f)
 }
 
 var (

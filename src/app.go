@@ -645,9 +645,13 @@ func (a *App) Daemon() *generator.Daemon {
 		fmt.Sprintf("%s.daemon", generatorComponentName),
 		func() (*generator.Daemon, error) {
 			a.app.EnableHealthzEntrypoint()
-			return &generator.Daemon{
-				Generator: a.Generator(),
-			}, nil
+
+			filter := generator.FilterByBlockNumberModulo(uint64(a.Config().Generator.Filter.Modulo.Value))
+
+			return generator.NewDaemon(
+				a.Generator(),
+				generator.WithFilter(filter),
+			), nil
 		},
 		app.WithComponentName(generatorComponentName), // override component name
 	)

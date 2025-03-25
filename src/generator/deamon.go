@@ -21,6 +21,32 @@ type Daemon struct {
 	cancelRun context.CancelFunc
 
 	latestBlockNumber prometheus.Gauge
+
+	fetchInterval time.Duration
+	filter        BlockFilter
+}
+
+type DaemonOption func(*Daemon)
+
+// WithFetchInterval sets the interval for fetching the latest block.
+func WithFetchInterval(interval time.Duration) DaemonOption {
+	return func(d *Daemon) {
+		d.fetchInterval = interval
+	}
+}
+
+func NewDaemon(gen *Generator, opts ...DaemonOption) *Daemon {
+	d := &Daemon{
+		Generator:     gen,
+		filter:        NoFilter(),
+		fetchInterval: 1 * time.Second,
+	}
+
+	for _, opt := range opts {
+		opt(d)
+	}
+
+	return d
 }
 
 func (d *Daemon) Start(ctx context.Context) error {
@@ -77,7 +103,7 @@ func (d *Daemon) Stop(_ context.Context) error {
 
 // listenLatest listens for chain head and sends new headers to the latestHeaders channel.
 func (d *Daemon) listenLatest(runCtx context.Context) {
-	ticker := time.NewTicker(1 * time.Second)
+	ticker := time.NewTicker(d.fetchInterval)
 	defer ticker.Stop()
 
 	var latest *gethtypes.Block
@@ -116,20 +142,25 @@ func (d *Daemon) processLatest(runCtx context.Context) {
 		case block := <-d.latest:
 			d.wg.Add(1)
 			go func() {
+				defer d.wg.Done()
 				ctx := tag.WithTags(
 					runCtx,
 					tag.Key("block.number").Int64(block.Number().Int64()),
 					tag.Key("block.hash").String(block.Hash().Hex()),
 				)
 				logger := log.LoggerFromContext(ctx)
-				logger.Info("Generate prover input...")
+				if d.filter != nil && !d.filter.Filter(block) {
+					logger.Info("Skip prover input generation for block due to filter")
+					return
+				}
+				logger.Info("Generate prover input for block...")
+
 				err := d.generate(ctx, block)
 				if err != nil {
 					logger.Error("Failed to generate prover input", zap.Error(err))
 				} else {
 					logger.Info("Successfully generated prover input")
 				}
-				d.wg.Done()
 			}()
 		case <-d.stop:
 			return

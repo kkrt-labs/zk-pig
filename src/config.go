@@ -19,6 +19,11 @@ type Config struct {
 	Config    []string `mapstructure:"config"`
 	Generator struct {
 		Include []string `mapstructure:"include"`
+		Filter  struct {
+			Modulo struct {
+				Value int `mapstructure:"value"`
+			} `mapstructure:"modulo,omitempty"`
+		} `mapstructure:"filter,omitempty"`
 	} `mapstructure:"generator"`
 	PreflightDataStore struct {
 		File struct {
