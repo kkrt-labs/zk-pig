@@ -83,7 +83,7 @@ func NewPrepareCommand(rootCtx *RootContext) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:     "prepare",
 		Short:   "Prepare prover inputs by basing on data previously collected during preflight.",
-		Long:    "Prepare prover inputs by basing on data previously collected during preflight. It can be ran off-line in which case it needs --chain-id to be provided",
+		Long:    "Prepare prover inputs by basing on data previously collected during preflight. It can be run off-line in which case it needs --chain-id to be provided",
 		PreRunE: preRun(ctx, &blockNumber),
 		PostRunE: func(cmd *cobra.Command, _ []string) error {
 			return ctx.App.Stop(cmd.Context())
@@ -111,8 +111,8 @@ func NewExecuteCommand(rootCtx *RootContext) *cobra.Command {
 
 	cmd := &cobra.Command{
 		Use:     "execute",
-		Short:   "Execute block by basing on prover inputs previously generated during prepare.",
-		Long:    "Execute block by basing on prover inputs previously generated during prepare. It can be ran off-line in which case it needs --chain-id to be provided.",
+		Short:   "Execute block by based on prover inputs previously generated during prepare.",
+		Long:    "Execute block by based on prover inputs previously generated during prepare. It can be ran off-line in which case it needs --chain-id to be provided.",
 		PreRunE: preRun(ctx, &blockNumber),
 		PostRunE: func(cmd *cobra.Command, _ []string) error {
 			return ctx.App.Stop(cmd.Context())
