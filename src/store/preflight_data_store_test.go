@@ -1,58 +1,58 @@
 package store
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"math/big"
 	"testing"
 
 	"github.com/ethereum/go-ethereum/common/hexutil"
 	"github.com/ethereum/go-ethereum/params"
 	"github.com/kkrt-labs/go-utils/ethereum/rpc"
-	filestore "github.com/kkrt-labs/go-utils/store/file"
+	store "github.com/kkrt-labs/go-utils/store"
+	mockstore "github.com/kkrt-labs/go-utils/store/mock"
 	"github.com/kkrt-labs/zk-pig/src/steps"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
-func setupPreflightDataTestStore(t *testing.T) (store PreflightDataStore, baseDir string) {
-	baseDir = t.TempDir()
-	cfg := &PreflightDataStoreConfig{
-		FileConfig: &filestore.Config{DataDir: baseDir},
-	}
-	fileStore := filestore.New(*cfg.FileConfig)
-
-	store, err := NewPreflightDataStore(fileStore)
-	assert.NoError(t, err)
-	return store, baseDir
-}
-
 func TestPreflightDataStore(t *testing.T) {
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
-			preflightDataStore, _ := setupPreflightDataTestStore(t)
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-			// Test PreflightData
-			preflightData := &steps.PreflightData{
-				ChainConfig: &params.ChainConfig{
-					ChainID: big.NewInt(1),
-				},
-				Block: &rpc.Block{
-					Header: rpc.Header{
-						Number: (*hexutil.Big)(hexutil.MustDecodeBig("0xa")),
-					},
-				},
-			}
+	mockStore := mockstore.NewMockStore(ctrl)
+	preflightDataStore, err := NewPreflightDataStore(mockStore)
+	assert.NoError(t, err)
 
-			// Test storing and loading PreflightData
-			err := preflightDataStore.StorePreflightData(context.Background(), preflightData)
-			assert.NoError(t, err)
-
-			loaded, err := preflightDataStore.LoadPreflightData(context.Background(), 1, 10)
-			assert.NoError(t, err)
-			assert.Equal(t, preflightData.ChainConfig.ChainID, loaded.ChainConfig.ChainID)
-
-			// Test non-existent PreflightData
-			_, err = preflightDataStore.LoadPreflightData(context.Background(), 1, 20)
-			assert.Error(t, err)
-		})
+	// Test PreflightData
+	preflightData := &steps.PreflightData{
+		ChainConfig: &params.ChainConfig{
+			ChainID: big.NewInt(1),
+		},
+		Block: &rpc.Block{
+			Header: rpc.Header{
+				Number: (*hexutil.Big)(hexutil.MustDecodeBig("0xa")),
+			},
+		},
 	}
+
+	// Test storing and loading PreflightData
+	var dataCache []byte
+	ctx := context.TODO()
+	mockStore.EXPECT().Store(ctx, "1/10", gomock.Any(), &store.Headers{
+		ContentType:     store.ContentTypeJSON,
+		ContentEncoding: store.ContentEncodingPlain,
+	}).DoAndReturn(func(_ context.Context, _ string, reader io.Reader, _ *store.Headers) error {
+		dataCache, _ = io.ReadAll(reader)
+		return nil
+	})
+	err = preflightDataStore.StorePreflightData(ctx, preflightData)
+	assert.NoError(t, err)
+
+	mockStore.EXPECT().Load(ctx, "1/10", gomock.Any()).Return(io.NopCloser(bytes.NewReader(dataCache)), nil)
+	loaded, err := preflightDataStore.LoadPreflightData(ctx, 1, 10)
+	assert.NoError(t, err)
+	assert.Equal(t, preflightData.ChainConfig.ChainID, loaded.ChainConfig.ChainID)
+	assert.Equal(t, preflightData.Block.Header.Number, loaded.Block.Header.Number)
 }

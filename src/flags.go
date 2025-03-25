@@ -75,15 +75,15 @@ var (
 		ViperKey:     "prover-input-store.content-type",
 		Name:         "inputs-content-type",
 		Env:          "INPUTS_CONTENT_TYPE",
-		Description:  fmt.Sprintf("Content type for storing prover inputs (one of %q)", []string{"json", "protobuf"}),
+		Description:  fmt.Sprintf("Content type for storing prover inputs (one of %q)", []string{"application/json", "application/protobuf"}),
 		DefaultValue: common.Ptr("application/json"),
 	}
 	contentEncodingFlag = &spf13.StringFlag{
 		ViperKey:     "prover-input-store.content-encoding",
 		Name:         "inputs-content-encoding",
 		Env:          "INPUTS_CONTENT_ENCODING",
-		Description:  fmt.Sprintf("Optional content encoding to apply to prover inputs before storing (one of %q)", []string{"gzip", "flate"}),
-		DefaultValue: common.Ptr(""),
+		Description:  fmt.Sprintf("Optional content encoding to apply to prover inputs before storing (one of %q)", []string{"gzip", "flate", "plain"}),
+		DefaultValue: common.Ptr("plain"),
 	}
 )
 

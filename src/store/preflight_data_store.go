@@ -7,7 +7,6 @@ import (
 	"fmt"
 
 	store "github.com/kkrt-labs/go-utils/store"
-	filestore "github.com/kkrt-labs/go-utils/store/file"
 	"github.com/kkrt-labs/zk-pig/src/steps"
 )
 
@@ -33,12 +32,8 @@ type preflightDataStore struct {
 	store store.Store
 }
 
-type PreflightDataStoreConfig struct {
-	FileConfig *filestore.Config
-}
-
 func (s *preflightDataStore) StorePreflightData(ctx context.Context, data *steps.PreflightData) error {
-	path := s.preflightPath(data.ChainConfig.ChainID.Uint64(), data.Block.Number.ToInt().Uint64())
+	path := s.path(data.ChainConfig.ChainID.Uint64(), data.Block.Number.ToInt().Uint64())
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(data); err != nil {
 		return fmt.Errorf("failed to encode JSON: %w", err)
@@ -52,7 +47,7 @@ func (s *preflightDataStore) StorePreflightData(ctx context.Context, data *steps
 }
 
 func (s *preflightDataStore) LoadPreflightData(ctx context.Context, chainID, blockNumber uint64) (*steps.PreflightData, error) {
-	path := s.preflightPath(chainID, blockNumber)
+	path := s.path(chainID, blockNumber)
 	data := &steps.PreflightData{}
 	headers := store.Headers{
 		ContentType:     store.ContentTypeJSON,
@@ -68,6 +63,6 @@ func (s *preflightDataStore) LoadPreflightData(ctx context.Context, chainID, blo
 	return data, nil
 }
 
-func (s *preflightDataStore) preflightPath(chainID, blockNumber uint64) string {
-	return fmt.Sprintf("%d/%d.json", chainID, blockNumber)
+func (s *preflightDataStore) path(chainID, blockNumber uint64) string {
+	return fmt.Sprintf("%d/%d", chainID, blockNumber)
 }

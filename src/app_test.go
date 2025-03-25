@@ -14,10 +14,10 @@ func TestApp(t *testing.T) {
 	cfg.Chain.RPC.URL = "https://test.com"
 	cfg.DataDir = "testdata"
 	cfg.Config = []string{"testdata/config.yaml"}
-	cfg.PreflightDataStore.File.Dir = "testdata/preflight"
+	cfg.PreflightDataStore.File.Dir = "preflight"
 	cfg.ProverInputStore.ContentType = "application/json"
 	cfg.ProverInputStore.ContentEncoding = "gzip"
-	cfg.ProverInputStore.File.Dir = "testdata/prover-input"
+	cfg.ProverInputStore.File.Dir = "prover-input"
 	cfg.ProverInputStore.S3.AWSProvider.Region = "us-east-1"
 	cfg.ProverInputStore.S3.AWSProvider.Credentials.AccessKey = "test"
 	cfg.ProverInputStore.S3.AWSProvider.Credentials.SecretKey = "test"

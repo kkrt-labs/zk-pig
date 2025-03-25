@@ -7,13 +7,17 @@ import (
 	"path/filepath"
 	"time"
 
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/service/s3"
+	"github.com/cenkalti/backoff/v4"
 	"github.com/kkrt-labs/go-utils/app"
-	aws "github.com/kkrt-labs/go-utils/aws"
 	ethrpc "github.com/kkrt-labs/go-utils/ethereum/rpc"
 	ethjsonrpc "github.com/kkrt-labs/go-utils/ethereum/rpc/jsonrpc"
 	"github.com/kkrt-labs/go-utils/jsonrpc"
 	jsonrpcmrgd "github.com/kkrt-labs/go-utils/jsonrpc/merged"
 	store "github.com/kkrt-labs/go-utils/store"
+	compressstore "github.com/kkrt-labs/go-utils/store/compress"
 	filestore "github.com/kkrt-labs/go-utils/store/file"
 	multistore "github.com/kkrt-labs/go-utils/store/multi"
 	s3store "github.com/kkrt-labs/go-utils/store/s3"
@@ -113,7 +117,7 @@ func (a *App) ChainRPCLogging() jsonrpc.Client {
 		a,
 		fmt.Sprintf("%s.logging", chainRPCComponentName),
 		func() (jsonrpc.Client, error) {
-			remote := a.ChainRPCMetrics()
+			remote := a.ChainRPCSecured()
 			if remote == nil {
 				return nil, nil
 			}
@@ -131,13 +135,16 @@ func (a *App) ChainRPCSecured() jsonrpc.Client {
 		a,
 		fmt.Sprintf("%s.secured", chainRPCComponentName),
 		func() (jsonrpc.Client, error) {
-			remote := a.ChainRPCLogging()
+			remote := a.ChainRPCMetrics()
 			if remote == nil {
 				return nil, nil
 			}
 
 			remote = jsonrpc.WithTimeout(500 * time.Millisecond)(remote)
-			remote = jsonrpc.WithRetry()(remote)
+			remote = jsonrpc.WithExponentialBackOffRetry(
+				backoff.WithInitialInterval(50*time.Millisecond),
+				backoff.WithMaxElapsedTime(2*time.Second),
+			)(remote)
 
 			return remote, nil
 		},
@@ -150,7 +157,7 @@ func (a *App) ChainRPCTagged() jsonrpc.Client {
 		a,
 		fmt.Sprintf("%s.tagged", chainRPCComponentName),
 		func() (jsonrpc.Client, error) {
-			remote := a.ChainRPCSecured()
+			remote := a.ChainRPCLogging()
 			if remote == nil {
 				return nil, nil
 			}
@@ -250,9 +257,7 @@ func (a *App) PreflightDataFileStoreBase() store.Store {
 		func() (store.Store, error) {
 			gCfg := a.Config()
 			if gCfg.PreflightDataStore.File.Dir != "" {
-				return filestore.New(filestore.Config{
-					DataDir: filepath.Join(gCfg.DataDir, gCfg.PreflightDataStore.File.Dir),
-				}), nil
+				return filestore.New(filepath.Join(gCfg.DataDir, gCfg.PreflightDataStore.File.Dir)), nil
 			}
 			return nil, nil
 		},
@@ -322,7 +327,7 @@ func (a *App) ProverInputFileStoreBase() store.Store {
 		func() (store.Store, error) {
 			gCfg := a.Config()
 			if gCfg.ProverInputStore.File.Dir != "" {
-				return filestore.New(filestore.Config{DataDir: filepath.Join(gCfg.DataDir, gCfg.ProverInputStore.File.Dir)}), nil
+				return filestore.New(filepath.Join(gCfg.DataDir, gCfg.ProverInputStore.File.Dir)), nil
 			}
 			return nil, nil
 		},
@@ -373,6 +378,27 @@ func (a *App) ProverInputFileStoreWithTags() store.Store {
 	)
 }
 
+func (a *App) ProverInputS3StoreBaseS3Client() *s3.Client {
+	return provide(
+		a,
+		fmt.Sprintf("%s.base.s3-client", proverInputS3StoreComponentName),
+		func() (*s3.Client, error) {
+			gCfg := a.Config()
+			if gCfg.ProverInputStore.S3.AWSProvider.Region != "" {
+				return s3.NewFromConfig(aws.Config{
+					Region: gCfg.ProverInputStore.S3.AWSProvider.Region,
+					Credentials: credentials.NewStaticCredentialsProvider(
+						gCfg.ProverInputStore.S3.AWSProvider.Credentials.AccessKey,
+						gCfg.ProverInputStore.S3.AWSProvider.Credentials.SecretKey,
+						"",
+					),
+				}), nil
+			}
+			return nil, nil
+		},
+	)
+}
+
 func (a *App) ProverInputS3StoreBase() store.Store {
 	return provide(
 		a,
@@ -380,17 +406,11 @@ func (a *App) ProverInputS3StoreBase() store.Store {
 		func() (store.Store, error) {
 			gCfg := a.Config()
 			if gCfg.ProverInputStore.S3.Bucket != "" {
-				return s3store.New(&s3store.Config{
-					Bucket:    gCfg.ProverInputStore.S3.Bucket,
-					KeyPrefix: gCfg.ProverInputStore.S3.BucketKeyPrefix,
-					ProviderConfig: &aws.ProviderConfig{
-						Region: gCfg.ProverInputStore.S3.AWSProvider.Region,
-						Credentials: &aws.CredentialsConfig{
-							AccessKey: gCfg.ProverInputStore.S3.AWSProvider.Credentials.AccessKey,
-							SecretKey: gCfg.ProverInputStore.S3.AWSProvider.Credentials.SecretKey,
-						},
-					},
-				})
+				return s3store.New(
+					a.ProverInputS3StoreBaseS3Client(),
+					gCfg.ProverInputStore.S3.Bucket,
+					s3store.WithKeyPrefix(gCfg.ProverInputStore.S3.BucketKeyPrefix),
+				)
 			}
 			return nil, nil
 		},
@@ -466,14 +486,17 @@ func (a *App) ProverInputStoreBase() inputstore.ProverInputStore {
 
 			multiStore := multistore.New(stores...)
 
-			// TODO: add compression
-			// contentEncoding, err := store.ParseContentEncoding(gCfg.ProverInputStore.ContentEncoding)
-			// if err != nil {
-			// 	return nil, fmt.Errorf("failed to parse ProverInputStore content encoding: %v", err)
-			// }
-			// compressedStore := compressstore.New(multiStore, contentEncoding)
+			contentEncoding, err := store.ParseContentEncoding(gCfg.ProverInputStore.ContentEncoding)
+			if err != nil {
+				return nil, fmt.Errorf("failed to parse ProverInputStore content encoding: %v", err)
+			}
 
-			return inputstore.NewFromStore(multiStore, contentType), nil
+			compressedStore, err := compressstore.New(multiStore, compressstore.WithContentEncoding(contentEncoding))
+			if err != nil {
+				return nil, fmt.Errorf("failed to create compressed store: %v", err)
+			}
+
+			return inputstore.NewProverInputStore(compressedStore, contentType), nil
 		})
 }
 

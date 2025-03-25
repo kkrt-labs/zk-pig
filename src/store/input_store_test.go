@@ -1,100 +1,47 @@
 package store
 
 import (
+	"bytes"
 	"context"
+	"io"
 	"math/big"
 	"testing"
 
 	gethcommon "github.com/ethereum/go-ethereum/common"
 	gethtypes "github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/params"
-	storeinputs "github.com/kkrt-labs/go-utils/store"
-	compressstore "github.com/kkrt-labs/go-utils/store/compress"
-	filestore "github.com/kkrt-labs/go-utils/store/file"
-	multistore "github.com/kkrt-labs/go-utils/store/multi"
-	s3store "github.com/kkrt-labs/go-utils/store/s3"
+	"github.com/kkrt-labs/go-utils/store"
+	mockstore "github.com/kkrt-labs/go-utils/store/mock"
 	input "github.com/kkrt-labs/zk-pig/src/prover-input"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/mock/gomock"
 )
 
-// Common test structures and helpers
-type testCase struct {
-	name            string
-	contentType     storeinputs.ContentType
-	contentEncoding storeinputs.ContentEncoding
-	storage         string
-	s3Config        *s3store.Config
-}
+func TestProverInputStore(t *testing.T) {
+	ctrl := gomock.NewController(t)
+	defer ctrl.Finish()
 
-var testCases = []testCase{
-	{
-		name:            "JSON Plain File",
-		contentType:     storeinputs.ContentTypeJSON,
-		contentEncoding: storeinputs.ContentEncodingPlain,
-		storage:         "file",
-	},
-	{
-		name:            "Protobuf Plain File",
-		contentType:     storeinputs.ContentTypeProtobuf,
-		contentEncoding: storeinputs.ContentEncodingPlain,
-		storage:         "file",
-	},
-	{
-		name:            "JSON Gzip File",
-		contentType:     storeinputs.ContentTypeJSON,
-		contentEncoding: storeinputs.ContentEncodingGzip,
-		storage:         "file",
-	},
-	{
-		name:            "Protobuf Gzip File",
-		contentType:     storeinputs.ContentTypeProtobuf,
-		contentEncoding: storeinputs.ContentEncodingGzip,
-		storage:         "file",
-	},
-	// TODO: Add S3 test cases
-	// TODO: Figure out access key and secret key access
-	// {
-	// 	name:            "JSON Plain S3",
-	// 	contentType:     storeinputs.ContentTypeJSON,
-	// 	contentEncoding: storeinputs.ContentEncodingPlain,
-	// 	storage:         "s3",
-	// 	s3Config: &s3.Config{
-	// 		Bucket:    "kkrt-dev-prover-input-s3-euw1-prover-input",
-	// 		Region:    "eu-west-1",
-	// 		AccessKey: "access-key",
-	// 		SecretKey: "secret-key",
-	// 		BucketKeyPrefix: "test",
-	// 	},
-	// },
-}
+	mockStore := mockstore.NewMockStore(ctrl)
 
-func setupProverInputTestStore(t *testing.T, tc testCase) (store ProverInputStore, baseDir string) {
-	baseDir = t.TempDir()
-	cfg := &ProverInputStoreConfig{
-		StoreConfig: multistore.Config{
-			FileConfig: &filestore.Config{
-				DataDir: baseDir,
-			},
-			S3Config: tc.s3Config,
+	testCases := []struct {
+		desc        string
+		contentType store.ContentType
+	}{
+		{
+			desc:        "JSON Plain File",
+			contentType: store.ContentTypeJSON,
+		},
+		{
+			desc:        "Protobuf Plain File",
+			contentType: store.ContentTypeProtobuf,
 		},
 	}
-	compressStore, err := compressstore.New(compressstore.Config{
-		MultiStoreConfig: cfg.StoreConfig,
-		ContentEncoding:  tc.contentEncoding,
-	})
-	store = NewFromStore(compressStore, tc.contentType)
-
-	assert.NoError(t, err)
-	return store, baseDir
-}
-
-func TestProverInputStore(t *testing.T) {
-	for _, tc := range testCases {
-		t.Run(tc.name, func(t *testing.T) {
+	for _, tt := range testCases {
+		t.Run(tt.desc, func(t *testing.T) {
 			// Test ProverInput
-			ProverInputStore, _ := setupProverInputTestStore(t, tc)
+			inputStore := NewProverInputStore(mockStore, tt.contentType)
 
-			ProverInput := &input.ProverInput{
+			in := &input.ProverInput{
 				ChainConfig: &params.ChainConfig{
 					ChainID: big.NewInt(2),
 				},
@@ -111,16 +58,25 @@ func TestProverInputStore(t *testing.T) {
 			}
 
 			// Test storing and loading ProverInput
-			err := ProverInputStore.StoreProverInput(context.Background(), ProverInput)
+			var dataCache []byte
+			ctx := context.TODO()
+			mockStore.EXPECT().Store(ctx, "2/15", gomock.Any(), &store.Headers{
+				ContentType: tt.contentType,
+			}).DoAndReturn(func(_ context.Context, _ string, reader io.Reader, _ *store.Headers) error {
+				dataCache, _ = io.ReadAll(reader)
+				return nil
+			})
+
+			err := inputStore.StoreProverInput(ctx, in)
 			assert.NoError(t, err)
 
-			loadedProverInput, err := ProverInputStore.LoadProverInput(context.Background(), 2, 15)
+			mockStore.EXPECT().Load(ctx, "2/15", &store.Headers{
+				ContentType: tt.contentType,
+			}).Return(io.NopCloser(bytes.NewReader(dataCache)), nil)
+			loadedProverInput, err := inputStore.LoadProverInput(ctx, 2, 15)
 			assert.NoError(t, err)
-			assert.Equal(t, ProverInput.ChainConfig.ChainID, loadedProverInput.ChainConfig.ChainID)
-
-			// Test non-existent ProverInput
-			_, err = ProverInputStore.LoadProverInput(context.Background(), 2, 25)
-			assert.Error(t, err)
+			assert.Equal(t, in.ChainConfig.ChainID, loadedProverInput.ChainConfig.ChainID)
+			assert.Equal(t, in.Blocks[0].Header.Number, loadedProverInput.Blocks[0].Header.Number)
 		})
 	}
 }
