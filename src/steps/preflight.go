@@ -90,7 +90,7 @@ func (pf *preflight) init(ctx context.Context) error {
 		return fmt.Errorf("failed to fetch chain ID: %v", err)
 	}
 
-	pf.chainCfg, err = getChainConfig(chainID)
+	pf.chainCfg, err = ethereum.GetChainConfig(chainID)
 	if err != nil {
 		return err
 	}

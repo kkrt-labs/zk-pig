@@ -11,8 +11,13 @@ import (
 
 // NewChain creates a new core.HeaderChain instance
 func NewChain(cfg *params.ChainConfig, stateDB gethstate.Database) (*core.HeaderChain, error) {
+	genesis, err := GetDefaultGenesis(cfg.ChainID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to get default genesis for chain %q: %v", cfg.ChainID.String(), err)
+	}
+
 	// Setup the genesis block, to avoid error on core.NewHeaderChain
-	_, err := core.DefaultGenesisBlock().Commit(stateDB.TrieDB().Disk(), stateDB.TrieDB())
+	_, err = genesis.Commit(stateDB.TrieDB().Disk(), stateDB.TrieDB())
 	if err != nil {
 		return nil, fmt.Errorf("failed to apply genesis block: %v", err)
 	}
