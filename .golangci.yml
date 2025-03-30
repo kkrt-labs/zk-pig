@@ -2,7 +2,6 @@
 linters:
   enable:
     - goconst
-    - goimports
     - gocritic
     - revive
     - misspell
@@ -10,7 +9,6 @@ linters:
     - unconvert
     - unparam
     - gocheckcompilerdirectives
-    - gofmt
 
 linters-settings:
   govet:
