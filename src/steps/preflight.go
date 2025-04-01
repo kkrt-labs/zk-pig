@@ -73,32 +73,18 @@ func NewPreflightFromEvm(e evm.Executor, remote ethrpc.Client) Preflight {
 	}
 }
 
-// Init initializes preflight instance, ensuring the chain is supported.
-func (pf *preflight) Start(ctx context.Context) error {
-	return pf.init(ctx)
-}
-
-func (pf *preflight) init(ctx context.Context) error {
-	var zero ethrpc.Client
-	if pf.remote == nil || pf.remote == ethrpc.Client(nil) || pf.remote == zero {
-		return fmt.Errorf("remote client not set")
-	}
-
+func (pf *preflight) configureDBAndChain(ctx context.Context) (*state.RPCDatabase, *core.HeaderChain, error) {
 	// Fetch chain ID
 	chainID, err := pf.remote.ChainID(ctx)
 	if err != nil {
-		return fmt.Errorf("failed to fetch chain ID: %v", err)
+		return nil, nil, fmt.Errorf("failed to fetch chain ID: %v", err)
 	}
 
 	pf.chainCfg, err = ethereum.GetChainConfig(chainID)
 	if err != nil {
-		return err
+		return nil, nil, fmt.Errorf("failed to get chain config: %v", err)
 	}
 
-	return nil
-}
-
-func (pf *preflight) configureDBAndChain(ctx context.Context) (*state.RPCDatabase, *core.HeaderChain, error) {
 	db := rpcdb.HackWithContext(ctx, rawdb.NewMemoryDatabase(), pf.remote)
 	trieDB := triedb.NewDatabase(db, &triedb.Config{HashDB: &hashdb.Config{}})
 	rpcDB := state.HackWithContext(ctx, gethstate.NewDatabase(trieDB, nil), pf.remote)
@@ -224,10 +210,6 @@ func (pf *preflight) fetchStateProofs(ctx context.Context, trackers *state.Acces
 	}
 
 	return preStateProofs, postStateProofs, nil
-}
-
-func (pf *preflight) Stop(_ context.Context) error {
-	return nil
 }
 
 type taggedPreflight struct {

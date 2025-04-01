@@ -103,7 +103,7 @@ func (s *Generator) Start(ctx context.Context) error {
 		}
 		s.ChainID = chainID
 	} else if s.ChainID == nil {
-		return fmt.Errorf("no chain configuration provided")
+		return ErrChainNotConfigured
 	}
 
 	return nil
@@ -170,7 +170,7 @@ func (s *Generator) Collect(ch chan<- prometheus.Metric) {
 
 func (s *Generator) Generate(ctx context.Context, blockNumber *big.Int) error {
 	if s.RPC == nil {
-		return fmt.Errorf("RPC not configured")
+		return ErrChainRPCNotConfigured
 	}
 
 	ctx = s.Context(ctx)
@@ -250,7 +250,7 @@ func (s *Generator) generate(ctx context.Context, block *gethtypes.Block) error 
 // If requires the remote RPC to be configured and started
 func (s *Generator) Preflight(ctx context.Context, blockNumber *big.Int) error {
 	if s.RPC == nil {
-		return fmt.Errorf("RPC not configured")
+		return ErrChainRPCNotConfigured
 	}
 
 	ctx = s.Context(ctx)
@@ -288,7 +288,7 @@ func (s *Generator) Prepare(ctx context.Context, blockNumber *big.Int) error {
 	ctx = s.Context(ctx)
 
 	if s.ChainID == nil {
-		return fmt.Errorf("prepare: chain not configured")
+		return ErrChainNotConfigured
 	}
 
 	data, err := s.loadPreflightData(ctx, blockNumber)
@@ -418,7 +418,7 @@ func (s *Generator) loadPreflightData(ctx context.Context, blockNumber *big.Int)
 	defer s.countOfBlocksPerStep.WithLabelValues(LoadPreflightDataStep.String()).Dec()
 
 	if s.ChainID == nil {
-		return nil, fmt.Errorf("chain not configured")
+		return nil, ErrChainNotConfigured
 	}
 
 	start := time.Now()
@@ -470,7 +470,7 @@ func (s *Generator) loadProverInput(ctx context.Context, blockNumber *big.Int) (
 	defer s.countOfBlocksPerStep.WithLabelValues(LoadProverInputStep.String()).Dec()
 
 	if s.ChainID == nil {
-		return nil, fmt.Errorf("chain not configured")
+		return nil, ErrChainNotConfigured
 	}
 
 	start := time.Now()
@@ -522,3 +522,8 @@ func (s *Generator) runStoreProverInput(ctx context.Context, in *input.ProverInp
 func (s *Generator) Stop(_ context.Context) error {
 	return nil
 }
+
+var (
+	ErrChainNotConfigured    = fmt.Errorf("chain not configured")
+	ErrChainRPCNotConfigured = fmt.Errorf("chain RPC not configured")
+)
