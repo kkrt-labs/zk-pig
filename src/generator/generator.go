@@ -96,14 +96,15 @@ func NewGenerator(cfg *Config) (*Generator, error) {
 // Start starts the service.
 func (s *Generator) Start(ctx context.Context) error {
 	ctx = s.Context(ctx)
-	if s.RPC != nil {
+	if s.RPC == nil {
+		return fmt.Errorf("RPC not configured")
+		}
+	if s.ChainID == nil {
 		chainID, err := s.RPC.ChainID(ctx)
 		if err != nil {
-			return fmt.Errorf("failed to initialize RPC client: %v", err)
+		return fmt.Errorf("failed to initialize RPC client: %v", err)
 		}
-		s.ChainID = chainID
-	} else if s.ChainID == nil {
-		return fmt.Errorf("no chain configuration provided")
+	s.ChainID = chainID
 	}
 
 	return nil
