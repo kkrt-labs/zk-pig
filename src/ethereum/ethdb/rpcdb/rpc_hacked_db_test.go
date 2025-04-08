@@ -51,7 +51,7 @@ func TestDecodeHeaderNumberAndHash(t *testing.T) {
 	}
 
 	for i, test := range tests {
-		t.Run(fmt.Sprintf("%v:key=%v", i, string(test.key)), func(t *testing.T) {
+		t.Run(fmt.Sprintf("%v", i), func(t *testing.T) {
 			num, hash, ok := decodeHeaderNumberAndHash(test.key)
 			if !test.expectedOk {
 				require.False(t, ok, "decodeHeaderNumberAndHash(%v) returned ok=true, want ok=false", test.key)

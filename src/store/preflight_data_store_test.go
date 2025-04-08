@@ -40,7 +40,7 @@ func TestPreflightDataStore(t *testing.T) {
 	// Test storing and loading PreflightData
 	var dataCache []byte
 	ctx := context.TODO()
-	mockStore.EXPECT().Store(ctx, "1/10", gomock.Any(), &store.Headers{
+	mockStore.EXPECT().Store(ctx, "/1/preflight/10.json", gomock.Any(), &store.Headers{
 		ContentType:     store.ContentTypeJSON,
 		ContentEncoding: store.ContentEncodingPlain,
 	}).DoAndReturn(func(_ context.Context, _ string, reader io.Reader, _ *store.Headers) error {
@@ -50,9 +50,20 @@ func TestPreflightDataStore(t *testing.T) {
 	err = preflightDataStore.StorePreflightData(ctx, preflightData)
 	assert.NoError(t, err)
 
-	mockStore.EXPECT().Load(ctx, "1/10", gomock.Any()).Return(io.NopCloser(bytes.NewReader(dataCache)), nil)
+	mockStore.EXPECT().Load(ctx, "/1/preflight/10.json").Return(io.NopCloser(bytes.NewReader(dataCache)), nil, nil)
 	loaded, err := preflightDataStore.LoadPreflightData(ctx, 1, 10)
 	assert.NoError(t, err)
 	assert.Equal(t, preflightData.ChainConfig.ChainID, loaded.ChainConfig.ChainID)
 	assert.Equal(t, preflightData.Block.Header.Number, loaded.Block.Header.Number)
+}
+
+func TestNoOpPreflightDataStore(t *testing.T) {
+	noOpStore := NewNoOpPreflightDataStore()
+	// Should implement interface
+	assert.Implements(t, (*PreflightDataStore)(nil), noOpStore)
+	assert.NoError(t, noOpStore.StorePreflightData(context.TODO(), &steps.PreflightData{}))
+
+	loaded, err := noOpStore.LoadPreflightData(context.TODO(), 1, 1)
+	assert.Nil(t, loaded)
+	assert.NoError(t, err)
 }

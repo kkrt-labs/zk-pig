@@ -61,10 +61,7 @@ func (s *proverInputStore) StoreProverInput(ctx context.Context, data *input.Pro
 
 func (s *proverInputStore) LoadProverInput(ctx context.Context, chainID, blockNumber uint64) (*input.ProverInput, error) {
 	path := s.path(chainID, blockNumber)
-	headers := store.Headers{
-		ContentType: s.contentType,
-	}
-	reader, err := s.store.Load(ctx, path, &headers)
+	reader, _, err := s.store.Load(ctx, path)
 	if err != nil {
 		return nil, fmt.Errorf("failed to load data from store: %w", err)
 	}
@@ -94,5 +91,19 @@ func (s *proverInputStore) LoadProverInput(ctx context.Context, chainID, blockNu
 }
 
 func (s *proverInputStore) path(chainID, blockNumber uint64) string {
-	return fmt.Sprintf("%d/%d", chainID, blockNumber)
+	return s.contentType.FilePath(fmt.Sprintf("/%d/inputs/%d", chainID, blockNumber))
+}
+
+type noOpProverInputStore struct{}
+
+func (s *noOpProverInputStore) StoreProverInput(_ context.Context, _ *input.ProverInput) error {
+	return nil
+}
+
+func (s *noOpProverInputStore) LoadProverInput(_ context.Context, _, _ uint64) (*input.ProverInput, error) {
+	return nil, nil
+}
+
+func NewNoOpProverInputStore() ProverInputStore {
+	return &noOpProverInputStore{}
 }

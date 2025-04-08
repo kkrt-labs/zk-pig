@@ -49,11 +49,7 @@ func (s *preflightDataStore) StorePreflightData(ctx context.Context, data *steps
 func (s *preflightDataStore) LoadPreflightData(ctx context.Context, chainID, blockNumber uint64) (*steps.PreflightData, error) {
 	path := s.path(chainID, blockNumber)
 	data := &steps.PreflightData{}
-	headers := store.Headers{
-		ContentType:     store.ContentTypeJSON,
-		ContentEncoding: store.ContentEncodingPlain,
-	}
-	reader, err := s.store.Load(ctx, path, &headers)
+	reader, _, err := s.store.Load(ctx, path)
 	if err != nil {
 		return nil, err
 	}
@@ -64,5 +60,19 @@ func (s *preflightDataStore) LoadPreflightData(ctx context.Context, chainID, blo
 }
 
 func (s *preflightDataStore) path(chainID, blockNumber uint64) string {
-	return fmt.Sprintf("%d/%d", chainID, blockNumber)
+	return fmt.Sprintf("/%d/preflight/%d.json", chainID, blockNumber)
+}
+
+type noOpPreflightDataStore struct{}
+
+func (s *noOpPreflightDataStore) StorePreflightData(_ context.Context, _ *steps.PreflightData) error {
+	return nil
+}
+
+func (s *noOpPreflightDataStore) LoadPreflightData(_ context.Context, _, _ uint64) (*steps.PreflightData, error) {
+	return nil, nil
+}
+
+func NewNoOpPreflightDataStore() PreflightDataStore {
+	return &noOpPreflightDataStore{}
 }

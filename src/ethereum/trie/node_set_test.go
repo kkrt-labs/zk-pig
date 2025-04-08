@@ -45,7 +45,7 @@ func TestNodeSetFromStateProofs(t *testing.T) {
 	}
 
 	for _, stateRoot := range stateRoots {
-		t.Run(stateRoot, func(t *testing.T) { testNodeSetFromStateProofs(t, gethcommon.HexToHash(stateRoot)) })
+		testNodeSetFromStateProofs(t, gethcommon.HexToHash(stateRoot))
 	}
 }
 
@@ -66,8 +66,8 @@ func testNodeSetFromStateProofs(t *testing.T, stateRoot gethcommon.Hash) {
 	require.NoError(t, err)
 
 	// Verifies that the state has been properly set
-	for i, accountProof := range stateProofs {
-		t.Run(fmt.Sprintf("#%v:%v", i, accountProof.Address.Hex()), func(t *testing.T) { testStoredAccount(t, trieDB, stateTrie, stateRoot, accountProof) })
+	for _, accountProof := range stateProofs {
+		testStoredAccount(t, trieDB, stateTrie, stateRoot, accountProof)
 	}
 }
 
@@ -121,7 +121,7 @@ func TestNodeSetFromStateTransitionProofs(t *testing.T) {
 	}
 
 	for _, id := range ids {
-		t.Run(id, func(t *testing.T) { testNodeSetFromStateTransitionProofs(t, id) })
+		testNodeSetFromStateTransitionProofs(t, id)
 	}
 }
 
@@ -142,8 +142,8 @@ func testNodeSetFromStateTransitionProofs(t *testing.T, id string) {
 	require.NoError(t, err)
 
 	// Verifies that the state has been properly created
-	for i, accountProof := range data.PreProofs {
-		t.Run(fmt.Sprintf("Creation#%v:%v", i, accountProof.Address.Hex()), func(t *testing.T) { testStoredAccount(t, trieDB, stateTrie, data.PreRoot, accountProof) })
+	for _, accountProof := range data.PreProofs {
+		testStoredAccount(t, trieDB, stateTrie, data.PreRoot, accountProof)
 	}
 
 	// Test deletions can be performed
@@ -152,11 +152,9 @@ func testNodeSetFromStateTransitionProofs(t *testing.T, id string) {
 		postAccountByAddress[account.Address] = account
 	}
 
-	for i, preAccountProof := range data.PreProofs {
+	for _, preAccountProof := range data.PreProofs {
 		if postAccountProof, ok := postAccountByAddress[preAccountProof.Address]; ok {
-			t.Run(fmt.Sprintf("Deletion#%v:%v", i, preAccountProof.Address.Hex()), func(t *testing.T) {
-				testDeleteAccount(t, trieDB, stateTrie, data.PreRoot, preAccountProof, postAccountProof)
-			})
+			testDeleteAccount(t, trieDB, stateTrie, data.PreRoot, preAccountProof, postAccountProof)
 		}
 	}
 }

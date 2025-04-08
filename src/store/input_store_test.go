@@ -26,14 +26,23 @@ func TestProverInputStore(t *testing.T) {
 	testCases := []struct {
 		desc        string
 		contentType store.ContentType
+		chainID     int64
+		blockNumber int64
+		expectedKey string
 	}{
 		{
 			desc:        "JSON Plain File",
 			contentType: store.ContentTypeJSON,
+			chainID:     2,
+			blockNumber: 15,
+			expectedKey: "/2/inputs/15.json",
 		},
 		{
 			desc:        "Protobuf Plain File",
 			contentType: store.ContentTypeProtobuf,
+			chainID:     2,
+			blockNumber: 15,
+			expectedKey: "/2/inputs/15.protobuf",
 		},
 	}
 	for _, tt := range testCases {
@@ -43,12 +52,12 @@ func TestProverInputStore(t *testing.T) {
 
 			in := &input.ProverInput{
 				ChainConfig: &params.ChainConfig{
-					ChainID: big.NewInt(2),
+					ChainID: big.NewInt(tt.chainID),
 				},
 				Blocks: []*input.Block{
 					{
 						Header: &gethtypes.Header{
-							Number:          big.NewInt(15),
+							Number:          big.NewInt(tt.blockNumber),
 							Difficulty:      big.NewInt(15),
 							BaseFee:         big.NewInt(15),
 							WithdrawalsHash: &gethcommon.Hash{0x1},
@@ -60,7 +69,7 @@ func TestProverInputStore(t *testing.T) {
 			// Test storing and loading ProverInput
 			var dataCache []byte
 			ctx := context.TODO()
-			mockStore.EXPECT().Store(ctx, "2/15", gomock.Any(), &store.Headers{
+			mockStore.EXPECT().Store(ctx, tt.expectedKey, gomock.Any(), &store.Headers{
 				ContentType: tt.contentType,
 			}).DoAndReturn(func(_ context.Context, _ string, reader io.Reader, _ *store.Headers) error {
 				dataCache, _ = io.ReadAll(reader)
@@ -70,13 +79,22 @@ func TestProverInputStore(t *testing.T) {
 			err := inputStore.StoreProverInput(ctx, in)
 			assert.NoError(t, err)
 
-			mockStore.EXPECT().Load(ctx, "2/15", &store.Headers{
-				ContentType: tt.contentType,
-			}).Return(io.NopCloser(bytes.NewReader(dataCache)), nil)
+			mockStore.EXPECT().Load(ctx, tt.expectedKey).Return(io.NopCloser(bytes.NewReader(dataCache)), nil, nil)
 			loadedProverInput, err := inputStore.LoadProverInput(ctx, 2, 15)
 			assert.NoError(t, err)
 			assert.Equal(t, in.ChainConfig.ChainID, loadedProverInput.ChainConfig.ChainID)
 			assert.Equal(t, in.Blocks[0].Header.Number, loadedProverInput.Blocks[0].Header.Number)
 		})
 	}
+}
+
+func TestNoOpProverInputStore(t *testing.T) {
+	noOpStore := NewNoOpProverInputStore()
+	// Should implement interface
+	assert.Implements(t, (*ProverInputStore)(nil), noOpStore)
+	assert.NoError(t, noOpStore.StoreProverInput(context.TODO(), &input.ProverInput{}))
+
+	loaded, err := noOpStore.LoadProverInput(context.TODO(), 1, 1)
+	assert.Nil(t, loaded)
+	assert.NoError(t, err)
 }
