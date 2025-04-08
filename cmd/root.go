@@ -77,7 +77,6 @@ func NewZkPigCommand() *cobra.Command {
 	// Add flags for chain, aws, and store
 	src.AddGeneratorFlags(ctx.Viper, rootCmd.PersistentFlags())
 	src.AddChainFlags(ctx.Viper, rootCmd.PersistentFlags())
-	src.AddAWSFlags(ctx.Viper, rootCmd.PersistentFlags())
 	src.AddStoreFlags(ctx.Viper, rootCmd.PersistentFlags())
 
 	// Add subcommands
@@ -111,24 +110,24 @@ func validateS3Config(cfg *src.Config) error {
 	}
 
 	// Check if any S3 field is set
-	if cfg.ProverInputStore.S3.Bucket != "" ||
-		cfg.ProverInputStore.S3.BucketKeyPrefix != "" ||
-		cfg.ProverInputStore.S3.AWSProvider.Credentials.AccessKey != "" ||
-		cfg.ProverInputStore.S3.AWSProvider.Credentials.SecretKey != "" ||
-		cfg.ProverInputStore.S3.AWSProvider.Region != "" {
+	if cfg.Store.S3.Bucket != "" ||
+		cfg.Store.S3.Prefix != "" ||
+		cfg.Store.S3.AWSProvider.Credentials.AccessKey != "" ||
+		cfg.Store.S3.AWSProvider.Credentials.SecretKey != "" ||
+		cfg.Store.S3.AWSProvider.Region != "" {
 
 		// If any S3 field is set, ensure all required fields are set
 		missingFields := []string{}
-		if cfg.ProverInputStore.S3.Bucket == "" {
+		if cfg.Store.S3.Bucket == "" {
 			missingFields = append(missingFields, "s3-bucket")
 		}
-		if cfg.ProverInputStore.S3.AWSProvider.Credentials.AccessKey == "" {
+		if cfg.Store.S3.AWSProvider.Credentials.AccessKey == "" {
 			missingFields = append(missingFields, "access-key")
 		}
-		if cfg.ProverInputStore.S3.AWSProvider.Credentials.SecretKey == "" {
+		if cfg.Store.S3.AWSProvider.Credentials.SecretKey == "" {
 			missingFields = append(missingFields, "secret-key")
 		}
-		if cfg.ProverInputStore.S3.AWSProvider.Region == "" {
+		if cfg.Store.S3.AWSProvider.Region == "" {
 			missingFields = append(missingFields, "region")
 		}
 

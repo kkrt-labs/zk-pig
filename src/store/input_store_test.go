@@ -60,7 +60,7 @@ func TestProverInputStore(t *testing.T) {
 			// Test storing and loading ProverInput
 			var dataCache []byte
 			ctx := context.TODO()
-			mockStore.EXPECT().Store(ctx, "2/15", gomock.Any(), &store.Headers{
+			mockStore.EXPECT().Store(ctx, "/inputs/2/15", gomock.Any(), &store.Headers{
 				ContentType: tt.contentType,
 			}).DoAndReturn(func(_ context.Context, _ string, reader io.Reader, _ *store.Headers) error {
 				dataCache, _ = io.ReadAll(reader)
@@ -70,7 +70,7 @@ func TestProverInputStore(t *testing.T) {
 			err := inputStore.StoreProverInput(ctx, in)
 			assert.NoError(t, err)
 
-			mockStore.EXPECT().Load(ctx, "2/15", &store.Headers{
+			mockStore.EXPECT().Load(ctx, "/inputs/2/15", &store.Headers{
 				ContentType: tt.contentType,
 			}).Return(io.NopCloser(bytes.NewReader(dataCache)), nil)
 			loadedProverInput, err := inputStore.LoadProverInput(ctx, 2, 15)
@@ -79,4 +79,15 @@ func TestProverInputStore(t *testing.T) {
 			assert.Equal(t, in.Blocks[0].Header.Number, loadedProverInput.Blocks[0].Header.Number)
 		})
 	}
+}
+
+func TestNoOpProverInputStore(t *testing.T) {
+	noOpStore := NewNoOpProverInputStore()
+	// Should implement interface
+	assert.Implements(t, (*ProverInputStore)(nil), noOpStore)
+	assert.NoError(t, noOpStore.StoreProverInput(context.TODO(), &input.ProverInput{}))
+
+	loaded, err := noOpStore.LoadProverInput(context.TODO(), 1, 1)
+	assert.Nil(t, loaded)
+	assert.NoError(t, err)
 }
