@@ -59,39 +59,62 @@ var (
 		Description: "Chain JSON-RPC URL",
 	}
 	dataDirFlag = &spf13.StringFlag{
-		ViperKey:     "data-dir",
-		Name:         "data-dir",
-		Env:          "DATA_DIR",
-		Description:  "Path to data directory",
+		ViperKey:     "store.file.dir",
+		Name:         "store-file-dir",
+		Env:          "STORE_FILE_DIR",
+		Description:  "Path to local data directory",
 		DefaultValue: common.Ptr("data"),
 	}
-	preflightDirFlag = &spf13.StringFlag{
-		ViperKey:     "preflight-data-store.file.dir",
-		Name:         "preflight-dir",
-		Env:          "PREFLIGHT_DIR",
-		Description:  "Directory where to store preflight data within --data-dir. If set to \"\" then does not store preflight data",
-		DefaultValue: common.Ptr("preflight"),
+	awsS3BucketFlag = &spf13.StringFlag{
+		ViperKey:    "store.s3.bucket",
+		Name:        "store-s3-bucket",
+		Env:         "STORE_S3_BUCKET",
+		Description: "Optional AWS S3 bucket to store prover inputs",
 	}
-	inputsDirFlag = &spf13.StringFlag{
-		ViperKey:     "prover-input-store.file.dir",
-		Name:         "inputs-dir",
-		Env:          "INPUTS_DIR",
-		Description:  "Directory where to store prover inputs within --data-dir. If set to \"\" then does not store file to dir",
-		DefaultValue: common.Ptr("inputs"),
+	awsS3BucketKeyPrefixFlag = &spf13.StringFlag{
+		ViperKey:    "store.s3.prefix",
+		Name:        "store-s3-prefix",
+		Env:         "STORE_S3_PREFIX",
+		Description: "Optional AWS S3 bucket key prefix where to store prover inputs",
 	}
-	contentTypeFlag = &spf13.StringFlag{
-		ViperKey:     "prover-input-store.content-type",
+	awsS3AccessKeyFlag = &spf13.StringFlag{
+		ViperKey:    "store.s3.aws-provider.credentials.access-key",
+		Name:        "store-s3-access-key",
+		Env:         "STORE_S3_ACCESS_KEY",
+		Description: "Optional AWS Access Key to write prover inputs into S3 bucket",
+	}
+	awsS3SecretKeyFlag = &spf13.StringFlag{
+		ViperKey:    "store.s3.aws-provider.credentials.secret-key",
+		Name:        "store-s3-secret-key",
+		Env:         "STORE_S3_SECRET_KEY",
+		Description: "Optional AWS Secret Key to write prover inputs into S3 bucket",
+	}
+	awsS3RegionFlag = &spf13.StringFlag{
+		ViperKey:    "store.s3.aws-provider.region",
+		Name:        "store-s3-region",
+		Env:         "STORE_S3_REGION",
+		Description: "Optional AWS S3 bucket's region",
+	}
+	contentEncodingFlag = &spf13.StringFlag{
+		ViperKey:     "store.content-encoding",
+		Name:         "store-content-encoding",
+		Env:          "STORE_CONTENT_ENCODING",
+		Description:  fmt.Sprintf("Optional content encoding to apply to prover inputs before storing (one of %q)", []string{"gzip", "flate", "plain"}),
+		DefaultValue: common.Ptr("plain"),
+	}
+	inputsContentTypeFlag = &spf13.StringFlag{
+		ViperKey:     "inputs.content-type",
 		Name:         "inputs-content-type",
 		Env:          "INPUTS_CONTENT_TYPE",
 		Description:  fmt.Sprintf("Content type for storing prover inputs (one of %q)", []string{"application/json", "application/protobuf"}),
 		DefaultValue: common.Ptr("application/json"),
 	}
-	contentEncodingFlag = &spf13.StringFlag{
-		ViperKey:     "prover-input-store.content-encoding",
-		Name:         "inputs-content-encoding",
-		Env:          "INPUTS_CONTENT_ENCODING",
-		Description:  fmt.Sprintf("Optional content encoding to apply to prover inputs before storing (one of %q)", []string{"gzip", "flate", "plain"}),
-		DefaultValue: common.Ptr("plain"),
+	preflightDataEnabledFlag = &spf13.BoolFlag{
+		ViperKey:     "preflight.enabled",
+		Name:         "preflight-data-enabled",
+		Env:          "PREFLIGHT_DATA_ENABLED",
+		Description:  "Enable preflight data",
+		DefaultValue: common.Ptr(true),
 	}
 )
 
@@ -99,39 +122,6 @@ func AddChainFlags(v *viper.Viper, f *pflag.FlagSet) {
 	chainIDFlag.Add(v, f)
 	chainRPCURLFlag.Add(v, f)
 }
-
-var (
-	awsS3BucketFlag = &spf13.StringFlag{
-		ViperKey:    "prover-input-store.s3.bucket",
-		Name:        "inputs-aws-s3-bucket",
-		Env:         "INPUTS_AWS_S3_BUCKET",
-		Description: "Optional AWS S3 bucket to store prover inputs",
-	}
-	awsS3BucketKeyPrefixFlag = &spf13.StringFlag{
-		ViperKey:    "prover-input-store.s3.bucket-key-prefix",
-		Name:        "inputs-aws-s3-bucket-key-prefix",
-		Env:         "INPUTS_AWS_S3_BUCKET_KEY_PREFIX",
-		Description: "Optional AWS S3 bucket key prefix where to store prover inputs",
-	}
-	awsS3AccessKeyFlag = &spf13.StringFlag{
-		ViperKey:    "prover-input-store.s3.aws-provider.credentials.access-key",
-		Name:        "inputs-aws-s3-access-key",
-		Env:         "INPUTS_AWS_S3_ACCESS_KEY",
-		Description: "Optional AWS Access Key to write prover inputs into S3 bucket",
-	}
-	awsS3SecretKeyFlag = &spf13.StringFlag{
-		ViperKey:    "prover-input-store.s3.aws-provider.credentials.secret-key",
-		Name:        "inputs-aws-s3-secret-key",
-		Env:         "INPUTS_AWS_S3_SECRET_KEY",
-		Description: "Optional AWS Secret Key to write prover inputs into S3 bucket",
-	}
-	awsS3RegionFlag = &spf13.StringFlag{
-		ViperKey:    "prover-input-store.s3.aws-provider.region",
-		Name:        "inputs-aws-s3-region",
-		Env:         "INPUTS_AWS_S3_REGION",
-		Description: "Optional AWS S3 bucket's region",
-	}
-)
 
 func AddAWSFlags(v *viper.Viper, f *pflag.FlagSet) {
 	awsS3BucketFlag.Add(v, f)
@@ -143,8 +133,15 @@ func AddAWSFlags(v *viper.Viper, f *pflag.FlagSet) {
 
 func AddStoreFlags(v *viper.Viper, f *pflag.FlagSet) {
 	dataDirFlag.Add(v, f)
-	preflightDirFlag.Add(v, f)
-	inputsDirFlag.Add(v, f)
-	contentTypeFlag.Add(v, f)
+	AddAWSFlags(v, f)
 	contentEncodingFlag.Add(v, f)
+	inputsContentTypeFlag.Add(v, f)
+	preflightDataEnabledFlag.Add(v, f)
+}
+
+func AddFlags(v *viper.Viper, f *pflag.FlagSet) {
+	AddConfigFileFlag(v, f)
+	AddChainFlags(v, f)
+	AddStoreFlags(v, f)
+	AddGeneratorFlags(v, f)
 }

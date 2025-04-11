@@ -9,33 +9,20 @@ import (
 )
 
 type Config struct {
-	Chain struct {
+	Log    log.Config `mapstructure:"log"`
+	App    app.Config `mapstructure:"app"`
+	Config []string   `mapstructure:"config"`
+	Chain  struct {
 		ID  string `mapstructure:"id,omitempty"`
 		RPC struct {
 			URL string `mapstructure:"url"`
 		} `mapstructure:"rpc,omitempty"`
 	} `mapstructure:"chain"`
-	DataDir   string   `mapstructure:"data-dir"`
-	Config    []string `mapstructure:"config"`
-	Generator struct {
-		Include []string `mapstructure:"include"`
-		Filter  struct {
-			Modulo struct {
-				Value int `mapstructure:"value"`
-			} `mapstructure:"modulo,omitempty"`
-		} `mapstructure:"filter,omitempty"`
-	} `mapstructure:"generator"`
-	PreflightDataStore struct {
+
+	Store struct {
 		File struct {
 			Dir string `mapstructure:"dir"`
-		} `mapstructure:"file"`
-	} `mapstructure:"preflight-data-store"`
-	ProverInputStore struct {
-		ContentType     string `mapstructure:"content-type"`
-		ContentEncoding string `mapstructure:"content-encoding"`
-		File            struct {
-			Dir string `mapstructure:"dir"`
-		} `mapstructure:"file"`
+		} `mapstructure:"file,omitempty"`
 		S3 struct {
 			AWSProvider struct {
 				Region      string `mapstructure:"region"`
@@ -44,13 +31,26 @@ type Config struct {
 					SecretKey string `mapstructure:"secret-key"`
 				} `mapstructure:"credentials"`
 			} `mapstructure:"aws-provider"`
-			Bucket          string `mapstructure:"bucket"`
-			BucketKeyPrefix string `mapstructure:"bucket-key-prefix"`
+			Bucket string `mapstructure:"bucket"`
+			Prefix string `mapstructure:"prefix"`
 		} `mapstructure:"s3,omitempty"`
-	} `mapstructure:"prover-input-store"`
+		ContentEncoding string `mapstructure:"content-encoding"`
+	} `mapstructure:"store"`
+	ProverInputs struct {
+		ContentType string `mapstructure:"content-type"`
+	} `mapstructure:"inputs"`
+	PreflightData struct {
+		Enabled bool `mapstructure:"enabled"`
+	} `mapstructure:"preflight"`
+	Generator struct {
+		Include []string `mapstructure:"include"`
+		Filter  struct {
+			Modulo struct {
+				Value int `mapstructure:"value"`
+			} `mapstructure:"modulo,omitempty"`
+		} `mapstructure:"filter,omitempty"`
+	} `mapstructure:"generator"`
 	Extra map[string]interface{} `mapstructure:"_extra,remain,omitempty"`
-	App   app.Config             `mapstructure:"app"`
-	Log   log.Config             `mapstructure:"log"`
 }
 
 func (config *Config) Load(v *viper.Viper) error {

@@ -94,5 +94,19 @@ func (s *proverInputStore) LoadProverInput(ctx context.Context, chainID, blockNu
 }
 
 func (s *proverInputStore) path(chainID, blockNumber uint64) string {
-	return fmt.Sprintf("%d/%d", chainID, blockNumber)
+	return fmt.Sprintf("/inputs/%d/%d", chainID, blockNumber)
+}
+
+type noOpProverInputStore struct{}
+
+func (s *noOpProverInputStore) StoreProverInput(ctx context.Context, inputs *input.ProverInput) error {
+	return nil
+}
+
+func (s *noOpProverInputStore) LoadProverInput(ctx context.Context, chainID, blockNumber uint64) (*input.ProverInput, error) {
+	return nil, nil
+}
+
+func NewNoOpProverInputStore() ProverInputStore {
+	return &noOpProverInputStore{}
 }

@@ -64,5 +64,19 @@ func (s *preflightDataStore) LoadPreflightData(ctx context.Context, chainID, blo
 }
 
 func (s *preflightDataStore) path(chainID, blockNumber uint64) string {
-	return fmt.Sprintf("%d/%d", chainID, blockNumber)
+	return fmt.Sprintf("/preflight/%d/%d", chainID, blockNumber)
+}
+
+type noOpPreflightDataStore struct{}
+
+func (s *noOpPreflightDataStore) StorePreflightData(ctx context.Context, data *steps.PreflightData) error {
+	return nil
+}
+
+func (s *noOpPreflightDataStore) LoadPreflightData(ctx context.Context, chainID, blockNumber uint64) (*steps.PreflightData, error) {
+	return nil, nil
+}
+
+func NewNoOpPreflightDataStore() PreflightDataStore {
+	return &noOpPreflightDataStore{}
 }
