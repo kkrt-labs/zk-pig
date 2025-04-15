@@ -44,9 +44,11 @@ func DefaultConfig() *Config {
 		Config: common.PtrSlice("config.yaml", "config.yml"),
 		Store: &StoreConfig{
 			File: &FileStoreConfig{
-				Dir: common.Ptr("data"),
+				Enabled: common.Ptr(true),
+				Dir:     common.Ptr("data"),
 			},
 			S3: &S3StoreConfig{
+				Enabled: common.Ptr(false),
 				Provider: &AWSProviderConfig{
 					Credentials: &CredentialsConfig{},
 				},
@@ -130,10 +132,12 @@ type StoreConfig struct {
 }
 
 type FileStoreConfig struct {
-	Dir *string `key:"dir" desc:"Path to local data directory"`
+	Enabled *bool   `key:"enabled" desc:"Enable file store"`
+	Dir     *string `key:"dir" desc:"Path to local data directory"`
 }
 
 type S3StoreConfig struct {
+	Enabled  *bool              `key:"enabled" desc:"Enable S3 store"`
 	Provider *AWSProviderConfig `key:"provider" env:"PROVIDER" flag:"provider"`
 	Bucket   *string            `key:"bucket" desc:"AWS S3 bucket"`
 	Prefix   *string            `key:"prefix" desc:"AWS S3 bucket key prefix"`

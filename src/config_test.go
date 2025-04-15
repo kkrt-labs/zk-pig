@@ -331,12 +331,14 @@ func TestFlagsUsage(t *testing.T) {
       --start-timeout string                              Start timeout [env: START_TIMEOUT] (default "10s")
       --stop-timeout string                               Stop timeout [env: STOP_TIMEOUT] (default "10s")
       --store-aws-s3-bucket string                        AWS S3 bucket [env: STORE_AWS_S3_BUCKET]
+      --store-aws-s3-enabled                              Enable S3 store [env: STORE_AWS_S3_ENABLED]
       --store-aws-s3-prefix string                        AWS S3 bucket key prefix [env: STORE_AWS_S3_PREFIX]
       --store-aws-s3-provider-access-key string           AWS access key [env: STORE_AWS_S3_PROVIDER_ACCESS_KEY]
       --store-aws-s3-provider-region string               AWS region [env: STORE_AWS_S3_PROVIDER_REGION]
       --store-aws-s3-provider-secret-key string           AWS secret key [env: STORE_AWS_S3_PROVIDER_SECRET_KEY]
       --store-content-encoding string                     Content encoding (e.g. gzip) [env: STORE_CONTENT_ENCODING] (default "plain")
       --store-file-dir string                             Path to local data directory [env: STORE_FILE_DIR] (default "data")
+      --store-file-enabled                                Enable file store [env: STORE_FILE_ENABLED] (default true)
 `
 
 	expectedRaws := strings.Split(expectedUsage, "\n")
@@ -401,9 +403,11 @@ func TestAddFlagsAndLoadEnv(t *testing.T) {
 		},
 		Store: &StoreConfig{
 			File: &FileStoreConfig{
-				Dir: common.Ptr("testdata"),
+				Enabled: common.Ptr(false),
+				Dir:     common.Ptr("testdata"),
 			},
 			S3: &S3StoreConfig{
+				Enabled: common.Ptr(true),
 				Provider: &AWSProviderConfig{
 					Region: common.Ptr("us-east-1"),
 					Credentials: &CredentialsConfig{

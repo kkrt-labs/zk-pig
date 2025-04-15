@@ -114,7 +114,7 @@ func (a *App) FileStore() store.Store {
 		a,
 		fileStoreComponentName,
 		func() (store.Store, error) {
-			if a.Config().Store.File != nil && a.Config().Store.File.Dir != nil && *a.Config().Store.File.Dir != "" {
+			if a.Config().Store.File != nil && common.Val(a.Config().Store.File.Enabled) {
 				return a.fileStoreWithTags(), nil
 			}
 			return store.NewNoOpStore(), nil
@@ -127,7 +127,7 @@ func (a *App) S3Store() store.Store {
 		a,
 		s3StoreComponentName,
 		func() (store.Store, error) {
-			if a.Config().Store.S3 != nil && a.Config().Store.S3.Bucket != nil {
+			if a.Config().Store.S3 != nil && common.Val(a.Config().Store.S3.Enabled) {
 				return a.s3StoreWithTags(), nil
 			}
 			return store.NewNoOpStore(), nil
