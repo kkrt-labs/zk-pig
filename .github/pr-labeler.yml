@@ -1,5 +1,5 @@
 type.fix: fix/*
-type.feature: feat/*
+type.feat: feat/*
 type.chore: chore/*
 type.test: test/*
 type.devops: ci/*
