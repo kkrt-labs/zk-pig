@@ -14,6 +14,8 @@ template: |
   **Full Changelog**: https://github.com/$OWNER/$REPOSITORY/compare/$PREVIOUS_TAG...v$RESOLVED_VERSION
 
 categories:
+  - title: '💥 BREAKING CHANGES'
+    label: 'breaking-change'
   - title: '✨ Features'
     label: 'type.feat'
   - title: '🐛 Bug fixes'
@@ -26,8 +28,6 @@ categories:
     label: 'type.devops'
   - title: '📝 Documentation'
     label: 'type.docs'
-  - title: '💥 BREAKING CHANGES'
-    label: 'breaking-change'
 
 version-resolver:
   # Major is not meant to be used before v1.0.0
@@ -39,6 +39,7 @@ version-resolver:
     labels:
       - 'type.feat'
       - 'bump.minor'
+      - 'breaking-change'
   patch:
     labels:
       - 'type.fix'
