@@ -3,6 +3,7 @@ package store
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"math/big"
 	"testing"
@@ -70,7 +71,12 @@ func TestProverInputStore(t *testing.T) {
 			var dataCache []byte
 			ctx := context.TODO()
 			mockStore.EXPECT().Store(ctx, tt.expectedKey, gomock.Any(), &store.Headers{
-				ContentType: tt.contentType,
+				ContentType:     tt.contentType,
+				ContentEncoding: store.ContentEncodingPlain,
+				KeyValue: map[string]string{
+					"chain.id":     fmt.Sprintf("%d", in.ChainConfig.ChainID.Uint64()),
+					"block.number": fmt.Sprintf("%d", in.Blocks[0].Header.Number.Uint64()),
+				},
 			}).DoAndReturn(func(_ context.Context, _ string, reader io.Reader, _ *store.Headers) error {
 				dataCache, _ = io.ReadAll(reader)
 				return nil

@@ -10,4 +10,5 @@ import (
 func TestImplementsInterface(t *testing.T) {
 	assert.Implements(t, (*svc.Taggable)(nil), ProverInputStoreWithTags(nil))
 	assert.Implements(t, (*svc.Taggable)(nil), PreflightDataStoreWithTags(nil))
+	assert.Implements(t, (*svc.Taggable)(nil), BlockStoreWithTags(nil))
 }

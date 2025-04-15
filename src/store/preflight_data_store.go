@@ -33,7 +33,9 @@ type preflightDataStore struct {
 }
 
 func (s *preflightDataStore) StorePreflightData(ctx context.Context, data *steps.PreflightData) error {
-	path := s.path(data.ChainConfig.ChainID.Uint64(), data.Block.Number.ToInt().Uint64())
+	chainID := data.ChainConfig.ChainID.Uint64()
+	blockNumber := data.Block.Number.ToInt().Uint64()
+	path := s.path(chainID, blockNumber)
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(data); err != nil {
 		return fmt.Errorf("failed to encode JSON: %w", err)
@@ -42,6 +44,10 @@ func (s *preflightDataStore) StorePreflightData(ctx context.Context, data *steps
 	headers := store.Headers{
 		ContentType:     store.ContentTypeJSON,
 		ContentEncoding: store.ContentEncodingPlain,
+		KeyValue: map[string]string{
+			"chain.id":     fmt.Sprintf("%d", chainID),
+			"block.number": fmt.Sprintf("%d", blockNumber),
+		},
 	}
 	return s.store.Store(ctx, path, reader, &headers)
 }

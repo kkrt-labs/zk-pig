@@ -54,7 +54,12 @@ func (s *proverInputStore) StoreProverInput(ctx context.Context, data *input.Pro
 
 	path := s.path(data.ChainConfig.ChainID.Uint64(), data.Blocks[0].Header.Number.Uint64())
 	headers := &store.Headers{
-		ContentType: s.contentType,
+		ContentType:     s.contentType,
+		ContentEncoding: store.ContentEncodingPlain,
+		KeyValue: map[string]string{
+			"chain.id":     fmt.Sprintf("%d", data.ChainConfig.ChainID.Uint64()),
+			"block.number": fmt.Sprintf("%d", data.Blocks[0].Header.Number.Uint64()),
+		},
 	}
 	return s.store.Store(ctx, path, bytes.NewReader(buf.Bytes()), headers)
 }

@@ -43,6 +43,10 @@ func TestPreflightDataStore(t *testing.T) {
 	mockStore.EXPECT().Store(ctx, "/1/preflight/10.json", gomock.Any(), &store.Headers{
 		ContentType:     store.ContentTypeJSON,
 		ContentEncoding: store.ContentEncodingPlain,
+		KeyValue: map[string]string{
+			"chain.id":     "1",
+			"block.number": "10",
+		},
 	}).DoAndReturn(func(_ context.Context, _ string, reader io.Reader, _ *store.Headers) error {
 		dataCache, _ = io.ReadAll(reader)
 		return nil

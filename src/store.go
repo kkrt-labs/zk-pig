@@ -21,10 +21,34 @@ var (
 	storeComponentName              = "store"
 	fileStoreComponentName          = fmt.Sprintf("%s.file", storeComponentName)
 	s3StoreComponentName            = fmt.Sprintf("%s.s3", storeComponentName)
+	blockStoreComponentName         = fmt.Sprintf("%s.block", storeComponentName)
 	proverInputStoreComponentName   = "prover-input-store"
 	preflightDataStoreComponentName = "preflight-data-store"
 )
 
+func (a *App) BlockStore() inputstore.BlockStore {
+	return provide(
+		a,
+		blockStoreComponentName,
+		func() (inputstore.BlockStore, error) {
+			s := a.blockStoreBase()
+			s = inputstore.BlockStoreWithLog(s)
+			s = inputstore.BlockStoreWithTags(s)
+
+			return s, nil
+		},
+	)
+}
+
+func (a *App) blockStoreBase() inputstore.BlockStore {
+	return provide(
+		a,
+		fmt.Sprintf("%s.base", blockStoreComponentName),
+		func() (inputstore.BlockStore, error) {
+			return inputstore.NewBlockStore(a.Store()), nil
+		},
+	)
+}
 func (a *App) ProverInputStore() inputstore.ProverInputStore {
 	return provide(
 		a,
