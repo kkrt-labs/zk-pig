@@ -3,7 +3,7 @@ module github.com/kkrt-labs/zk-pig
 go 1.24.1
 
 require (
-	github.com/aws/aws-sdk-go-v2/config v1.29.13
+	github.com/aws/aws-sdk-go-v2/config v1.29.14
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.67
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.79.2
 	github.com/cenkalti/backoff/v4 v4.3.0
