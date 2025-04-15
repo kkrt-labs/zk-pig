@@ -94,18 +94,10 @@ func (a *App) Store() store.Store {
 		a,
 		storeComponentName,
 		func() (store.Store, error) {
-			stores := make([]store.Store, 0)
-			fileStore := a.FileStore()
-			if fileStore != nil {
-				stores = append(stores, fileStore)
-			}
-
-			s3Store := a.S3Store()
-			if s3Store != nil {
-				stores = append(stores, s3Store)
-			}
-
-			multiStore := multistore.New(stores...)
+			multiStore := multistore.New(
+				a.FileStore(),
+				a.S3Store(),
+			)
 
 			compressedStore, err := compressstore.New(multiStore, compressstore.WithContentEncoding(common.Val(a.Config().Store.ContentEncoding)))
 			if err != nil {
@@ -122,10 +114,10 @@ func (a *App) FileStore() store.Store {
 		a,
 		fileStoreComponentName,
 		func() (store.Store, error) {
-			if a.Config().Store.File != nil && a.Config().Store.File.Dir != nil {
+			if a.Config().Store.File != nil && a.Config().Store.File.Dir != nil && *a.Config().Store.File.Dir != "" {
 				return a.fileStoreWithTags(), nil
 			}
-			return nil, nil
+			return store.NewNoOpStore(), nil
 		},
 	)
 }
@@ -138,7 +130,7 @@ func (a *App) S3Store() store.Store {
 			if a.Config().Store.S3 != nil && a.Config().Store.S3.Bucket != nil {
 				return a.s3StoreWithTags(), nil
 			}
-			return nil, nil
+			return store.NewNoOpStore(), nil
 		},
 	)
 }
