@@ -308,11 +308,6 @@ func (s *Generator) Prepare(ctx context.Context, blockNumber *big.Int) (*input.P
 		return nil, err
 	}
 
-	err = s.execute(ctx, in)
-	if err != nil {
-		return nil, err
-	}
-
 	err = s.storeProverInput(ctx, in)
 	if err != nil {
 		return nil, err

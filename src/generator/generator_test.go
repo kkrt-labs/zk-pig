@@ -82,8 +82,7 @@ func TestGenerator(t *testing.T) {
 	t.Run("Prepare#NoError", func(t *testing.T) {
 		loadDataCall := preflightDataStore.EXPECT().LoadPreflightData(gomock.Any(), uint64(1), uint64(1)).Return(testData, nil)
 		prepareCall := preparer.EXPECT().Prepare(gomock.Any(), testData).Return(testInput, nil).After(loadDataCall)
-		executeCall := executor.EXPECT().Execute(gomock.Any(), testInput).Return(nil, nil).After(prepareCall)
-		proverInputStore.EXPECT().StoreProverInput(gomock.Any(), testInput).After(executeCall)
+		proverInputStore.EXPECT().StoreProverInput(gomock.Any(), testInput).After(prepareCall)
 
 		_, err := generator.Prepare(context.TODO(), big.NewInt(1))
 		require.NoError(t, err)
@@ -175,8 +174,7 @@ func TestGeneratorWithRPCNotConfigured(t *testing.T) {
 	t.Run("Prepare", func(t *testing.T) {
 		loadDataCall := preflightDataStore.EXPECT().LoadPreflightData(gomock.Any(), uint64(1), uint64(1)).Return(testData, nil)
 		prepareCall := preparer.EXPECT().Prepare(gomock.Any(), testData).Return(testInput, nil).After(loadDataCall)
-		executeCall := executor.EXPECT().Execute(gomock.Any(), testInput).Return(nil, nil).After(prepareCall)
-		proverInputStore.EXPECT().StoreProverInput(gomock.Any(), testInput).After(executeCall)
+		proverInputStore.EXPECT().StoreProverInput(gomock.Any(), testInput).After(prepareCall)
 
 		_, err := generator.Prepare(context.TODO(), big.NewInt(1))
 		require.NoError(t, err)
