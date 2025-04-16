@@ -3,13 +3,14 @@ module github.com/kkrt-labs/zk-pig
 go 1.24.1
 
 require (
+	github.com/aws/aws-lambda-go v1.48.0
 	github.com/aws/aws-sdk-go-v2/config v1.29.14
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.67
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.79.2
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/ethereum/go-ethereum v1.14.12
 	github.com/holiman/uint256 v1.3.2
-	github.com/kkrt-labs/go-utils v0.5.2
+	github.com/kkrt-labs/go-utils v0.5.3
 	github.com/prometheus/client_golang v1.22.0
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6

@@ -80,11 +80,7 @@ func (a *App) PreflightDataStore() inputstore.PreflightDataStore {
 		a,
 		preflightDataStoreComponentName,
 		func() (inputstore.PreflightDataStore, error) {
-			if a.Config().PreflightData != nil && a.Config().PreflightData.Enabled != nil && *a.Config().PreflightData.Enabled {
-				return inputstore.NewPreflightDataStore(a.Store())
-			}
-
-			return inputstore.NewNoOpPreflightDataStore(), nil
+			return inputstore.NewPreflightDataStore(a.Store())
 		},
 	)
 }

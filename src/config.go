@@ -61,23 +61,20 @@ func DefaultConfig() *Config {
 		ProverInputs: &ProverInputsConfig{
 			ContentType: common.Ptr(store.ContentTypeJSON),
 		},
-		PreflightData: &PreflightDataConfig{
-			Enabled: common.Ptr(false),
-		},
 		Generator: &GeneratorConfig{
-			FilterModulo: common.Ptr(uint64(5)),
+			StorePreflightData: common.Ptr(false),
+			FilterModulo:       common.Ptr(uint64(5)),
 		},
 	}
 }
 
 type Config struct {
-	App           *app.Config          `key:"app" env:"-" flag:"-"`
-	Config        *[]*string           `key:"config" short:"c"`
-	Chain         *ChainConfig         `key:"chain"`
-	Store         *StoreConfig         `key:"store"`
-	ProverInputs  *ProverInputsConfig  `key:"inputs" env:"INPUTS" flag:"inputs"`
-	PreflightData *PreflightDataConfig `key:"preflight" env:"PREFLIGHT" flag:"preflight"`
-	Generator     *GeneratorConfig     `key:"generator"`
+	App          *app.Config         `key:"app" env:"-" flag:"-"`
+	Config       *[]*string          `key:"config" short:"c"`
+	Chain        *ChainConfig        `key:"chain"`
+	Store        *StoreConfig        `key:"store"`
+	ProverInputs *ProverInputsConfig `key:"inputs" env:"INPUTS" flag:"inputs"`
+	Generator    *GeneratorConfig    `key:"generator"`
 }
 
 func (cfg *Config) Load(v *viper.Viper) error {
@@ -91,8 +88,6 @@ func (cfg *Config) Load(v *viper.Viper) error {
 			return err
 		}
 	}
-
-	fmt.Printf("viper: %+v\n", v.AllSettings())
 
 	if err := cfg.Unmarshal(v); err != nil {
 		return fmt.Errorf("unable to load config: %w", err)
@@ -157,11 +152,8 @@ type ProverInputsConfig struct {
 	ContentType *store.ContentType `key:"content-type" env:"CONTENT_TYPE" flag:"content-type" desc:"Content type (e.g. json)"`
 }
 
-type PreflightDataConfig struct {
-	Enabled *bool `key:"enabled"`
-}
-
 type GeneratorConfig struct {
-	IncludeExtensions *steps.Include `key:"include" env:"INCLUDE_EXTENSIONS" desc:"Optionnal extended data to include in the generated Prover Input (e.g. accessList, preState, stateDiffs, committed, all)"`
-	FilterModulo      *uint64        `key:"filter-modulo" env:"FILTER_MODULO" flag:"filter-modulo" desc:"Generate prover input for blocks which number is divisible by the given modulo"`
+	StorePreflightData *bool          `key:"store-preflight-data" env:"STORE_PREFLIGHT_DATA" flag:"store-preflight-data" desc:"Store intermediate preflight data when generating prover inputs"`
+	IncludeExtensions  *steps.Include `key:"include" env:"INCLUDE_EXTENSIONS" desc:"Optionnal extended data to include in the generated Prover Input (e.g. accessList, preState, stateDiffs, committed, all)"`
+	FilterModulo       *uint64        `key:"filter-modulo" env:"FILTER_MODULO" flag:"filter-modulo" desc:"Generate prover input for blocks which number is divisible by the given modulo"`
 }

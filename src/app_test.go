@@ -21,3 +21,9 @@ func TestApp(t *testing.T) {
 	assert.NotNil(t, daemon)
 	assert.NoError(t, app.Error())
 }
+
+func TestLoad(t *testing.T) {
+	app, err := Load()
+	require.NoError(t, err)
+	assert.NotNil(t, app)
+}

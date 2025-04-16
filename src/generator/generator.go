@@ -56,6 +56,8 @@ type Config struct {
 
 	PreflightDataStore inputstore.PreflightDataStore
 	ProverInputStore   inputstore.ProverInputStore
+
+	StorePreflightDataEnabled bool
 }
 
 // Generator is a service that enables the generation of prover inpunts for EVM compatible blocks.
@@ -70,6 +72,8 @@ type Generator struct {
 	PreflightDataStore inputstore.PreflightDataStore
 	ProverInputStore   inputstore.ProverInputStore
 
+	storePreflightDataEnabled bool
+
 	blocks                *prometheus.GaugeVec
 	generationTime        *prometheus.HistogramVec
 	countOfBlocksPerStep  *prometheus.GaugeVec
@@ -81,14 +85,15 @@ type Generator struct {
 
 func NewGenerator(cfg *Config) (*Generator, error) {
 	generator := &Generator{
-		ChainID:            cfg.ChainID,
-		RPC:                cfg.RPC,
-		Preflighter:        cfg.Preflighter,
-		Preparer:           cfg.Preparer,
-		Executor:           cfg.Executor,
-		PreflightDataStore: cfg.PreflightDataStore,
-		ProverInputStore:   cfg.ProverInputStore,
-		Tagged:             svc.NewTagged(),
+		ChainID:                   cfg.ChainID,
+		RPC:                       cfg.RPC,
+		Preflighter:               cfg.Preflighter,
+		Preparer:                  cfg.Preparer,
+		Executor:                  cfg.Executor,
+		PreflightDataStore:        cfg.PreflightDataStore,
+		ProverInputStore:          cfg.ProverInputStore,
+		storePreflightDataEnabled: cfg.StorePreflightDataEnabled,
+		Tagged:                    svc.NewTagged(),
 	}
 	return generator, nil
 }
@@ -206,12 +211,14 @@ func (s *Generator) generate(ctx context.Context, block *gethtypes.Block) (*inpu
 		return nil, err
 	}
 
-	err = s.storePreflightData(ctx, data)
-	if err != nil {
-		s.generationTime.
-			WithLabelValues(StorePreflightDataStep.String()).
-			Observe(time.Since(start).Seconds())
-		return nil, err
+	if s.storePreflightDataEnabled {
+		err = s.storePreflightData(ctx, data)
+		if err != nil {
+			s.generationTime.
+				WithLabelValues(StorePreflightDataStep.String()).
+				Observe(time.Since(start).Seconds())
+			return nil, err
+		}
 	}
 
 	in, err := s.prepare(ctx, data)

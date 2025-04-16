@@ -54,7 +54,7 @@ func TestViperConfig(t *testing.T) {
 	v.Set("store.s3.prefix", "test-prefix")
 	v.Set("store.content-encoding", "gzip")
 	v.Set("inputs.content-type", "application/protobuf")
-	v.Set("preflight.enabled", "true")
+	v.Set("generator.store-preflight-data", "true")
 	v.Set("generator.filter-modulo", "15")
 	v.Set("generator.include", "preState,accessList")
 
@@ -134,12 +134,10 @@ func TestViperConfig(t *testing.T) {
 		ProverInputs: &ProverInputsConfig{
 			ContentType: common.Ptr(store.ContentTypeProtobuf),
 		},
-		PreflightData: &PreflightDataConfig{
-			Enabled: common.Ptr(true),
-		},
 		Generator: &GeneratorConfig{
-			FilterModulo:      common.Ptr(uint64(15)),
-			IncludeExtensions: common.Ptr(steps.IncludePreState | steps.IncludeAccessList),
+			StorePreflightData: common.Ptr(true),
+			FilterModulo:       common.Ptr(uint64(15)),
+			IncludeExtensions:  common.Ptr(steps.IncludePreState | steps.IncludeAccessList),
 		},
 	}
 	assert.Equal(t, expectedCfg, cfg)
@@ -218,12 +216,10 @@ func TestEnv(t *testing.T) {
 		ProverInputs: &ProverInputsConfig{
 			ContentType: common.Ptr(store.ContentTypeProtobuf),
 		},
-		PreflightData: &PreflightDataConfig{
-			Enabled: common.Ptr(true),
-		},
 		Generator: &GeneratorConfig{
-			FilterModulo:      common.Ptr(uint64(15)),
-			IncludeExtensions: common.Ptr(steps.IncludePreState | steps.IncludeAccessList),
+			StorePreflightData: common.Ptr(true),
+			FilterModulo:       common.Ptr(uint64(15)),
+			IncludeExtensions:  common.Ptr(steps.IncludePreState | steps.IncludeAccessList),
 		},
 	}).Env()
 	require.NoError(t, err)
@@ -263,7 +259,7 @@ func TestEnv(t *testing.T) {
 		"STORE_AWS_S3_PREFIX":                      "test-prefix",
 		"STORE_CONTENT_ENCODING":                   "gzip",
 		"INPUTS_CONTENT_TYPE":                      "application/protobuf",
-		"PREFLIGHT_ENABLED":                        "true",
+		"GENERATOR_STORE_PREFLIGHT_DATA":           "true",
 		"GENERATOR_FILTER_MODULO":                  "15",
 		"GENERATOR_INCLUDE_EXTENSIONS":             "accessList,preState",
 	}, env)
@@ -281,6 +277,7 @@ func TestFlagsUsage(t *testing.T) {
   -c, --config strings                                     [env: CONFIG] (default [config.yaml,config.yml])
       --generator-filter-modulo uint                      Generate prover input for blocks which number is divisible by the given modulo [env: GENERATOR_FILTER_MODULO] (default 5)
       --generator-includeextensions string                Optionnal extended data to include in the generated Prover Input (e.g. accessList [env: GENERATOR_INCLUDE_EXTENSIONS] (default "none")
+      --generator-store-preflight-data                    Store intermediate preflight data when generating prover inputs [env: GENERATOR_STORE_PREFLIGHT_DATA]
       --healthz-ep-addr string                            healthz entrypoint: TCP Address to listen on [env: HEALTHZ_EP_ADDR] (default ":8081")
       --healthz-ep-http-idle-timeout string               healthz entrypoint: Maximum duration to wait for the next request when keep-alives are enabled (zero uses the value of read timeout) [env: HEALTHZ_EP_HTTP_IDLE_TIMEOUT] (default "30s")
       --healthz-ep-http-max-header-bytes int              healthz entrypoint: Maximum number of bytes the server will read parsing the request header's keys and values [env: HEALTHZ_EP_HTTP_MAX_HEADER_BYTES] (default 1048576)
@@ -327,7 +324,6 @@ func TestFlagsUsage(t *testing.T) {
       --main-ep-net-keep-alive-probe-enable               main entrypoint: Enable keep alive probes [env: MAIN_EP_NET_KEEP_ALIVE_PROBE_ENABLE]
       --main-ep-net-keep-alive-probe-idle string          main entrypoint: Time that the connection must be idle before the first keep-alive probe is sent [env: MAIN_EP_NET_KEEP_ALIVE_PROBE_IDLE] (default "15s")
       --main-ep-net-keep-alive-probe-interval string      main entrypoint: Time between keep-alive probes [env: MAIN_EP_NET_KEEP_ALIVE_PROBE_INTERVAL] (default "15s")
-      --preflight-enabled                                  [env: PREFLIGHT_ENABLED]
       --start-timeout string                              Start timeout [env: START_TIMEOUT] (default "10s")
       --stop-timeout string                               Stop timeout [env: STOP_TIMEOUT] (default "10s")
       --store-aws-s3-bucket string                        AWS S3 bucket [env: STORE_AWS_S3_BUCKET]
@@ -420,15 +416,13 @@ func TestAddFlagsAndLoadEnv(t *testing.T) {
 			},
 			ContentEncoding: common.Ptr(store.ContentEncodingGzip),
 		},
-		PreflightData: &PreflightDataConfig{
-			Enabled: common.Ptr(true),
-		},
 		ProverInputs: &ProverInputsConfig{
 			ContentType: common.Ptr(store.ContentTypeJSON),
 		},
 		Generator: &GeneratorConfig{
-			FilterModulo:      common.Ptr(uint64(15)),
-			IncludeExtensions: common.Ptr(steps.IncludePreState | steps.IncludeAccessList),
+			StorePreflightData: common.Ptr(true),
+			FilterModulo:       common.Ptr(uint64(15)),
+			IncludeExtensions:  common.Ptr(steps.IncludePreState | steps.IncludeAccessList),
 		},
 	}
 

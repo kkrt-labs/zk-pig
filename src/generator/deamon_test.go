@@ -38,12 +38,13 @@ func TestDaemon(t *testing.T) {
 	preflightDataStore := mockstore.NewMockPreflightDataStore(ctrl)
 
 	generator, err := NewGenerator(&Config{
-		RPC:                ethrpc,
-		Preflighter:        preflighter,
-		Preparer:           preparer,
-		Executor:           executor,
-		ProverInputStore:   proverInputStore,
-		PreflightDataStore: preflightDataStore,
+		RPC:                       ethrpc,
+		Preflighter:               preflighter,
+		Preparer:                  preparer,
+		Executor:                  executor,
+		ProverInputStore:          proverInputStore,
+		PreflightDataStore:        preflightDataStore,
+		StorePreflightDataEnabled: true,
 	})
 	require.NoError(t, err)
 	generator.SetMetrics("test", "test")
