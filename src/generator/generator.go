@@ -168,9 +168,9 @@ func (s *Generator) Collect(ch chan<- prometheus.Metric) {
 	s.generateErrorCount.Collect(ch)
 }
 
-func (s *Generator) Generate(ctx context.Context, blockNumber *big.Int) error {
+func (s *Generator) Generate(ctx context.Context, blockNumber *big.Int) (*input.ProverInput, error) {
 	if s.RPC == nil {
-		return ErrChainRPCNotConfigured
+		return nil, ErrChainRPCNotConfigured
 	}
 
 	ctx = s.Context(ctx)
@@ -182,7 +182,7 @@ func (s *Generator) Generate(ctx context.Context, blockNumber *big.Int) error {
 
 	block, err := s.RPC.BlockByNumber(ctx, blockNumber)
 	if err != nil {
-		return fmt.Errorf("failed to fetch block: %v", err)
+		return nil, fmt.Errorf("failed to fetch block: %v", err)
 	}
 
 	ctx = tag.WithTags(
@@ -194,7 +194,7 @@ func (s *Generator) Generate(ctx context.Context, blockNumber *big.Int) error {
 	return s.generate(ctx, block)
 }
 
-func (s *Generator) generate(ctx context.Context, block *gethtypes.Block) error {
+func (s *Generator) generate(ctx context.Context, block *gethtypes.Block) (*input.ProverInput, error) {
 	s.blocks.WithLabelValues(block.Number().String()).Inc()
 	defer s.blocks.DeleteLabelValues(block.Number().String())
 
@@ -203,7 +203,7 @@ func (s *Generator) generate(ctx context.Context, block *gethtypes.Block) error 
 	data, err := s.preflight(ctx, block)
 	if err != nil {
 		s.generationTime.WithLabelValues(PreflightStep.String()).Observe(time.Since(start).Seconds())
-		return err
+		return nil, err
 	}
 
 	err = s.storePreflightData(ctx, data)
@@ -211,7 +211,7 @@ func (s *Generator) generate(ctx context.Context, block *gethtypes.Block) error 
 		s.generationTime.
 			WithLabelValues(StorePreflightDataStep.String()).
 			Observe(time.Since(start).Seconds())
-		return err
+		return nil, err
 	}
 
 	in, err := s.prepare(ctx, data)
@@ -219,7 +219,7 @@ func (s *Generator) generate(ctx context.Context, block *gethtypes.Block) error 
 		s.generationTime.
 			WithLabelValues(PrepareStep.String()).
 			Observe(time.Since(start).Seconds())
-		return err
+		return nil, err
 	}
 
 	err = s.execute(ctx, in)
@@ -227,7 +227,7 @@ func (s *Generator) generate(ctx context.Context, block *gethtypes.Block) error 
 		s.generationTime.
 			WithLabelValues(ExecuteStep.String()).
 			Observe(time.Since(start).Seconds())
-		return err
+		return nil, err
 	}
 
 	err = s.storeProverInput(ctx, in)
@@ -235,7 +235,7 @@ func (s *Generator) generate(ctx context.Context, block *gethtypes.Block) error 
 		s.generationTime.
 			WithLabelValues(StoreProverInputStep.String()).
 			Observe(time.Since(start).Seconds())
-		return err
+		return nil, err
 	}
 
 	s.generationTime.
@@ -243,14 +243,14 @@ func (s *Generator) generate(ctx context.Context, block *gethtypes.Block) error 
 		Observe(time.Since(start).Seconds())
 	s.countOfBlocksPerStep.WithLabelValues(FinalStep.String()).Inc()
 
-	return nil
+	return in, nil
 }
 
 // Preflight executes the preflight checks for the given block number.
 // If requires the remote RPC to be configured and started
-func (s *Generator) Preflight(ctx context.Context, blockNumber *big.Int) error {
+func (s *Generator) Preflight(ctx context.Context, blockNumber *big.Int) (*steps.PreflightData, error) {
 	if s.RPC == nil {
-		return ErrChainRPCNotConfigured
+		return nil, ErrChainRPCNotConfigured
 	}
 
 	ctx = s.Context(ctx)
@@ -262,7 +262,7 @@ func (s *Generator) Preflight(ctx context.Context, blockNumber *big.Int) error {
 
 	block, err := s.RPC.BlockByNumber(ctx, blockNumber)
 	if err != nil {
-		return fmt.Errorf("failed to fetch block: %v", err)
+		return nil, fmt.Errorf("failed to fetch block: %v", err)
 	}
 
 	ctx = tag.WithTags(
@@ -273,45 +273,45 @@ func (s *Generator) Preflight(ctx context.Context, blockNumber *big.Int) error {
 
 	data, err := s.preflight(ctx, block)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = s.storePreflightData(ctx, data)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return data, nil
 }
 
-func (s *Generator) Prepare(ctx context.Context, blockNumber *big.Int) error {
+func (s *Generator) Prepare(ctx context.Context, blockNumber *big.Int) (*input.ProverInput, error) {
 	ctx = s.Context(ctx)
 
 	if s.ChainID == nil {
-		return ErrChainNotConfigured
+		return nil, ErrChainNotConfigured
 	}
 
 	data, err := s.loadPreflightData(ctx, blockNumber)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	in, err := s.prepare(ctx, data)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = s.execute(ctx, in)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	err = s.storeProverInput(ctx, in)
 	if err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return in, nil
 }
 
 func (s *Generator) Execute(ctx context.Context, blockNumber *big.Int) error {

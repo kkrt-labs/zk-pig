@@ -35,7 +35,8 @@ func NewGenerateCommand(rootCtx *RootContext) *cobra.Command {
 				return err
 			}
 
-			return generator.Generate(cmd.Context(), ctx.blockNumber)
+			_, err = generator.Generate(cmd.Context(), ctx.blockNumber)
+			return err
 		},
 	}
 
@@ -65,7 +66,9 @@ func NewPreflightCommand(rootCtx *RootContext) *cobra.Command {
 				return err
 			}
 
-			return generator.Preflight(cmd.Context(), ctx.blockNumber)
+			_, err = generator.Preflight(cmd.Context(), ctx.blockNumber)
+
+			return err
 		},
 	}
 
@@ -94,7 +97,8 @@ func NewPrepareCommand(rootCtx *RootContext) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return generator.Prepare(cmd.Context(), ctx.blockNumber)
+			_, err = generator.Prepare(cmd.Context(), ctx.blockNumber)
+			return err
 		},
 	}
 

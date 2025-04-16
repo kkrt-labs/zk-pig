@@ -74,7 +74,7 @@ func TestGenerator(t *testing.T) {
 		preflightCall := preflighter.EXPECT().Preflight(gomock.Any(), testBlock).Return(testData, nil).After(rpcCall)
 		preflightDataStore.EXPECT().StorePreflightData(gomock.Any(), testData).After(preflightCall)
 
-		err := generator.Preflight(context.TODO(), big.NewInt(1))
+		_, err := generator.Preflight(context.TODO(), big.NewInt(1))
 		require.NoError(t, err)
 	})
 
@@ -84,7 +84,7 @@ func TestGenerator(t *testing.T) {
 		executeCall := executor.EXPECT().Execute(gomock.Any(), testInput).Return(nil, nil).After(prepareCall)
 		proverInputStore.EXPECT().StoreProverInput(gomock.Any(), testInput).After(executeCall)
 
-		err := generator.Prepare(context.TODO(), big.NewInt(1))
+		_, err := generator.Prepare(context.TODO(), big.NewInt(1))
 		require.NoError(t, err)
 	})
 
@@ -104,7 +104,7 @@ func TestGenerator(t *testing.T) {
 		executeCall := executor.EXPECT().Execute(gomock.Any(), testInput).Return(nil, nil).After(prepareCall)
 		proverInputStore.EXPECT().StoreProverInput(gomock.Any(), testInput).After(executeCall)
 
-		err := generator.Generate(context.TODO(), big.NewInt(1))
+		_, err := generator.Generate(context.TODO(), big.NewInt(1))
 		require.NoError(t, err)
 	})
 }
@@ -127,10 +127,10 @@ func TestGeneratorConfigError(t *testing.T) {
 		err = generator.Start(context.TODO())
 		require.NoError(t, err)
 
-		err = generator.Preflight(context.TODO(), big.NewInt(1))
+		_, err = generator.Preflight(context.TODO(), big.NewInt(1))
 		assert.ErrorIs(t, err, ErrChainRPCNotConfigured)
 
-		err = generator.Generate(context.TODO(), big.NewInt(1))
+		_, err = generator.Generate(context.TODO(), big.NewInt(1))
 		assert.ErrorIs(t, err, ErrChainRPCNotConfigured)
 	})
 }
@@ -177,7 +177,7 @@ func TestGeneratorWithRPCNotConfigured(t *testing.T) {
 		executeCall := executor.EXPECT().Execute(gomock.Any(), testInput).Return(nil, nil).After(prepareCall)
 		proverInputStore.EXPECT().StoreProverInput(gomock.Any(), testInput).After(executeCall)
 
-		err := generator.Prepare(context.TODO(), big.NewInt(1))
+		_, err := generator.Prepare(context.TODO(), big.NewInt(1))
 		require.NoError(t, err)
 	})
 

@@ -155,7 +155,7 @@ func (d *Daemon) processLatest(runCtx context.Context) {
 				}
 				logger.Info("Generate prover input for block...")
 
-				err := d.generate(ctx, block)
+				_, err := d.generate(ctx, block)
 				if err != nil {
 					logger.Error("Failed to generate prover input", zap.Error(err))
 				} else {
