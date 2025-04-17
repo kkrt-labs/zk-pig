@@ -154,6 +154,6 @@ type ProverInputsConfig struct {
 
 type GeneratorConfig struct {
 	StorePreflightData *bool          `key:"store-preflight-data" env:"STORE_PREFLIGHT_DATA" flag:"store-preflight-data" desc:"Store intermediate preflight data when generating prover inputs"`
-	IncludeExtensions  *steps.Include `key:"include" env:"INCLUDE_EXTENSIONS" desc:"Optionnal extended data to include in the generated Prover Input (e.g. accessList, preState, stateDiffs, committed, all)"`
+	IncludeExtensions  *steps.Include `key:"include" env:"INCLUDE_EXTENSIONS" desc:"Optional extended data to include in the generated Prover Input (e.g. accessList, preState, stateDiffs, committed, all)"`
 	FilterModulo       *uint64        `key:"filter-modulo" env:"FILTER_MODULO" flag:"filter-modulo" desc:"Generate prover input for blocks which number is divisible by the given modulo"`
 }
