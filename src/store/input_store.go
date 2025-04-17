@@ -70,6 +70,7 @@ func (s *proverInputStore) LoadProverInput(ctx context.Context, chainID, blockNu
 	if err != nil {
 		return nil, fmt.Errorf("failed to load data from store: %w", err)
 	}
+	defer reader.Close()
 
 	data := &input.ProverInput{}
 

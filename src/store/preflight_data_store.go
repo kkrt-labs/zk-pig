@@ -59,6 +59,8 @@ func (s *preflightDataStore) LoadPreflightData(ctx context.Context, chainID, blo
 	if err != nil {
 		return nil, err
 	}
+	defer reader.Close()
+
 	if err := json.NewDecoder(reader).Decode(data); err != nil {
 		return nil, err
 	}

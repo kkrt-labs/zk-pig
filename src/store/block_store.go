@@ -54,6 +54,8 @@ func (s *blockStore) LoadBlock(ctx context.Context, chainID, blockNumber uint64)
 	if err != nil {
 		return nil, err
 	}
+	defer reader.Close()
+
 	if err := json.NewDecoder(reader).Decode(block); err != nil {
 		return nil, err
 	}
