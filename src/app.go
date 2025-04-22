@@ -26,10 +26,14 @@ func NewApp(cfg *Config) (*App, error) {
 		return nil, err
 	}
 
+	return NewAppFromApp(a, cfg), nil
+}
+
+func NewAppFromApp(a *app.App, cfg *Config) *App {
 	return &App{
 		app: a,
 		cfg: cfg,
-	}, nil
+	}
 }
 
 func (a *App) Config() *Config {
