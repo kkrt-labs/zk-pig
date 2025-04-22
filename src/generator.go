@@ -11,7 +11,7 @@ import (
 )
 
 var (
-	generatorComponentName = "generator"
+	generatorComponentName = "zkpig"
 )
 
 func (a *App) PreflightEVM() evm.Executor {
