@@ -11,13 +11,13 @@ import (
 )
 
 var (
-	generatorComponentName = "zkpig"
+	zkpigComponentName = "zkpig"
 )
 
 func (a *App) PreflightEVM() evm.Executor {
 	return provide(
 		a,
-		fmt.Sprintf("%s.preflight.evm", generatorComponentName),
+		fmt.Sprintf("%s.preflight.evm", zkpigComponentName),
 		func() (evm.Executor, error) {
 			vm := evm.NewExecutor()
 			vm = evm.WithLog()(vm)
@@ -30,7 +30,7 @@ func (a *App) PreflightEVM() evm.Executor {
 func (a *App) PreflightBase() steps.Preflight {
 	return provide(
 		a,
-		fmt.Sprintf("%s.preflight.base", generatorComponentName),
+		fmt.Sprintf("%s.preflight.base", zkpigComponentName),
 		func() (steps.Preflight, error) {
 			return steps.NewPreflightFromEvm(a.PreflightEVM(), a.Chain()), nil
 		},
@@ -40,7 +40,7 @@ func (a *App) PreflightBase() steps.Preflight {
 func (a *App) Preflight() steps.Preflight {
 	return provide(
 		a,
-		fmt.Sprintf("%s.preflight", generatorComponentName),
+		fmt.Sprintf("%s.preflight", zkpigComponentName),
 		func() (steps.Preflight, error) {
 			return steps.PreflightWithTags(a.PreflightBase()), nil
 		},
@@ -50,7 +50,7 @@ func (a *App) Preflight() steps.Preflight {
 func (a *App) PreparerEVM() evm.Executor {
 	return provide(
 		a,
-		fmt.Sprintf("%s.preparer.evm", generatorComponentName),
+		fmt.Sprintf("%s.preparer.evm", zkpigComponentName),
 		func() (evm.Executor, error) {
 			vm := evm.NewExecutor()
 			vm = evm.WithLog()(vm)
@@ -63,7 +63,7 @@ func (a *App) PreparerEVM() evm.Executor {
 func (a *App) PreparerBase() steps.Preparer {
 	return provide(
 		a,
-		fmt.Sprintf("%s.preparer.base", generatorComponentName),
+		fmt.Sprintf("%s.preparer.base", zkpigComponentName),
 		func() (steps.Preparer, error) {
 			gCfg := a.Config()
 			var include steps.Include
@@ -78,7 +78,7 @@ func (a *App) PreparerBase() steps.Preparer {
 func (a *App) Preparer() steps.Preparer {
 	return provide(
 		a,
-		fmt.Sprintf("%s.preparer", generatorComponentName),
+		fmt.Sprintf("%s.preparer", zkpigComponentName),
 		func() (steps.Preparer, error) {
 			return steps.PreparerWithTags(a.PreparerBase()), nil
 		},
@@ -88,7 +88,7 @@ func (a *App) Preparer() steps.Preparer {
 func (a *App) ExecutorEVM() evm.Executor {
 	return provide(
 		a,
-		fmt.Sprintf("%s.executor.evm", generatorComponentName),
+		fmt.Sprintf("%s.executor.evm", zkpigComponentName),
 		func() (evm.Executor, error) {
 			vm := evm.NewExecutor()
 			vm = evm.WithLog()(vm)
@@ -101,7 +101,7 @@ func (a *App) ExecutorEVM() evm.Executor {
 func (a *App) ExecutorBase() steps.Executor {
 	return provide(
 		a,
-		fmt.Sprintf("%s.executor.base", generatorComponentName),
+		fmt.Sprintf("%s.executor.base", zkpigComponentName),
 		func() (steps.Executor, error) {
 			return steps.NewExecutorFromEvm(a.ExecutorEVM()), nil
 		},
@@ -111,7 +111,7 @@ func (a *App) ExecutorBase() steps.Executor {
 func (a *App) Executor() steps.Executor {
 	return provide(
 		a,
-		fmt.Sprintf("%s.executor", generatorComponentName),
+		fmt.Sprintf("%s.executor", zkpigComponentName),
 		func() (steps.Executor, error) {
 			return steps.ExecutorWithTags(a.ExecutorBase()), nil
 		},
@@ -121,7 +121,7 @@ func (a *App) Executor() steps.Executor {
 func (a *App) Generator() *generator.Generator {
 	return provide(
 		a,
-		fmt.Sprintf("%s.base", generatorComponentName),
+		fmt.Sprintf("%s.base", zkpigComponentName),
 		func() (*generator.Generator, error) {
 			return generator.NewGenerator(
 				&generator.Config{
@@ -135,14 +135,14 @@ func (a *App) Generator() *generator.Generator {
 				},
 			)
 		},
-		app.WithComponentName(generatorComponentName), // override component name
+		app.WithComponentName(zkpigComponentName), // override component name
 	)
 }
 
 func (a *App) Daemon() *generator.Daemon {
 	return provide(
 		a,
-		fmt.Sprintf("%s.daemon", generatorComponentName),
+		fmt.Sprintf("%s.daemon", zkpigComponentName),
 		func() (*generator.Daemon, error) {
 			a.app.EnableHealthzEntrypoint()
 
@@ -156,6 +156,6 @@ func (a *App) Daemon() *generator.Daemon {
 				generator.WithFilter(filter),
 			), nil
 		},
-		app.WithComponentName(generatorComponentName), // override component name
+		app.WithComponentName(zkpigComponentName), // override component name
 	)
 }
