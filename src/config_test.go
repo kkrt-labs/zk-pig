@@ -276,7 +276,7 @@ func TestFlagsUsage(t *testing.T) {
       --chain-rpc-url string                              Chain JSON-RPC URL [env: CHAIN_RPC_URL]
   -c, --config strings                                     [env: CONFIG] (default [config.yaml,config.yml])
       --generator-filter-modulo uint                      Generate prover input for blocks which number is divisible by the given modulo [env: GENERATOR_FILTER_MODULO] (default 5)
-      --generator-includeextensions string                Optionnal extended data to include in the generated Prover Input (e.g. accessList [env: GENERATOR_INCLUDE_EXTENSIONS] (default "none")
+      --generator-includeextensions string                Optional extended data to include in the generated Prover Input (e.g. accessList [env: GENERATOR_INCLUDE_EXTENSIONS] (default "none")
       --generator-store-preflight-data                    Store intermediate preflight data when generating prover inputs [env: GENERATOR_STORE_PREFLIGHT_DATA]
       --healthz-ep-addr string                            healthz entrypoint: TCP Address to listen on [env: HEALTHZ_EP_ADDR] (default ":8081")
       --healthz-ep-http-idle-timeout string               healthz entrypoint: Maximum duration to wait for the next request when keep-alives are enabled (zero uses the value of read timeout) [env: HEALTHZ_EP_HTTP_IDLE_TIMEOUT] (default "30s")
