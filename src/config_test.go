@@ -259,9 +259,9 @@ func TestEnv(t *testing.T) {
 		"STORE_AWS_S3_PREFIX":                      "test-prefix",
 		"STORE_CONTENT_ENCODING":                   "gzip",
 		"INPUTS_CONTENT_TYPE":                      "application/protobuf",
-		"GENERATOR_STORE_PREFLIGHT_DATA":           "true",
-		"GENERATOR_FILTER_MODULO":                  "15",
-		"GENERATOR_INCLUDE_EXTENSIONS":             "accessList,preState",
+		"STORE_PREFLIGHT_DATA":                     "true",
+		"FILTER_MODULO":                            "15",
+		"INCLUDE_EXTENSIONS":                       "accessList,preState",
 	}, env)
 }
 
@@ -275,9 +275,7 @@ func TestFlagsUsage(t *testing.T) {
 	expectedUsage := `      --chain-id string                                   Chain ID (decimal) [env: CHAIN_ID]
       --chain-rpc-url string                              Chain JSON-RPC URL [env: CHAIN_RPC_URL]
   -c, --config strings                                     [env: CONFIG] (default [config.yaml,config.yml])
-      --generator-filter-modulo uint                      Generate prover input for blocks which number is divisible by the given modulo [env: GENERATOR_FILTER_MODULO] (default 5)
-      --generator-includeextensions string                Optionnal extended data to include in the generated Prover Input (e.g. accessList [env: GENERATOR_INCLUDE_EXTENSIONS] (default "none")
-      --generator-store-preflight-data                    Store intermediate preflight data when generating prover inputs [env: GENERATOR_STORE_PREFLIGHT_DATA]
+      --filter-modulo uint                                Generate prover input for blocks which number is divisible by the given modulo [env: FILTER_MODULO] (default 5)
       --healthz-ep-addr string                            healthz entrypoint: TCP Address to listen on [env: HEALTHZ_EP_ADDR] (default ":8081")
       --healthz-ep-http-idle-timeout string               healthz entrypoint: Maximum duration to wait for the next request when keep-alives are enabled (zero uses the value of read timeout) [env: HEALTHZ_EP_HTTP_IDLE_TIMEOUT] (default "30s")
       --healthz-ep-http-max-header-bytes int              healthz entrypoint: Maximum number of bytes the server will read parsing the request header's keys and values [env: HEALTHZ_EP_HTTP_MAX_HEADER_BYTES] (default 1048576)
@@ -289,6 +287,7 @@ func TestFlagsUsage(t *testing.T) {
       --healthz-ep-net-keep-alive-probe-enable            healthz entrypoint: Enable keep alive probes [env: HEALTHZ_EP_NET_KEEP_ALIVE_PROBE_ENABLE]
       --healthz-ep-net-keep-alive-probe-idle string       healthz entrypoint: Time that the connection must be idle before the first keep-alive probe is sent [env: HEALTHZ_EP_NET_KEEP_ALIVE_PROBE_IDLE] (default "15s")
       --healthz-ep-net-keep-alive-probe-interval string   healthz entrypoint: Time between keep-alive probes [env: HEALTHZ_EP_NET_KEEP_ALIVE_PROBE_INTERVAL] (default "15s")
+      --include-extensions string                         Optionnal extended data to include in the generated prover input (e.g. "accessList" "preState" "stateDiffs" "committed" "all") [env: INCLUDE_EXTENSIONS] (default "all")
       --inputs-content-type string                        Content type (e.g. json) [env: INPUTS_CONTENT_TYPE] (default "application/json")
       --log-enable-caller                                 Enable caller [env: LOG_ENABLE_CALLER]
       --log-enable-stacktrace                             Enable automatic stacktrace capturing [env: LOG_ENABLE_STACKTRACE]
@@ -335,6 +334,7 @@ func TestFlagsUsage(t *testing.T) {
       --store-content-encoding string                     Content encoding (e.g. gzip) [env: STORE_CONTENT_ENCODING] (default "plain")
       --store-file-dir string                             Path to local data directory [env: STORE_FILE_DIR] (default "data")
       --store-file-enabled                                Enable file store [env: STORE_FILE_ENABLED] (default true)
+      --store-preflight-data                              Store intermediate preflight data when generating prover inputs [env: STORE_PREFLIGHT_DATA]
 `
 
 	expectedRaws := strings.Split(expectedUsage, "\n")
