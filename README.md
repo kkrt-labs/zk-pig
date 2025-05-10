@@ -34,6 +34,69 @@ To test the installation, run:
 zkpig version
 ```
 
+### Building from Source
+
+You can also build `zkpig` from source:
+
+1. Ensure you have Go 1.20 or later installed:
+   ```sh
+   go version
+   ```
+
+2. Clone the repository:
+   ```sh
+   git clone https://github.com/kkrt-labs/zk-pig.git
+   cd zk-pig
+   ```
+
+3. Build the project:
+   ```sh
+   make
+   ```
+   
+   This will create a binary in the `./build` directory.
+
+4. Install the binary (optional):
+   ```sh
+   # Install to $GOPATH/bin
+   go install
+   
+   # Or move the binary to a location in your PATH
+   sudo mv ./build/zkpig /usr/local/bin/
+   ```
+
+### Using Pre-built Binaries
+
+Pre-built binaries are available for various platforms on the [GitHub Releases](https://github.com/kkrt-labs/zk-pig/releases) page.
+
+1. Download the appropriate binary for your platform:
+   ```sh
+   # For macOS (Apple Silicon)
+   curl -L https://github.com/kkrt-labs/zk-pig/releases/latest/download/zkpig_Darwin_arm64.tar.gz -o zkpig.tar.gz
+   
+   # For macOS (Intel)
+   curl -L https://github.com/kkrt-labs/zk-pig/releases/latest/download/zkpig_Darwin_x86_64.tar.gz -o zkpig.tar.gz
+   
+   # For Linux (x86_64)
+   curl -L https://github.com/kkrt-labs/zk-pig/releases/latest/download/zkpig_Linux_x86_64.tar.gz -o zkpig.tar.gz
+   ```
+
+2. Extract the binary:
+   ```sh
+   tar -xzf zkpig.tar.gz
+   ```
+
+3. Make the binary executable and move it to a location in your PATH:
+   ```sh
+   chmod +x ./zkpig
+   sudo mv ./zkpig /usr/local/bin/
+   ```
+
+4. Verify the installation:
+   ```sh
+   zkpig version
+   ```
+
 ## Architecture
 
 For more detailed architecture documentation, you can refer to the [Documentation](https://github.com/kkrt-labs/zk-pig/blob/main/docs/prover-input-generation.md).
