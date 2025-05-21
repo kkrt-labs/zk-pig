@@ -19,7 +19,7 @@ type StorageProof struct {
 	Proof []string    `json:"proof"`
 }
 
-// FromStorageRPC set StorageProof fields from a storage result returned by an RPC client and returns the StorageProof.
+// StorageProofFromRPC set StorageProof fields from a storage result returned by an RPC client and returns the StorageProof.
 func StorageProofFromRPC(res *gethclient.StorageResult) *StorageProof {
 	return &StorageProof{
 		Key:   res.Key,
