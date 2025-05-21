@@ -97,7 +97,7 @@ func (s *proverInputStore) LoadProverInput(ctx context.Context, chainID, blockNu
 }
 
 func (s *proverInputStore) path(chainID, blockNumber uint64) string {
-	return s.contentType.FilePath(fmt.Sprintf("/%d/inputs/%d", chainID, blockNumber))
+	return s.contentType.FilePath(fmt.Sprintf("/%d/%d/zkpi", chainID, blockNumber))
 }
 
 type noOpProverInputStore struct{}

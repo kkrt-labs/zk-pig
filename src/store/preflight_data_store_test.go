@@ -40,7 +40,7 @@ func TestPreflightDataStore(t *testing.T) {
 	// Test storing and loading PreflightData
 	var dataCache []byte
 	ctx := context.TODO()
-	mockStore.EXPECT().Store(ctx, "/1/preflight/10.json", gomock.Any(), &store.Headers{
+	mockStore.EXPECT().Store(ctx, "/1/10/preflight.json", gomock.Any(), &store.Headers{
 		ContentType:     store.ContentTypeJSON,
 		ContentEncoding: store.ContentEncodingPlain,
 		KeyValue: map[string]string{
@@ -54,7 +54,7 @@ func TestPreflightDataStore(t *testing.T) {
 	err = preflightDataStore.StorePreflightData(ctx, preflightData)
 	assert.NoError(t, err)
 
-	mockStore.EXPECT().Load(ctx, "/1/preflight/10.json").Return(io.NopCloser(bytes.NewReader(dataCache)), nil, nil)
+	mockStore.EXPECT().Load(ctx, "/1/10/preflight.json").Return(io.NopCloser(bytes.NewReader(dataCache)), nil, nil)
 	loaded, err := preflightDataStore.LoadPreflightData(ctx, 1, 10)
 	assert.NoError(t, err)
 	assert.Equal(t, preflightData.ChainConfig.ChainID, loaded.ChainConfig.ChainID)

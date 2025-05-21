@@ -68,7 +68,7 @@ func (s *preflightDataStore) LoadPreflightData(ctx context.Context, chainID, blo
 }
 
 func (s *preflightDataStore) path(chainID, blockNumber uint64) string {
-	return fmt.Sprintf("/%d/preflight/%d.json", chainID, blockNumber)
+	return fmt.Sprintf("/%d/%d/preflight.json", chainID, blockNumber)
 }
 
 type noOpPreflightDataStore struct{}

@@ -36,14 +36,14 @@ func TestProverInputStore(t *testing.T) {
 			contentType: store.ContentTypeJSON,
 			chainID:     2,
 			blockNumber: 15,
-			expectedKey: "/2/inputs/15.json",
+			expectedKey: "/2/15/zkpi.json",
 		},
 		{
 			desc:        "Protobuf Plain File",
 			contentType: store.ContentTypeProtobuf,
 			chainID:     2,
 			blockNumber: 15,
-			expectedKey: "/2/inputs/15.protobuf",
+			expectedKey: "/2/15/zkpi.protobuf",
 		},
 	}
 	for _, tt := range testCases {
