@@ -14,7 +14,7 @@ git clone git@github.com:kkrt-labs/zk-pig.git
 
 Ensure you have the following tools installed:
 
-- [Go 1.20.0](https://go.dev/doc/install)
+- [Go 1.24.3](https://go.dev/doc/install)
 - [Docker](https://docs.docker.com/get-started/get-docker/)
 
 ### Verify Installation
