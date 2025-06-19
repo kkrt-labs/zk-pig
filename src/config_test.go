@@ -287,7 +287,7 @@ func TestFlagsUsage(t *testing.T) {
       --healthz-ep-net-keep-alive-probe-enable            healthz entrypoint: Enable keep alive probes [env: HEALTHZ_EP_NET_KEEP_ALIVE_PROBE_ENABLE]
       --healthz-ep-net-keep-alive-probe-idle string       healthz entrypoint: Time that the connection must be idle before the first keep-alive probe is sent [env: HEALTHZ_EP_NET_KEEP_ALIVE_PROBE_IDLE] (default "15s")
       --healthz-ep-net-keep-alive-probe-interval string   healthz entrypoint: Time between keep-alive probes [env: HEALTHZ_EP_NET_KEEP_ALIVE_PROBE_INTERVAL] (default "15s")
-      --include-extensions string                         Optionnal extended data to include in the generated prover input (e.g. "accessList" "preState" "stateDiffs" "committed" "all") [env: INCLUDE_EXTENSIONS] (default "all")
+      --include-extensions string                         Optional extended data to include in the generated prover input (e.g. "accessList" "preState" "stateDiffs" "committed" "all") [env: INCLUDE_EXTENSIONS] (default "all")
       --inputs-content-type string                        Content type (e.g. json) [env: INPUTS_CONTENT_TYPE] (default "application/json")
       --log-enable-caller                                 Enable caller [env: LOG_ENABLE_CALLER]
       --log-enable-stacktrace                             Enable automatic stacktrace capturing [env: LOG_ENABLE_STACKTRACE]
