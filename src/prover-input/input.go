@@ -128,7 +128,7 @@ func (e *Extra) UnmarshalJSON(b []byte) error {
 type StateDiff struct {
 	Address     gethcommon.Address `json:"address"`               // Address of the account that has changed
 	PreAccount  *Account           `json:"preAccount,omitempty"`  // Pre-state account, nil if the account if the account was created
-	PostAccount *Account           `json:"postAccount,omitempty"` // Post-state account, nil if the account was desctructed
+	PostAccount *Account           `json:"postAccount,omitempty"` // Post-state account, nil if the account was destructed
 	Storage     []*StorageDiff     `json:"storage,omitempty"`     // Storage diffs for the account
 }
 
