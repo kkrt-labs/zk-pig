@@ -60,7 +60,7 @@ type Config struct {
 	StorePreflightDataEnabled bool
 }
 
-// Generator is a service that enables the generation of prover inpunts for EVM compatible blocks.
+// Generator is a service that enables the generation of prover inputs for EVM compatible blocks.
 type Generator struct {
 	ChainID *big.Int
 	RPC     ethrpc.Client
