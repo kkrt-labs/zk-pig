@@ -78,7 +78,7 @@ To delete a value at a given `path` starts by looking up the for the correspondi
 
 ###### Extension node reduction
 
-During deletion if an extension node is left with an null child, then it is deleted as well.
+During deletion if an extension node is left with a null child, then it is deleted as well.
 
 ###### Branch node reduction
 

@@ -13,7 +13,7 @@ The EVM state is composed of:
   - **Value** is the RLP encoding of account data including
     - Balance: The ETH balance of the account.
     - Nonce: The count of transactions executed by the account.
-    - Code Hash: In case, the account is a Smart Contract, this is the hash of corresponding bytecode.
+    - Code Hash: In case, the account is a Smart Contract, this is the hash of the corresponding bytecode.
     - Storage Root: In case, the account is a Smart Contract, this is the root hash of the MPT for storage of the account
 - **Storage of Account:** Stored as an MPT, where:
   - **Key** is the Keccak hash of the slot index.

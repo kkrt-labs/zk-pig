@@ -20,7 +20,7 @@ ZK proving engines operate in isolated & stateless environments without direct a
   - **Ancestors**: At minimum, the parent header, and optionally all block headers up to the oldest ancestor block accessed during execution (maximum 256 entries).
   - **Codes**: Bytecode of all smart contracts called during execution.
   - **PreState**: The partial pre-state accessed during execution, represented as a list of RLP-encoded MPT nodes (both account storage and all storage tries in the same list).
-- **AccessList**: A mapping of accessed state entries (accounts and storage) during block execution. While this data is actually redundant, it currently facilitates some ZK EVM prover engines by enabling them to perform some pre-state validations before executing the block. In the long run, we may re-assess if this is absolutely needed.
+- **AccessList**: A mapping of accessed state entries (accounts and storage) during block execution. While this data is actually redundant, it currently facilitates some ZK EVM prover engines by enabling them to perform some pre-state validations before executing the block. In the long run, we may reassess if this is absolutely needed.
 
 ## Generation of Prover Inputs
 

@@ -17,7 +17,7 @@ All generator metrics use the subsystem label `generator`.
 - **Name**: `generator_generation_time`
 - **Type**: Histogram Vector
 - **Labels**:
-  - `final_step`: The final step reached in generation process
+  - `final_step`: The final step reached in the generation process
 - **Description**: Time spent to generate prover input (in seconds)
 - **Buckets**: [0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5, 10, 25, 50, 100, 250, 500]
 
